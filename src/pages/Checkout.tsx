@@ -19,20 +19,16 @@ declare global {
 type PaymentMethod = 'prepaid' | 'cod';
 
 export const Checkout = () => {
-  const { items, clear, removeItem } = useCart();
+  const { items, clear } = useCart();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-purge legacy cart items (static-catalogue sizeIds aren't valid
-  // variant UUIDs and would fail the server-side check). One-shot on mount —
-  // user keeps any items they added after the Supabase cutover.
-  useEffect(() => {
-    const legacy = items.filter((it) => !isUuid(it.sizeId));
-    if (legacy.length > 0) {
-      legacy.forEach((it) => removeItem(it.productId, it.sizeId));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Detect legacy items (static-catalogue sizeIds aren't valid variant UUIDs).
+  // We DO NOT auto-remove them — earlier we did and it caused phantom
+  // "Your cart is empty" pages when items were added during the brief warm-
+  // start before Supabase products loaded. Now we just count them and show
+  // a banner so the user knows to re-add from the shop.
+  const legacyItemCount = items.filter((it) => !isUuid(it.sizeId)).length;
 
   const [step, setStep] = useState<'details' | 'confirmed'>('details');
   const [confirmedOrder, setConfirmedOrder] = useState<{ orderNumber: string; total_paise: number } | null>(null);
@@ -97,13 +93,15 @@ export const Checkout = () => {
     e.preventDefault();
     setError(null);
 
-    // Defence-in-depth: any non-UUID sizeId would be rejected server-side.
-    // The useEffect above purges these on mount; this catches the edge case
-    // where the cart was modified after mount.
+    // Server-side validation will reject non-UUID variant IDs with a 400.
+    // We surface a clearer error to the user before submission so they
+    // can fix it themselves rather than seeing a generic API error.
     const invalidItems = items.filter((it) => !isUuid(it.sizeId));
     if (invalidItems.length > 0) {
-      invalidItems.forEach((it) => removeItem(it.productId, it.sizeId));
-      setError('Cart was updated to remove legacy items. Please review and try again.');
+      setError(
+        `${invalidItems.length} item${invalidItems.length === 1 ? '' : 's'} in your cart can't be checked out (${invalidItems.map((it) => it.name).join(', ')}). ` +
+        `Please remove them from the cart drawer and re-add from the shop.`,
+      );
       return;
     }
 
@@ -368,8 +366,15 @@ export const Checkout = () => {
                 </p>
               )}
 
+              {legacyItemCount > 0 && !error && (
+                <div className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 normal-case tracking-normal leading-snug">
+                  <p className="uppercase tracking-widest mb-1">{legacyItemCount} item{legacyItemCount === 1 ? '' : 's'} need attention</p>
+                  <p className="text-amber-700 font-normal">Some items were added before our latest catalogue update and can't be checked out as-is. Open the cart drawer, remove them, and re-add from the shop to continue.</p>
+                </div>
+              )}
+
               {error && (
-                <div className="text-[11px] uppercase tracking-widest font-bold text-red-600 bg-red-50 border border-red-200 px-4 py-3">
+                <div className="text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-4 py-3 normal-case tracking-normal leading-snug">
                   {error}
                 </div>
               )}
