@@ -19,6 +19,7 @@ const Checkout           = lazy(() => import('./pages/Checkout').then(m => ({ de
 const Catalog            = lazy(() => import('./pages/Catalog').then(m => ({ default: m.Catalog })));
 const Account            = lazy(() => import('./pages/Account').then(m => ({ default: m.Account })));
 const AccountOrderDetail = lazy(() => import('./pages/AccountOrderDetail').then(m => ({ default: m.AccountOrderDetail })));
+const AccountInvoice     = lazy(() => import('./pages/AccountInvoice').then(m => ({ default: m.AccountInvoice })));
 const Track              = lazy(() => import('./pages/Track').then(m => ({ default: m.Track })));
 
 function ScrollToTop() {
@@ -68,8 +69,9 @@ export default function App() {
               <Route path="/cms" element={<Navigate to="/" replace />} />
 
               {/* Customer account + order history */}
-              <Route path="/account"              element={<Account />} />
-              <Route path="/account/orders/:id"   element={<AccountOrderDetail />} />
+              <Route path="/account"                       element={<Account />} />
+              <Route path="/account/orders/:id"            element={<AccountOrderDetail />} />
+              <Route path="/account/orders/:id/invoice"    element={<AccountInvoice />} />
 
               {/* Shipment tracking */}
               <Route path="/track/:awb" element={<Track />} />

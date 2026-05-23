@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, API_URL } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
@@ -165,6 +165,25 @@ export const AccountOrderDetail = () => {
                   </div>
                 </div>
               </section>
+            )}
+
+            {/* ── Invoice link (status ≥ packed) ──────────────────────────── */}
+            {['packed', 'shipped', 'delivered'].includes(order.status) && (
+              <Link
+                to={`/account/orders/${order.id}/invoice`}
+                className="block bg-brand-ink text-white p-6 hover:bg-brand-ink/90 transition-colors group"
+              >
+                <div className="flex items-start gap-4">
+                  <FileText size={20} strokeWidth={1.5} className="text-brand-yellow mt-1" />
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-white/60 mb-1">Tax Invoice</p>
+                    <p className="text-sm font-bold flex items-center justify-between">
+                      View &amp; download invoice
+                      <span className="text-brand-yellow group-hover:translate-x-1 transition-transform">→</span>
+                    </p>
+                  </div>
+                </div>
+              </Link>
             )}
 
             {/* ── Items ───────────────────────────────────────────────────── */}

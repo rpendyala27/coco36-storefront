@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Package, MapPin, User, LogOut, ChevronRight } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
@@ -117,10 +118,10 @@ export const Account = () => {
             ) : (
               <ul className="divide-y divide-brand-ink/5">
                 {orders.map((o) => (
-                  <li key={o.id}>
+                  <li key={o.id} className="relative group">
                     <Link
                       to={`/account/orders/${o.id}`}
-                      className="flex items-center justify-between px-6 py-4 hover:bg-brand-surface/50 transition-colors group"
+                      className="flex items-center justify-between px-6 py-4 hover:bg-brand-surface/50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-mono text-sm font-bold text-brand-ink">{o.order_number}</p>
@@ -133,6 +134,20 @@ export const Account = () => {
                       <div className="flex items-center gap-6">
                         <StatusBadge status={o.status} />
                         <span className="font-bold text-brand-indigo">{formatMoney(o.total_paise)}</span>
+                        {/* Invoice icon — only when order is invoiceable (packed and beyond) */}
+                        {['packed', 'shipped', 'delivered'].includes(o.status) ? (
+                          <Link
+                            to={`/account/orders/${o.id}/invoice`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-brand-muted hover:text-brand-primary transition-colors"
+                            aria-label="View invoice"
+                            title="View invoice"
+                          >
+                            <FileText size={16} />
+                          </Link>
+                        ) : (
+                          <span className="w-4" /> /* spacer to align rows */
+                        )}
                         <ChevronRight size={16} className="text-brand-muted group-hover:text-brand-primary transition-colors" />
                       </div>
                     </Link>
