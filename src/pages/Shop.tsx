@@ -22,7 +22,7 @@ const SORT_LABELS: Record<SortKey, string> = {
 const ALL_BADGES: ProductBadge[] = ['Best Seller', 'New', 'Limited Harvest', 'Staff Pick'];
 
 export const Shop = () => {
-  const { products: PRODUCTS } = useProducts();
+  const { products: PRODUCTS, loading } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') as ProductCategory | null;
   const initialQuery    = searchParams.get('q') ?? '';
@@ -325,7 +325,23 @@ export const Shop = () => {
               </div>
             )}
 
-            {filtered.length === 0 ? (
+            {loading && PRODUCTS.length === 0 ? (
+              /* Skeleton — only when there are zero products to render
+                 (i.e. very first paint before any data arrives). After that
+                 we keep showing existing cards while new data streams in. */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-white border border-brand-ink/5">
+                    <div className="aspect-[4/3] bg-brand-surface" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-3 w-2/3 bg-brand-surface" />
+                      <div className="h-3 w-1/3 bg-brand-surface" />
+                      <div className="h-3 w-1/2 bg-brand-surface mt-4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="py-32 text-center">
                 <p className="text-2xl font-serif italic text-brand-muted mb-6">No ingredients match these filters.</p>
                 <button

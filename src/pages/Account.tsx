@@ -4,6 +4,7 @@ import { Package, MapPin, User, LogOut, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
+import { getOrderStatusMeta } from '../lib/order-status';
 
 interface OrderRow {
   id:           string;
@@ -177,18 +178,8 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-const STATUS_LABELS: Record<string, { label: string; bg: string; fg: string }> = {
-  placed:    { label: 'Placed',     bg: 'bg-blue-100',   fg: 'text-blue-700' },
-  confirmed: { label: 'Confirmed',  bg: 'bg-amber-100',  fg: 'text-amber-700' },
-  packed:    { label: 'Packed',     bg: 'bg-purple-100', fg: 'text-purple-700' },
-  shipped:   { label: 'Shipped',    bg: 'bg-cyan-100',   fg: 'text-cyan-700' },
-  delivered: { label: 'Delivered',  bg: 'bg-green-100',  fg: 'text-green-700' },
-  cancelled: { label: 'Cancelled',  bg: 'bg-red-100',    fg: 'text-red-700' },
-  returned:  { label: 'Returned',   bg: 'bg-gray-200',   fg: 'text-gray-700' },
-};
-
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_LABELS[status] ?? { label: status, bg: 'bg-gray-100', fg: 'text-gray-700' };
+  const s = getOrderStatusMeta(status);
   return (
     <span className={`text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 ${s.bg} ${s.fg}`}>
       {s.label}
