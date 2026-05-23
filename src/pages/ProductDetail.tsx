@@ -20,7 +20,7 @@ export const ProductDetail = () => {
   const navigate = useNavigate();
   const { addItem } = useCart();
 
-  const { product } = useProduct(id);
+  const { product, loading } = useProduct(id);
   const { products } = useProducts();
   const [selectedSizeId, setSelectedSizeId] = useState<string>(product?.sizes[0]?.id ?? '');
   const [quantity, setQuantity] = useState(1);
@@ -30,6 +30,27 @@ export const ProductDetail = () => {
     [product, products],
   );
 
+  // While the catalogue is still streaming from Supabase, show a skeleton —
+  // NOT a "Product not found" page. Previously this fired prematurely whenever
+  // the URL was a slug that only matched after the DB fetch resolved.
+  if (loading && !product) {
+    return (
+      <div className="min-h-screen pt-32 px-6 max-w-5xl mx-auto animate-pulse">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="aspect-square bg-brand-surface" />
+          <div className="space-y-4">
+            <div className="h-8 w-2/3 bg-brand-surface" />
+            <div className="h-4 w-1/3 bg-brand-surface" />
+            <div className="h-32 w-full bg-brand-surface mt-6" />
+            <div className="h-12 w-48 bg-brand-surface mt-6" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show 404 once we KNOW the catalogue has loaded and the product
+  // really doesn't exist.
   if (!product) {
     return (
       <div className="min-h-screen pt-32 px-6 text-center">
