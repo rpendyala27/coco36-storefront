@@ -19,9 +19,20 @@ declare global {
 type PaymentMethod = 'prepaid' | 'cod';
 
 export const Checkout = () => {
-  const { items, clear } = useCart();
+  const { items, clear, removeItem } = useCart();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-purge legacy cart items (static-catalogue sizeIds aren't valid
+  // variant UUIDs and would fail the server-side check). One-shot on mount —
+  // user keeps any items they added after the Supabase cutover.
+  useEffect(() => {
+    const legacy = items.filter((it) => !isUuid(it.sizeId));
+    if (legacy.length > 0) {
+      legacy.forEach((it) => removeItem(it.productId, it.sizeId));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [step, setStep] = useState<'details' | 'confirmed'>('details');
   const [confirmedOrder, setConfirmedOrder] = useState<{ orderNumber: string; total_paise: number } | null>(null);
@@ -86,13 +97,13 @@ export const Checkout = () => {
     e.preventDefault();
     setError(null);
 
-    // Block submit if items don't have proper variant IDs (UUID format)
+    // Defence-in-depth: any non-UUID sizeId would be rejected server-side.
+    // The useEffect above purges these on mount; this catches the edge case
+    // where the cart was modified after mount.
     const invalidItems = items.filter((it) => !isUuid(it.sizeId));
     if (invalidItems.length > 0) {
-      setError(
-        'One or more items in your cart cannot be checked out (legacy product data). ' +
-        'Please remove them and add fresh items from the shop.',
-      );
+      invalidItems.forEach((it) => removeItem(it.productId, it.sizeId));
+      setError('Cart was updated to remove legacy items. Please review and try again.');
       return;
     }
 

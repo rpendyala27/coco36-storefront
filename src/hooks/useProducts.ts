@@ -11,20 +11,20 @@ interface UseProductsResult {
 }
 
 /**
- * Supabase-first product hook with static catalogue fallback.
+ * Supabase-backed product hook.
  *
  * Strategy:
- *   • Warm-start with the static catalogue so the UI never flashes empty.
- *   • Subscribe to Supabase for realtime updates.
- *   • Merge results: Supabase products win on ID collision, static fills
- *     gaps for slugs not yet in the database. This means UI works smoothly
- *     during the migration period when only some products are seeded.
- *
- * `fromSupabase` is true once Supabase responds with at least one product.
+ *   • Warm-start with the static catalogue so the UI never flashes empty
+ *     during the first network round-trip.
+ *   • Once Supabase responds, **fully replace** with DB data — the merge
+ *     approach caused duplicate listings with mismatched variant IDs at
+ *     checkout (static sizes were 'sm'/'md'/'lg', not UUIDs).
+ *   • The static catalogue is only displayed when Supabase is totally
+ *     empty (e.g. first-ever boot, or offline).
  */
 export function useProducts(): UseProductsResult {
-  const [products, setProducts]     = useState<Product[]>(PRODUCTS); // warm start
-  const [loading, setLoading]       = useState(true);
+  const [products, setProducts]         = useState<Product[]>(PRODUCTS); // warm start
+  const [loading, setLoading]           = useState(true);
   const [fromSupabase, setFromSupabase] = useState(false);
 
   useEffect(() => {
@@ -40,23 +40,19 @@ export function useProducts(): UseProductsResult {
         }
 
         if (dbProducts.length > 0) {
-          // Merge: Supabase entries first, then static entries whose IDs
-          // (slugs) aren't yet covered by the DB.
-          const dbIds = new Set(dbProducts.map((p) => p.id));
-          const merged = [
-            ...dbProducts,
-            ...PRODUCTS.filter((p) => !dbIds.has(p.id)),
-          ];
-          setProducts(merged);
+          // Supabase is the source of truth — all 38 products + variants
+          // live there. Static catalogue is no longer mixed in (would create
+          // duplicate listings + non-UUID variant ids at checkout).
+          setProducts(dbProducts);
           setFromSupabase(true);
         } else {
-          // Empty DB → pure static catalogue.
+          // Empty DB → pure static catalogue (development fallback).
           setProducts(PRODUCTS);
           setFromSupabase(false);
         }
       });
     } catch {
-      // Supabase not configured / offline — stay on static data silently
+      // Supabase unreachable — stay on static data silently
       setLoading(false);
     }
 
@@ -69,9 +65,27 @@ export function useProducts(): UseProductsResult {
 /**
  * Single-product lookup. Useful in ProductDetail without re-subscribing
  * to the full collection.
+ *
+ * Matches:
+ *   1. Direct UUID/id match — primary path for Supabase products.
+ *   2. Slug fallback — turns "india-trinitario-couverture" into a name
+ *      match so legacy bookmarks/URLs from the static catalogue era keep
+ *      resolving without a DB migration.
  */
 export function useProduct(id: string | undefined): { product: Product | undefined; loading: boolean } {
   const { products, loading } = useProducts();
-  const product = id ? products.find((p) => p.id === id) : undefined;
+
+  const product = id
+    ? products.find((p) => p.id === id) ?? products.find((p) => slugify(p.name) === id)
+    : undefined;
+
   return { product, loading };
+}
+
+/** Lowercase, hyphenated, alphanumeric-only — matches the static catalogue slug style. */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')   // any non-alphanum → hyphen
+    .replace(/^-+|-+$/g, '');      // trim leading/trailing hyphens
 }
