@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>From crop to craft — COCO36 supply chain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="preconnect" href="https://unpkg.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,400..700,30..100&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* Transparent so the parent hero gradient shows through */
+  html, body { margin: 0; padding: 0; height: 100%; background: transparent; overflow: hidden; }
+  #root { position: fixed; inset: 0; }
+  @keyframes stampFlash {
+    0%   { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<!--
+  PRODUCTION embed: pre-compiled scene bundle, no in-browser Babel.
+  ⚡ Saved ~3MB of JS download + JSX compilation cost vs. the dev workflow.
+  Source `.jsx` is still in this folder for reference — only `scene.js` is loaded at runtime.
+-->
+<script src="https://unpkg.com/qrcode-generator@1.4.4/qrcode.js"></script>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
+<script src="scene.js"></script>
+</body>
+</html>

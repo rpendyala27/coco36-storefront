@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans:  "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-serif: "Newsreader", serif;
+
+  /* ─── Reds (CTA + accent) ───────────────────────── */
+  --color-brand-primary:        #ef405b;  /* main CTA, badges, active nav */
+  --color-brand-primary-bright: #ff1e55;  /* hover, highlights */
+  --color-brand-coral:          #fd535f;  /* secondary badges, ribbons */
+
+  /* ─── Yellows (energy) ──────────────────────────── */
+  --color-brand-yellow:         #ffde2f;  /* stars, prices */
+  --color-brand-amber:          #fab73d;  /* offer tags, premium */
+  --color-brand-lemon:          #f7e447;  /* subtle accents */
+
+  /* ─── Purples (trust / dark surfaces) ───────────── */
+  --color-brand-purple:         #4b1f64;  /* header/footer */
+  --color-brand-berry:          #730a6b;  /* gradient endpoint */
+  --color-brand-indigo:         #3b0366;  /* deep text, borders */
+
+  /* ─── Neutrals ──────────────────────────────────── */
+  --color-brand-paper:          #faf8f5;  /* warm off-white page bg */
+  --color-brand-surface:        #f5f5f5;  /* dividers, inactive */
+  --color-brand-ink:            #282c3f;  /* charcoal body */
+  --color-brand-muted:          #686b78;  /* secondary text */
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-primary selection:text-white;
+    background-color: #faf8f5;
+    /* Kraft recycled paper texture — subtle ivory with organic fibre noise */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(75, 31, 100, 0.02), transparent 70%),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='kraft'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.40  0 0 0 0 0.20  0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23kraft)'/%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 800 800' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fibres'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.02 0.6' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.30  0 0 0 0 0.15  0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fibres)'/%3E%3C/svg%3E");
+    background-size: 400px 400px, 800px 800px;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-bold tracking-tight text-brand-indigo;
+    font-feature-settings: "ss01", "cv11";
+  }
+}
+
+@layer components {
+  /* SVG kraft-grain noise overlay */
+  .bg-noise {
+    @apply fixed inset-0 pointer-events-none z-[1] opacity-[0.04];
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.4   0 0 0 0 0.25  0 0 0 0 0.1   0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Drop-cap accent (kept for editorial moments) */
+  .drop-cap::first-letter {
+    @apply float-left font-serif text-[5rem] leading-[0.8] pt-[0.2rem] pr-[0.5rem] pl-[0.1rem] text-brand-primary italic font-normal;
+  }
+
+  /* Swiggy-style card */
+  .card-eco {
+    @apply bg-white rounded-2xl shadow-[0_2px_12px_rgba(40,44,63,0.06)] hover:shadow-[0_12px_32px_rgba(40,44,63,0.12)] transition-all duration-300 hover:-translate-y-1 overflow-hidden;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-brand-primary text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-primary-bright transition-all duration-200 shadow-[0_4px_14px_rgba(239,64,91,0.35)] hover:shadow-[0_6px_20px_rgba(255,30,85,0.45)];
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 bg-white text-brand-ink font-semibold rounded-xl px-6 py-3 border border-brand-surface hover:border-brand-primary hover:text-brand-primary transition-all duration-200;
+  }
+  .btn-purple {
+    @apply inline-flex items-center justify-center gap-2 bg-brand-purple text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-berry transition-all duration-200;
+  }
+
+  /* Pill badge */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold;
+  }
+}
+
+/* GSAP scroll-reveal initial state (visible by default to avoid FOUC if JS fails) */
+.gsap-reveal { will-change: transform, opacity; }
+
+/* Scrollbar polish */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -800px 0; }
+  100% { background-position: 800px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0eeea 0%, #f8f6f2 50%, #f0eeea 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
