@@ -92,7 +92,7 @@ export const Trade = () => {
                     <input
                       type="email"
                       placeholder="business@example.com"
-                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl font-serif italic transition-all"
+                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl placeholder:font-serif placeholder:italic transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -102,7 +102,7 @@ export const Trade = () => {
                     <input
                       type="text"
                       placeholder="Botanical Labs Co."
-                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl font-serif italic transition-all"
+                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl placeholder:font-serif placeholder:italic transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -112,7 +112,7 @@ export const Trade = () => {
                     <input
                       type="text"
                       placeholder="XX-XXXXXXX"
-                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl font-serif italic transition-all"
+                      className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-xl placeholder:font-serif placeholder:italic transition-all"
                     />
                   </div>
                 </div>

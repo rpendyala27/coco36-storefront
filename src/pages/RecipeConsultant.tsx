@@ -248,7 +248,7 @@ export const RecipeConsultant = () => {
                 }}
                 placeholder="Ask about a recipe, technique, or substitution…"
                 rows={2}
-                className="flex-1 resize-none bg-transparent px-3 py-2 text-base font-serif italic placeholder:text-brand-muted/50 focus:outline-none"
+                className="flex-1 resize-none bg-transparent px-3 py-2 text-base placeholder:font-serif placeholder:italic placeholder:text-brand-muted/50 focus:outline-none"
                 disabled={loading}
               />
               <button

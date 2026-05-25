@@ -6,9 +6,11 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
+import { readPincode } from '../components/PincodePopup';
 
 const FREE_SHIPPING_THRESHOLD_PAISE = 250000; // ₹2,500
 const SHIPPING_PAISE = 9900;                  // ₹99
+const DRAFT_KEY = 'coco36.checkout-draft';
 
 declare global {
   interface Window {
@@ -37,19 +39,29 @@ export const Checkout = () => {
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   // ── Form state ──────────────────────────────────────────────────────────────
-  const [form, setForm] = useState({
-    name:    profile?.name ?? '',
-    email:   profile?.email ?? user?.email ?? '',
-    phone:   profile?.phone ?? '',
-    line1:   '',
-    line2:   '',
-    city:    '',
-    state:   '',
-    pincode: '',
-    paymentMethod: 'prepaid' as PaymentMethod,
+  // Restore from sessionStorage so a refresh/back-button doesn't lose input.
+  const [form, setForm] = useState(() => {
+    const empty = {
+      name:    profile?.name ?? '',
+      email:   profile?.email ?? user?.email ?? '',
+      phone:   profile?.phone ?? '',
+      line1:   '',
+      line2:   '',
+      city:    '',
+      state:   '',
+      pincode: readPincode() ?? '',
+      paymentMethod: 'prepaid' as PaymentMethod,
+    };
+    if (typeof window === 'undefined') return empty;
+    try {
+      const raw = window.sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return empty;
+      const draft = JSON.parse(raw);
+      return { ...empty, ...draft };
+    } catch { return empty; }
   });
 
-  // Prefill once auth loads
+  // Prefill once auth loads (only fills empties — preserves user edits)
   useEffect(() => {
     setForm((f) => ({
       ...f,
@@ -58,6 +70,12 @@ export const Checkout = () => {
       phone: f.phone || profile?.phone || '',
     }));
   }, [user, profile]);
+
+  // Persist the draft on every change. sessionStorage — not localStorage —
+  // so it lives for the tab session but doesn't outlive a browser restart.
+  useEffect(() => {
+    try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch { /* quota */ }
+  }, [form]);
 
   // ── Load Razorpay SDK ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -141,6 +159,7 @@ export const Checkout = () => {
       if (form.paymentMethod === 'cod') {
         setConfirmedOrder({ orderNumber, total_paise: amount });
         setStep('confirmed');
+        try { window.sessionStorage.removeItem(DRAFT_KEY); } catch {}
         setTimeout(() => clear(), 300);
         return;
       }
@@ -334,7 +353,7 @@ export const Checkout = () => {
                       <p className="font-serif italic text-base leading-tight">{item.name}</p>
                       <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{item.sizeLabel}</p>
                     </div>
-                    <span className="font-bold text-base shrink-0 text-brand-indigo">
+                    <span className="font-bold text-base shrink-0 text-brand-ink">
                       {formatMoney(item.unitPriceInPaise * item.quantity)}
                     </span>
                   </li>
@@ -350,19 +369,19 @@ export const Checkout = () => {
                   <span className="text-brand-muted">Shipping</span>
                   <span className="font-semibold">
                     {totals.shipping_paise === 0
-                      ? <span className="text-brand-primary text-[10px] uppercase tracking-widest font-bold">Free</span>
+                      ? <span className="text-brand-ink text-[10px] uppercase tracking-widest font-bold">Free</span>
                       : formatMoney(totals.shipping_paise)}
                   </span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-brand-ink/10 items-baseline">
                   <span className="text-[11px] uppercase tracking-widest font-bold">Total</span>
-                  <span className="text-3xl font-bold text-brand-indigo">{formatMoney(totals.total_paise)}</span>
+                  <span className="text-3xl font-bold text-brand-ink">{formatMoney(totals.total_paise)}</span>
                 </div>
               </div>
 
               {totals.subtotal_paise < FREE_SHIPPING_THRESHOLD_PAISE && (
                 <p className="text-[10px] uppercase tracking-widest text-brand-muted text-center bg-brand-paper py-3 border border-brand-ink/10">
-                  Add <span className="text-brand-primary font-bold">{formatMoney(FREE_SHIPPING_THRESHOLD_PAISE - totals.subtotal_paise)}</span> more for free shipping
+                  Add <span className="text-brand-ink font-bold">{formatMoney(FREE_SHIPPING_THRESHOLD_PAISE - totals.subtotal_paise)}</span> more for free shipping
                 </p>
               )}
 
@@ -388,7 +407,8 @@ export const Checkout = () => {
               </button>
 
               <p className="text-[10px] uppercase tracking-widest text-brand-muted text-center font-bold opacity-60">
-                By placing this order you agree to our terms.
+                By placing this order you agree to our{' '}
+                <Link to="/terms" className="underline hover:text-brand-ink">terms</Link>.
               </p>
             </div>
           </aside>
@@ -421,7 +441,7 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, c
         onChange={(e) => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        className="w-full bg-transparent border-b border-brand-ink/20 py-3 focus:outline-none focus:border-brand-primary text-lg font-serif italic"
+        className="w-full bg-transparent border-b border-brand-ink/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic"
       />
     </div>
   );

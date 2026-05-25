@@ -1,6 +1,8 @@
+import type React from 'react';
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { API_URL } from '../lib/supabase';
 import {
   Beaker, Layers, Tag, Cpu, ArrowRight, Building2, IceCream, CookingPot, Wine, Send, Check,
 } from 'lucide-react';
@@ -45,13 +47,40 @@ const PROCESS = [
 
 export const Partnerships = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '', company: '', email: '', volume: '', application: '', message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/enquiry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'partnerships',
+          name: form.name,
+          email: form.email,
+          organisation: form.company,
+          application: form.application,
+          message: `Annual volume: ${form.volume || '(not specified)'}\n\n${form.message}`,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? 'Submission failed');
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Submission failed');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -236,7 +265,7 @@ export const Partnerships = () => {
                         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                         placeholder={placeholder}
                         required
-                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg font-serif italic placeholder:text-brand-paper/30"
+                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30"
                       />
                     </div>
                   ))}
@@ -248,7 +277,7 @@ export const Partnerships = () => {
                     value={form.application}
                     onChange={(e) => setForm({ ...form, application: e.target.value })}
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg font-serif italic appearance-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic appearance-none"
                   >
                     <option value="" className="bg-brand-ink">Select…</option>
                     <option className="bg-brand-ink">Confectionery / Chocolate</option>
@@ -267,15 +296,21 @@ export const Partnerships = () => {
                     rows={5}
                     placeholder="Tell us what you're building, target launch date, sensory profile, anything else relevant…"
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg font-serif italic placeholder:text-brand-paper/30 resize-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30 resize-none"
                   />
                 </div>
 
+                {error && (
+                  <p className="text-sm text-brand-primary bg-brand-primary/10 px-4 py-3 text-center">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
-                  className="w-full py-5 bg-brand-primary text-brand-paper text-[11px] uppercase tracking-widest font-bold flex items-center justify-center gap-3 hover:bg-brand-paper hover:text-brand-ink transition-all duration-500"
+                  disabled={submitting}
+                  className="w-full py-5 bg-brand-primary text-brand-paper text-[11px] uppercase tracking-widest font-bold flex items-center justify-center gap-3 hover:bg-brand-paper hover:text-brand-ink transition-all duration-500 disabled:opacity-50"
                 >
-                  Submit Brief <Send size={14} />
+                  {submitting ? 'Sending…' : <>Submit Brief <Send size={14} /></>}
                 </button>
               </form>
             </>

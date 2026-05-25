@@ -3,6 +3,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { AIDock } from './components/AIDock';
+import { CookieBanner } from './components/CookieBanner';
+import { PincodePopup } from './components/PincodePopup';
 // Home is eagerly imported (above-the-fold landing experience).
 import { Home } from './pages/Home';
 
@@ -21,6 +23,8 @@ const Account            = lazy(() => import('./pages/Account').then(m => ({ def
 const AccountOrderDetail = lazy(() => import('./pages/AccountOrderDetail').then(m => ({ default: m.AccountOrderDetail })));
 const AccountInvoice     = lazy(() => import('./pages/AccountInvoice').then(m => ({ default: m.AccountInvoice })));
 const Track              = lazy(() => import('./pages/Track').then(m => ({ default: m.Track })));
+const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
+const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -47,6 +51,8 @@ export default function App() {
         <Navigation />
         <CartDrawer />
         <AIDock />
+        <CookieBanner />
+        <PincodePopup />
         <main>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -75,6 +81,10 @@ export default function App() {
 
               {/* Shipment tracking */}
               <Route path="/track/:awb" element={<Track />} />
+
+              {/* Legal */}
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
 
               {/* Legacy redirects */}
               <Route path="/traceability" element={<Navigate to="/36-steps" replace />} />
@@ -147,10 +157,10 @@ export default function App() {
             <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
               <div>© 2026 COCO36 · Natural Origin Intl.</div>
               <div className="flex gap-6 font-medium">
-                <a href="#" className="hover:text-brand-yellow transition-colors">Privacy</a>
-                <a href="#" className="hover:text-brand-yellow transition-colors">Terms</a>
-                <a href="#" className="hover:text-brand-yellow transition-colors">Shipping</a>
-                <a href="#" className="hover:text-brand-yellow transition-colors">Contact</a>
+                <a href="/privacy" className="hover:text-brand-yellow transition-colors">Privacy</a>
+                <a href="/terms" className="hover:text-brand-yellow transition-colors">Terms</a>
+                <a href="/terms#shipping" className="hover:text-brand-yellow transition-colors">Shipping</a>
+                <a href="mailto:rohankpendyala@gmail.com" className="hover:text-brand-yellow transition-colors">Contact</a>
               </div>
             </div>
           </div>
