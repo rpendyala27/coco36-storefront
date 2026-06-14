@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Menu, Search, User, LogOut, Settings, ShoppingBag, X, Globe } from 'lucide-react';
+import { Menu, Search, User, Settings, ShoppingBag, X, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { ProfileDropdown } from './ProfileDropdown';
 
 const NAV_LINKS = [
   { to: '/shop',          label: 'Shop' },
@@ -14,17 +15,12 @@ const NAV_LINKS = [
 ];
 
 export const Navigation: React.FC = () => {
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { itemCount, openCart } = useCart();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate('/');
-  };
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,13 +120,7 @@ export const Navigation: React.FC = () => {
           </button>
 
           {user ? (
-            <button
-              onClick={handleLogout}
-              className="p-2.5 hover:bg-white/10 rounded-lg transition-colors"
-              title="Sign Out"
-            >
-              <LogOut size={18} strokeWidth={1.75} />
-            </button>
+            <ProfileDropdown />
           ) : (
             <NavLink
               to="/auth"

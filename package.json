@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build:hero": "node scripts/build-hero.mjs",
-    "build": "npm run build:hero && vite build",
+    "build:sitemap": "node scripts/build-sitemap.mjs",
+    "build": "npm run build:hero && npm run build:sitemap && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"

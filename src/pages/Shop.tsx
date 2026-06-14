@@ -367,7 +367,7 @@ export const Shop = () => {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
           {[
             { title: 'Verified Origin',   desc: 'Every ingredient traceable to source farm and harvest batch.' },
-            { title: 'Free Shipping',     desc: 'Complimentary on retail orders over $75 within North America.' },
+            { title: 'Free Shipping',     desc: 'Complimentary on retail orders over ₹999 within India.' },
             { title: 'Quality Guarantee', desc: '30-day satisfaction promise — full refund if not perfect.' },
           ].map((item) => (
             <div key={item.title}>

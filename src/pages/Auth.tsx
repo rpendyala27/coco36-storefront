@@ -124,7 +124,7 @@ export const AuthPage = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-lg font-serif italic transition-all"
+                  className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic transition-all"
                   required
                 />
               </div>
@@ -138,7 +138,7 @@ export const AuthPage = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 …"
-                  className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-lg font-serif italic transition-all"
+                  className="w-full bg-transparent border-b border-brand-ink/20 py-4 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic transition-all"
                 />
               </div>
             </>
@@ -154,7 +154,7 @@ export const AuthPage = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-transparent border-b border-brand-ink/20 py-4 pl-7 focus:outline-none focus:border-brand-primary text-lg font-serif italic transition-all"
+                className="w-full bg-transparent border-b border-brand-ink/20 py-4 pl-7 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic transition-all"
                 required
               />
             </div>
@@ -171,7 +171,7 @@ export const AuthPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={8}
-                className="w-full bg-transparent border-b border-brand-ink/20 py-4 pl-7 focus:outline-none focus:border-brand-primary text-lg font-serif italic transition-all"
+                className="w-full bg-transparent border-b border-brand-ink/20 py-4 pl-7 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic transition-all"
                 required
               />
             </div>

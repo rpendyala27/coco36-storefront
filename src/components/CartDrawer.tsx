@@ -1,12 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShoppingBag, Minus, Plus, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
+
 export const CartDrawer: React.FC = () => {
   const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, itemCount } = useCart();
+  const legacyCount = items.filter(it => isLegacy(it.sizeId)).length;
+  const removeAllLegacy = () => {
+    items.filter(it => isLegacy(it.sizeId)).forEach(it => removeItem(it.productId, it.sizeId));
+  };
 
   return (
     <AnimatePresence>
@@ -50,6 +57,25 @@ export const CartDrawer: React.FC = () => {
 
             {/* Items */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
+              {legacyCount > 0 && (
+                <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 text-xs">
+                    <p className="font-bold text-amber-800 mb-1">
+                      {legacyCount} item{legacyCount === 1 ? '' : 's'} from an older catalogue
+                    </p>
+                    <p className="text-amber-700 leading-snug mb-2">
+                      These can't be checked out. Re-add them from the shop.
+                    </p>
+                    <button
+                      onClick={removeAllLegacy}
+                      className="text-amber-900 font-bold underline hover:no-underline"
+                    >
+                      Remove all
+                    </button>
+                  </div>
+                </div>
+              )}
               {items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <div className="size-20 rounded-2xl bg-brand-surface flex items-center justify-center mb-6">
