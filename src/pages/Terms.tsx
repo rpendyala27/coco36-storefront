@@ -64,8 +64,8 @@ export const Terms = () => {
       <Section title="Contact">
         <p>
           Questions or disputes:{' '}
-          <a href="mailto:rohankpendyala@gmail.com" className="text-brand-primary hover:underline">
-            rohankpendyala@gmail.com
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">
+            pendyalarohan27@gmail.com
           </a>.
         </p>
       </Section>

@@ -160,7 +160,7 @@ export default function App() {
                 <a href="/privacy" className="hover:text-brand-yellow transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-brand-yellow transition-colors">Terms</a>
                 <a href="/terms#shipping" className="hover:text-brand-yellow transition-colors">Shipping</a>
-                <a href="mailto:rohankpendyala@gmail.com" className="hover:text-brand-yellow transition-colors">Contact</a>
+                <a href="mailto:pendyalarohan27@gmail.com" className="hover:text-brand-yellow transition-colors">Contact</a>
               </div>
             </div>
           </div>

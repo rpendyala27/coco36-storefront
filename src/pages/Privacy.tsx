@@ -59,8 +59,8 @@ export const Privacy = () => {
           You can request access, correction, or deletion of your personal
           data, and you can withdraw consent for marketing at any time. Write
           to{' '}
-          <a href="mailto:rohankpendyala@gmail.com" className="text-brand-primary hover:underline">
-            rohankpendyala@gmail.com
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">
+            pendyalarohan27@gmail.com
           </a>{' '}
           and we will respond within 30 days.
         </p>
