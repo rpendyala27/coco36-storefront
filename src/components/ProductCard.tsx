@@ -73,10 +73,10 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       </Link>
 
       {/* Body */}
-      <div className="p-5 flex flex-col flex-1 relative">
+      <div className="p-3.5 md:p-5 flex flex-col flex-1 relative">
         <span className="eyebrow leading-tight mb-2">{product.origin || product.brand}</span>
 
-        <Link to={`/shop/${product.id}`} className="font-serif text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-deep hover:text-brand-primary transition-colors">
+        <Link to={`/shop/${product.id}`} className="font-serif text-[18px] md:text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-deep hover:text-brand-primary transition-colors">
           {product.name}
         </Link>
 
@@ -91,16 +91,16 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
         )}
 
         {/* Price + quick-add */}
-        <div className="mt-auto pt-4 border-t border-brand-line flex items-end justify-between gap-3">
-          <div className="leading-none">
-            <span className="font-sans font-bold text-xl text-brand-deep tabular-nums">{formatMoney(minPricePaise)}</span>
-            {unitLabel && <span className="text-[11px] text-brand-muted ml-1.5">/ {unitLabel}</span>}
+        <div className="mt-auto pt-4 border-t border-brand-line flex items-end justify-between gap-2 md:gap-3">
+          <div className="leading-none min-w-0">
+            <span className="font-sans font-bold text-lg md:text-xl text-brand-deep tabular-nums">{formatMoney(minPricePaise)}</span>
+            {unitLabel && <span className="block truncate text-[11px] text-brand-muted">/ {unitLabel}</span>}
             {hasOptions && <div className="text-[11px] text-brand-muted mt-1">From</div>}
           </div>
-          <button onClick={onAddClick} className="btn-primary !px-4 !py-2 text-[13px] whitespace-nowrap">
+          <button onClick={onAddClick} className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap">
             {added
               ? <><Check size={14} strokeWidth={3} /> Added</>
-              : <><Plus size={14} strokeWidth={2.5} /> {hasOptions ? 'Add' : 'Add to bag'}</>}
+              : <><Plus size={14} strokeWidth={2.5} /> {hasOptions ? 'Add' : <>Add<span className="hidden sm:inline"> to bag</span></>}</>}
           </button>
         </div>
 

@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, RotateCcw, Plus, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
-import { API_URL, RAZORPAY_KEY_ID, supabase } from '../lib/supabase';
-import { readPincode } from '../components/PincodePopup';
+import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
+import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
+import { AddressForm } from '../components/AddressForm';
 
 const DRAFT_KEY = 'coco36.checkout-draft';
 
@@ -19,17 +20,6 @@ declare global {
 }
 
 type PaymentMethod = 'prepaid' | 'cod';
-
-interface SavedAddress {
-  id: string;
-  name: string;
-  line1: string;
-  line2: string | null;
-  city: string;
-  state: string;
-  pincode: string;
-  created_at: string;
-}
 
 export const Checkout = () => {
   const { items, clear } = useCart();
@@ -49,29 +39,31 @@ export const Checkout = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
-  // ── Form state ──────────────────────────────────────────────────────────────
-  // Restore from sessionStorage so a refresh/back-button doesn't lose input.
+  // ── Address book ──────────────────────────────────────────────────────────
+  const [addresses, setAddresses]       = useState<BookAddress[]>([]);
+  const [selectedShipId, setShipId]     = useState<string | null>(null);
+  const [selectedBillId, setBillId]     = useState<string | null>(null);
+  const [billSameAsShip, setBillSame]   = useState(true);
+  const [addingShip, setAddingShip]     = useState(false);
+  const [addingBill, setAddingBill]     = useState(false);
+  const [busyAddr, setBusyAddr]         = useState(false);
+
+  // ── Contact + payment form ────────────────────────────────────────────────
+  // Address lives in the book now; this form only holds contact + payment.
+  // Restored from sessionStorage so a refresh/back-button doesn't lose input.
   const [form, setForm] = useState(() => {
     const empty = {
       name:    profile?.name ?? '',
       email:   profile?.email ?? user?.email ?? '',
       phone:   profile?.phone ?? '',
-      line1:   '',
-      line2:   '',
-      city:    '',
-      state:   '',
-      pincode: readPincode() ?? '',
       paymentMethod: 'prepaid' as PaymentMethod,
     };
     if (typeof window === 'undefined') return empty;
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
       if (!raw) return empty;
-      const draft = JSON.parse(raw);
-      return { ...empty, ...draft };
+      return { ...empty, ...JSON.parse(raw) };
     } catch { return empty; }
   });
 
@@ -93,52 +85,23 @@ export const Checkout = () => {
     if (!user) navigate('/auth?redirect=/checkout', { replace: true });
   }, [user, navigate]);
 
-  // ── Saved address book ───────────────────────────────────────────────────────
-  // RLS returns only this customer's addresses (customer_id = auth.uid()).
-  // Orders save shipping+billing rows every time, so we dedupe by content and
-  // keep the most recent few.
+  // ── Load the address book ─────────────────────────────────────────────────
+  // RLS returns only this customer's live rows. Preselect the default (or first)
+  // for shipping; billing defaults to "same as shipping".
   useEffect(() => {
     if (!user) return;
     let active = true;
     (async () => {
-      const { data } = await supabase
-        .from('addresses')
-        .select('id, name, line1, line2, city, state, pincode, created_at')
-        .order('created_at', { ascending: false });
-      if (!active || !data) return;
-      const seen = new Set<string>();
-      const unique: SavedAddress[] = [];
-      for (const a of data as SavedAddress[]) {
-        const key = `${a.line1}|${a.line2 ?? ''}|${a.city}|${a.state}|${a.pincode}`.toLowerCase().trim();
-        if (seen.has(key) || !a.line1) continue;
-        seen.add(key);
-        unique.push(a);
-      }
-      setSavedAddresses(unique.slice(0, 6));
+      const book = await listAddresses();
+      if (!active) return;
+      setAddresses(book);
+      const preferred = book.find((a) => a.is_default)?.id ?? book[0]?.id ?? null;
+      setShipId((prev) => prev ?? preferred);
     })();
     return () => { active = false; };
   }, [user]);
 
-  const applyAddress = (a: SavedAddress) => {
-    setSelectedAddressId(a.id);
-    setForm((f) => ({
-      ...f,
-      name:    f.name || a.name,
-      line1:   a.line1,
-      line2:   a.line2 ?? '',
-      city:    a.city,
-      state:   a.state,
-      pincode: a.pincode,
-    }));
-  };
-
-  const useNewAddress = () => {
-    setSelectedAddressId(null);
-    setForm((f) => ({ ...f, line1: '', line2: '', city: '', state: '', pincode: readPincode() ?? '' }));
-  };
-
-  // Persist the draft on every change. sessionStorage — not localStorage —
-  // so it lives for the tab session but doesn't outlive a browser restart.
+  // Persist contact + payment draft on every change.
   useEffect(() => {
     try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch { /* quota */ }
   }, [form]);
@@ -172,31 +135,57 @@ export const Checkout = () => {
     };
   }, [items, form.paymentMethod, cfg]);
 
-  // Pincode → auto-fill city/state (cuts two fields → less decision fatigue).
-  const lookupPincode = async (pin: string) => {
-    if (!/^\d{6}$/.test(pin)) return;
-    try {
-      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-      const data = await res.json();
-      const po = data?.[0]?.PostOffice?.[0];
-      if (po) setForm((f) => ({ ...f, city: f.city || po.District, state: f.state || po.State }));
-    } catch { /* offline / API down — user types manually */ }
+  // ── Address-book helpers ────────────────────────────────────────────────────
+  const addShipAddress = async (input: AddressInput) => {
+    if (!user) return;
+    setBusyAddr(true);
+    const created = await addAddress(user.id, input);
+    setAddresses(await listAddresses());
+    if (created) setShipId(created.id);
+    setBusyAddr(false);
+    setAddingShip(false);
+  };
+
+  const addBillAddress = async (input: AddressInput) => {
+    if (!user) return;
+    setBusyAddr(true);
+    const created = await addAddress(user.id, input);
+    setAddresses(await listAddresses());
+    if (created) setBillId(created.id);
+    setBusyAddr(false);
+    setAddingBill(false);
   };
 
   // ── Submit handler ──────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError(null);
 
+    // Contact is required (the page is no longer a <form>, so we check here —
+    // see the <div> wrapper note below).
+    if (!form.name.trim() || !form.phone.trim()) {
+      setError('Please enter your name and phone number.');
+      return;
+    }
+
     // Server-side validation will reject non-UUID variant IDs with a 400.
-    // We surface a clearer error to the user before submission so they
-    // can fix it themselves rather than seeing a generic API error.
+    // We surface a clearer error to the user before submission.
     const invalidItems = items.filter((it) => !isUuid(it.sizeId));
     if (invalidItems.length > 0) {
       setError(
         `${invalidItems.length} item${invalidItems.length === 1 ? '' : 's'} in your cart can't be checked out (${invalidItems.map((it) => it.name).join(', ')}). ` +
         `Please remove them from the cart drawer and re-add from the shop.`,
       );
+      return;
+    }
+
+    if (!selectedShipId) {
+      setError('Please select or add a shipping address.');
+      return;
+    }
+    const billAddressId = billSameAsShip ? selectedShipId : selectedBillId;
+    if (!billAddressId) {
+      setError('Please select or add a billing address (or tick "same as shipping").');
       return;
     }
 
@@ -212,15 +201,14 @@ export const Checkout = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Pin the order to the auth user so /account history + the address
+          // book (both keyed on auth.uid()) resolve. Checkout is login-gated.
+          customerId: user?.id,
           items: items.map((it) => ({ variantId: it.sizeId, qty: it.quantity })),
-          shippingAddress: {
-            line1: form.line1, line2: form.line2 || undefined,
-            city: form.city, state: form.state, pincode: form.pincode,
-          },
-          billingAddress: {
-            line1: form.line1, line2: form.line2 || undefined,
-            city: form.city, state: form.state, pincode: form.pincode,
-          },
+          // Reusable book rows — no per-order duplication. "Same as shipping"
+          // points both at the one row. GSTIN rides on the billing address.
+          shipAddressId: selectedShipId,
+          billAddressId,
           customerName:  form.name,
           customerEmail: form.email,
           customerPhone: form.phone,
@@ -328,6 +316,8 @@ export const Checkout = () => {
     );
   }
 
+  const defaultName = form.name || profile?.name || '';
+
   // ── Checkout form ───────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen pt-28 pb-20 px-6 md:px-10 lg:px-16 bg-brand-paper">
@@ -359,7 +349,10 @@ export const Checkout = () => {
           </div>
         </header>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* Not a <form>: the inline AddressForm renders its own <form>, and
+            nesting forms is invalid HTML. The place-order button submits via
+            onClick instead. */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Forms */}
           <div className="lg:col-span-7 space-y-12">
             {/* Contact */}
@@ -386,40 +379,77 @@ export const Checkout = () => {
                 Shipping Address
               </h2>
 
-              {savedAddresses.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-3">Use a saved address</p>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {savedAddresses.map((a) => (
-                      <button
-                        type="button"
-                        key={a.id}
-                        onClick={() => applyAddress(a)}
-                        className={`text-left border p-3.5 rounded-lg transition-colors ${selectedAddressId === a.id ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
-                      >
-                        <p className="text-sm text-brand-deep leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
-                        <p className="text-xs text-brand-muted mt-0.5">{a.city}, {a.state} {a.pincode}</p>
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={useNewAddress}
-                      className={`text-left border border-dashed p-3.5 rounded-lg text-sm font-medium transition-colors ${selectedAddressId === null ? 'border-brand-deep text-brand-deep' : 'border-brand-line text-brand-muted hover:border-brand-deep hover:text-brand-deep'}`}
-                    >
-                      + Use a new address
-                    </button>
-                  </div>
+              {addresses.length > 0 && !addingShip && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  {addresses.map((a) => (
+                    <AddressPickCard key={a.id} a={a} selected={selectedShipId === a.id} onSelect={() => setShipId(a.id)} />
+                  ))}
+                  <AddNewCard onClick={() => setAddingShip(true)} />
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-5">
-                <Field label="Pincode" value={form.pincode} onChange={(v) => { setForm({ ...form, pincode: v }); lookupPincode(v); }} required autoComplete="postal-code" placeholder="6-digit PIN — city & state auto-fill" />
-                <Field label="Address Line 1" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} required autoComplete="address-line1" />
-                <Field label="Address Line 2 (optional)" value={form.line2} onChange={(v) => setForm({ ...form, line2: v })} autoComplete="address-line2" />
-                <div className="grid grid-cols-2 gap-5">
-                  <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required autoComplete="address-level2" />
-                  <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required autoComplete="address-level1" />
+              {(addingShip || addresses.length === 0) && (
+                <div className="border border-brand-line rounded-lg p-5 bg-brand-surface">
+                  <h3 className="text-sm font-bold mb-4">{addresses.length === 0 ? 'Add a shipping address' : 'New address'}</h3>
+                  <AddressForm
+                    defaultName={defaultName}
+                    busy={busyAddr}
+                    submitLabel="Save & use this address"
+                    showDefaultToggle={addresses.length > 0}
+                    onSubmit={addShipAddress}
+                    onCancel={addresses.length > 0 ? () => setAddingShip(false) : undefined}
+                  />
                 </div>
+              )}
+
+              {/* Billing */}
+              <div className="mt-8 pt-6 border-t border-brand-line">
+                <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
+                  <MapPin size={14} className="text-brand-muted" /> Billing Address
+                </h3>
+                <label className="flex items-center gap-2 text-sm text-brand-ink cursor-pointer select-none mb-3">
+                  <input
+                    type="checkbox"
+                    checked={billSameAsShip}
+                    onChange={(e) => {
+                      setBillSame(e.target.checked);
+                      if (!e.target.checked && !selectedBillId) {
+                        setBillId(addresses.find((a) => a.is_default)?.id ?? selectedShipId);
+                      }
+                    }}
+                    className="accent-brand-primary size-4"
+                  />
+                  Same as shipping address
+                </label>
+
+                {!billSameAsShip && (
+                  <>
+                    {addresses.length > 0 && !addingBill && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        {addresses.map((a) => (
+                          <AddressPickCard key={a.id} a={a} selected={selectedBillId === a.id} onSelect={() => setBillId(a.id)} showGstin />
+                        ))}
+                        <AddNewCard onClick={() => setAddingBill(true)} />
+                      </div>
+                    )}
+                    {(addingBill || addresses.length === 0) && (
+                      <div className="border border-brand-line rounded-lg p-5 bg-brand-surface">
+                        <h3 className="text-sm font-bold mb-4">New billing address</h3>
+                        <AddressForm
+                          defaultName={defaultName}
+                          busy={busyAddr}
+                          submitLabel="Save & use this address"
+                          showDefaultToggle={false}
+                          onSubmit={addBillAddress}
+                          onCancel={addresses.length > 0 ? () => setAddingBill(false) : undefined}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+                <p className="text-[11px] text-brand-muted mt-2">
+                  For a GST invoice, add the GSTIN on your billing address.
+                </p>
               </div>
             </section>
 
@@ -522,7 +552,8 @@ export const Checkout = () => {
               )}
 
               <button
-                type="submit"
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={submitting}
                 className="btn-primary w-full !py-5 disabled:opacity-50"
               >
@@ -542,7 +573,7 @@ export const Checkout = () => {
               </p>
             </div>
           </aside>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -551,6 +582,37 @@ export const Checkout = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Small presentational helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+function AddressPickCard({ a, selected, onSelect, showGstin }: { a: BookAddress; selected: boolean; onSelect: () => void; showGstin?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`text-left border p-3.5 rounded-lg transition-colors ${selected ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
+    >
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}
+        {a.is_default && <span className="text-[9px] uppercase tracking-widest font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">Default</span>}
+        {showGstin && a.gstin && <span className="text-[9px] uppercase tracking-widest font-bold text-brand-muted bg-brand-band px-1.5 py-0.5 rounded">GST</span>}
+      </div>
+      <p className="text-sm text-brand-deep leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+      <p className="text-xs text-brand-muted mt-0.5">{a.city}, {a.state} {a.pincode}</p>
+      {showGstin && a.gstin && <p className="text-[11px] text-brand-muted mt-1 font-mono">GSTIN: {a.gstin}</p>}
+    </button>
+  );
+}
+
+function AddNewCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left border border-dashed border-brand-line p-3.5 rounded-lg text-sm font-medium text-brand-muted hover:border-brand-deep hover:text-brand-deep transition-colors inline-flex items-center gap-2"
+    >
+      <Plus size={14} /> Add a new address
+    </button>
+  );
+}
 
 interface FieldProps {
   label: string;

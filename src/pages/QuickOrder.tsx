@@ -63,16 +63,16 @@ export const QuickOrder = () => {
         </div>
       </section>
 
-      <section className="max-w-4xl mx-auto px-6 md:px-12 py-10 grid lg:grid-cols-[1fr_300px] gap-10 items-start">
+      <section className="max-w-4xl mx-auto px-6 md:px-12 py-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 items-start min-w-0">
         <div>
           <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_90px_40px] gap-3 font-mono text-[11px] uppercase tracking-wide text-brand-muted px-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-mono text-[11px] uppercase tracking-wide text-brand-muted px-1">
               <span>SKU</span><span>Qty</span><span />
             </div>
             {rows.map((r, i) => (
-              <div key={i} className="grid grid-cols-[1fr_90px_40px] gap-3 items-center">
-                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-CAO-001" className="border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-primary font-mono" />
-                <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-primary tabular-nums" />
+              <div key={i} className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 items-center">
+                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-CAO-001" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-primary font-mono" />
+                <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="w-full min-w-0 border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-primary tabular-nums" />
                 <button onClick={() => removeRow(i)} className="text-brand-muted hover:text-brand-primary flex justify-center" aria-label="Remove row"><Trash2 size={16} /></button>
               </div>
             ))}

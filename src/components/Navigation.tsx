@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Menu, Search, ShoppingBag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { useProducts } from '../hooks/useProducts';
+import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
 
 const NAV_LINKS = [
@@ -18,19 +20,10 @@ const NAV_LINKS = [
 export const Navigation: React.FC = () => {
   const { user } = useAuth();
   const { itemCount, openCart } = useCart();
+  const { products } = useProducts();
   const cfg = useStoreConfig();
-  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-
-  const submitSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchValue.trim();
-    setSearchOpen(false);
-    setSearchValue('');
-    navigate(q ? `/shop?q=${encodeURIComponent(q)}` : '/shop');
-  };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors duration-200 pb-1 ${
@@ -167,21 +160,23 @@ export const Navigation: React.FC = () => {
           >
             <motion.div
               initial={{ y: -20 }} animate={{ y: 0 }} exit={{ y: -20 }}
-              className="w-full max-w-2xl"
+              className="w-full max-w-lg flex flex-col items-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <form onSubmit={submitSearch} className="flex items-center gap-4 bg-white rounded-full px-6 py-4 shadow-2xl">
-                <Search size={22} className="text-brand-primary shrink-0" />
-                <input
-                  type="text" autoFocus value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder="Search ingredients, brands, origins…"
-                  className="flex-1 bg-transparent text-lg font-medium placeholder:text-brand-muted/60 focus:outline-none text-brand-deep"
-                />
-                <button type="button" onClick={() => setSearchOpen(false)} className="p-1.5 hover:bg-brand-surface rounded-full" aria-label="Close search">
-                  <X size={18} className="text-brand-muted" />
-                </button>
-              </form>
+              <SearchBox
+                products={products}
+                variant="overlay"
+                autoFocus
+                onNavigated={() => setSearchOpen(false)}
+              />
+              <button
+                type="button"
+                onClick={() => setSearchOpen(false)}
+                className="mt-4 inline-flex items-center gap-1.5 text-white/70 hover:text-white text-[11px] uppercase tracking-widest font-bold"
+                aria-label="Close search"
+              >
+                <X size={13} /> Close
+              </button>
             </motion.div>
           </motion.div>
         )}
