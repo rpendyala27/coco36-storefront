@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Package, MapPin, User, LogOut, ChevronRight } from 'lucide-react';
+import { Package, MapPin, User, LogOut, ChevronRight, Plus, Star, Pencil, Trash2 } from 'lucide-react';
 import { FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
 import { getOrderStatusMeta } from '../lib/order-status';
+import {
+  listAddresses, addAddress, replaceAddress, softDeleteAddress, setDefaultAddress,
+  type BookAddress, type AddressInput,
+} from '../lib/addresses';
+import { AddressForm } from '../components/AddressForm';
 
 interface OrderRow {
   id:           string;
@@ -15,15 +20,6 @@ interface OrderRow {
   placed_at:    string;
   payment_method: string;
   item_count?:  number;
-}
-
-interface AddrRow {
-  id:      string;
-  line1:   string;
-  line2:   string | null;
-  city:    string;
-  state:   string;
-  pincode: string;
 }
 
 /**
@@ -40,8 +36,17 @@ export const Account = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [addresses, setAddresses] = useState<AddrRow[]>([]);
+  const [addresses, setAddresses] = useState<BookAddress[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Address-book edit state
+  const [adding, setAdding]   = useState(false);
+  const [editing, setEditing] = useState<BookAddress | null>(null);
+  const [busy, setBusy]       = useState(false);
+
+  const refreshAddresses = useCallback(async () => {
+    setAddresses(await listAddresses());
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -70,23 +75,8 @@ export const Account = () => {
         );
       }
 
-      // Saved addresses — RLS returns only this customer's rows. Orders write a
-      // shipping + billing row each time, so dedupe by content.
-      const { data: addrData } = await supabase
-        .from('addresses')
-        .select('id, line1, line2, city, state, pincode, created_at')
-        .order('created_at', { ascending: false });
-      if (addrData) {
-        const seen = new Set<string>();
-        const unique: AddrRow[] = [];
-        for (const a of addrData as any[]) {
-          const key = `${a.line1}|${a.line2 ?? ''}|${a.city}|${a.state}|${a.pincode}`.toLowerCase().trim();
-          if (seen.has(key) || !a.line1) continue;
-          seen.add(key);
-          unique.push(a);
-        }
-        setAddresses(unique.slice(0, 8));
-      }
+      // Saved address book — RLS returns only this customer's live rows.
+      await refreshAddresses();
 
       setLoading(false);
     })();
@@ -96,6 +86,38 @@ export const Account = () => {
     await signOut();
     navigate('/');
   }
+
+  // ── Address-book actions ───────────────────────────────────────────────────
+  const handleAdd = async (input: AddressInput) => {
+    if (!user) return;
+    setBusy(true);
+    await addAddress(user.id, input);
+    await refreshAddresses();
+    setBusy(false);
+    setAdding(false);
+  };
+
+  const handleEdit = async (input: AddressInput) => {
+    if (!user || !editing) return;
+    setBusy(true);
+    // Edit = replace (new row + soft-delete old) so issued orders keep their address.
+    await replaceAddress(user.id, editing.id, { ...input, is_default: input.is_default ?? editing.is_default });
+    await refreshAddresses();
+    setBusy(false);
+    setEditing(null);
+  };
+
+  const handleDelete = async (a: BookAddress) => {
+    if (!window.confirm('Remove this address from your book?')) return;
+    await softDeleteAddress(a.id);
+    await refreshAddresses();
+  };
+
+  const handleSetDefault = async (a: BookAddress) => {
+    if (!user) return;
+    await setDefaultAddress(user.id, a.id);
+    await refreshAddresses();
+  };
 
   if (!user) return null;
 
@@ -184,27 +206,85 @@ export const Account = () => {
           </div>
         </section>
 
-        {/* ── Addresses ─────────────────────────────────────────────────── */}
+        {/* ── Address book ──────────────────────────────────────────────── */}
         <section>
           <SectionHeader
             icon={<MapPin size={14} />}
             title="Saved Addresses"
             subtitle={addresses.length ? `${addresses.length} saved` : undefined}
           />
-          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6">
-            {addresses.length === 0 ? (
-              <p className="text-sm text-brand-muted">
-                Addresses you've shipped to will appear here, ready to reuse at your next checkout.
-              </p>
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 space-y-5">
+            {adding ? (
+              <div className="border border-brand-line rounded-lg p-5 bg-brand-paper/40">
+                <h3 className="text-sm font-bold mb-4">New address</h3>
+                <AddressForm
+                  defaultName={profile?.name ?? ''}
+                  busy={busy}
+                  submitLabel="Save address"
+                  onSubmit={handleAdd}
+                  onCancel={() => setAdding(false)}
+                />
+              </div>
+            ) : editing ? (
+              <div className="border border-brand-line rounded-lg p-5 bg-brand-paper/40">
+                <h3 className="text-sm font-bold mb-4">Edit address</h3>
+                <AddressForm
+                  initial={editing}
+                  defaultName={profile?.name ?? ''}
+                  busy={busy}
+                  submitLabel="Save changes"
+                  onSubmit={handleEdit}
+                  onCancel={() => setEditing(null)}
+                />
+              </div>
             ) : (
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {addresses.map((a) => (
-                  <li key={a.id} className="border border-brand-line rounded-lg p-4">
-                    <p className="text-sm text-brand-ink leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
-                    <p className="text-xs text-brand-muted mt-1">{a.city}, {a.state} {a.pincode}</p>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {addresses.length === 0 ? (
+                  <p className="text-sm text-brand-muted">
+                    No saved addresses yet. Add one to speed up checkout.
+                  </p>
+                ) : (
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {addresses.map((a) => (
+                      <li key={a.id} className="border border-brand-line rounded-lg p-4 flex flex-col gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}
+                            {a.is_default && (
+                              <span className="text-[9px] uppercase tracking-widest font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">Default</span>
+                            )}
+                            {a.gstin && (
+                              <span className="text-[9px] uppercase tracking-widest font-bold text-brand-muted bg-brand-band px-1.5 py-0.5 rounded">GST</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-brand-ink leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+                          <p className="text-xs text-brand-muted mt-0.5">{a.city}, {a.state} {a.pincode}</p>
+                          {a.gstin && <p className="text-[11px] text-brand-muted mt-1 font-mono">GSTIN: {a.gstin}</p>}
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px] mt-auto pt-2 border-t border-brand-line/60">
+                          {!a.is_default && (
+                            <button onClick={() => handleSetDefault(a)} className="inline-flex items-center gap-1 text-brand-muted hover:text-brand-primary transition-colors">
+                              <Star size={12} /> Set default
+                            </button>
+                          )}
+                          <button onClick={() => setEditing(a)} className="inline-flex items-center gap-1 text-brand-muted hover:text-brand-ink transition-colors">
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button onClick={() => handleDelete(a)} className="inline-flex items-center gap-1 text-brand-muted hover:text-red-600 transition-colors">
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button
+                  onClick={() => { setEditing(null); setAdding(true); }}
+                  className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-primary hover:underline"
+                >
+                  <Plus size={14} /> Add address
+                </button>
+              </>
             )}
           </div>
         </section>
