@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  ChevronDown, X, Filter, ArrowRight, Search,
+  ChevronDown, X, Filter, ArrowRight,
   Candy, CakeSlice, Wheat, Coffee, CookingPot,
   FileCheck, Network, HandCoins, Leaf, Sprout,
 } from 'lucide-react';
 import { PRODUCT_CATEGORIES } from '../data/products';
 import { ProductCard } from '../components/ProductCard';
+import { SearchBox } from '../components/SearchBox';
+import { RequestProduct } from '../components/RequestProduct';
 import { ProductCategory } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
@@ -77,6 +79,19 @@ export const Shop = () => {
     const q = searchParams.get('q');
     if (q !== null) setSearch(q);
   }, [searchParams]);
+
+  // Arriving from a header/overlay search → anchor-scroll to the grid once.
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem('coco36.scrollCatalog')) return;
+      sessionStorage.removeItem('coco36.scrollCatalog');
+      const t = setTimeout(
+        () => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+        120,
+      );
+      return () => clearTimeout(t);
+    } catch { /* private mode */ }
+  }, []);
 
   const minPaiseOf = (p: typeof PRODUCTS[number]) =>
     p.sizes.length ? Math.min(...p.sizes.map((s) => s.priceInPaise)) : 0;
@@ -158,6 +173,17 @@ export const Shop = () => {
     setSearch(''); setMaxRupees(null); setSearchParams({});
   };
 
+  // Hero search submit — treat as a fresh global search: clear facets, set ?q,
+  // then anchor-scroll down to the grid (no manual scrolling).
+  const runSearch = (q: string) => {
+    setCraft(null); setOrigins(new Set()); setTagSlugs(new Set()); setCategory('All');
+    setSearch(q);
+    setSearchParams(q ? { q } : {});
+    requestAnimationFrame(() =>
+      setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40),
+    );
+  };
+
   const activeCount = (category !== 'All' ? 1 : 0) + origins.size + tagSlugs.size + (maxRupees != null && maxRupees < priceCeil ? 1 : 0);
   const craftLabel = CRAFTS.find((c) => c.key === craft)?.label;
 
@@ -165,58 +191,54 @@ export const Shop = () => {
     <div className="pt-20 bg-brand-paper min-h-screen">
       {/* ── Hero ── */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-12 lg:py-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-7 md:py-12 lg:py-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 lg:gap-16 items-center">
           {/* Left: headline + trust marks */}
           <div>
-            <p className="eyebrow text-brand-primary mb-6">The pure-ingredient marketplace</p>
-            <h1 className="text-5xl md:text-7xl leading-[0.95]">
+            <p className="eyebrow text-brand-primary mb-3 md:mb-6">The pure-ingredient marketplace</p>
+            <h1 className="text-4xl md:text-7xl leading-[0.95]">
               Find your secret <em className="display-italic text-brand-primary">ingredient</em>
             </h1>
-            <p className="mt-5 text-brand-muted text-sm md:text-base">
+            <p className="mt-3 md:mt-5 text-brand-muted text-sm md:text-base">
               Sourced direct from origin, built for{' '}
               <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-deep font-medium">{ROTATING[wordIdx]}</span>
             </p>
 
             {/* Prominent search, the primary tool for intent-driven buyers (law of least effort) */}
-            <div className="mt-7 flex items-center gap-2 bg-white border border-brand-line rounded-full pl-5 pr-2 py-2 max-w-lg shadow-[0_2px_10px_rgba(10,40,33,0.06)] focus-within:border-brand-primary transition-colors">
-              <Search size={18} className="text-brand-primary shrink-0" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search ingredients, origins, certifications…"
-                aria-label="Search the catalogue"
-                className="flex-1 bg-transparent text-[15px] placeholder:text-brand-muted/70 focus:outline-none text-brand-deep"
+            <div className="mt-4 md:mt-7 max-w-lg">
+              <SearchBox
+                variant="hero"
+                initialValue={search}
+                products={PRODUCTS}
+                onSubmitQuery={runSearch}
               />
-              {search && (
-                <button type="button" onClick={() => setSearch('')} className="text-brand-muted hover:text-brand-deep p-1.5" aria-label="Clear search"><X size={16} /></button>
-              )}
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-3">
+            {/* Trust marks — single compact scroll row on mobile, wraps on desktop */}
+            <div className="mt-4 md:mt-7 flex md:flex-wrap gap-x-4 md:gap-x-6 gap-y-2 overflow-x-auto no-scrollbar -mx-1 px-1">
               {TRUST_MARKS.map(({ label, Icon }) => (
-                <span key={label} className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.04em] text-brand-primary">
-                  <Icon size={15} strokeWidth={1.5} /> {label}
+                <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-primary whitespace-nowrap">
+                  <Icon size={14} strokeWidth={1.5} /> {label}
                 </span>
               ))}
             </div>
           </div>
 
           {/* Right: Shop by craft card */}
-          <div className="bg-brand-deep rounded-2xl p-4 shadow-[0_8px_24px_rgba(10,40,33,0.2)]">
-            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-brand-sea px-2 pt-2 pb-3">Shop by craft</div>
-            <div className="flex flex-col gap-2">
+          <div className="bg-brand-deep rounded-2xl p-3 md:p-4 shadow-[0_8px_24px_rgba(10,40,33,0.2)]">
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-brand-sea px-2 pt-1 pb-2 md:pb-3">Shop by craft</div>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
               {CRAFTS.map(({ key, label, Icon }) => {
                 const active = craft === key;
                 return (
                   <button
                     key={key}
                     onClick={() => selectCraft(key)}
-                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border transition-all ${
+                    className={`flex items-center justify-between gap-2 px-3 md:px-4 py-2.5 md:py-3 rounded-xl border transition-all ${
                       active ? 'bg-brand-paper text-brand-deep border-brand-paper' : 'bg-white/5 text-white border-white/15 hover:bg-white/10'
                     }`}
                   >
-                    <span className="flex items-center gap-3 text-sm font-semibold"><Icon size={18} strokeWidth={1.6} /> {label}</span>
-                    <ArrowRight size={15} className={active ? 'text-brand-deep' : 'text-white/50'} />
+                    <span className="flex items-center gap-2 md:gap-3 text-[13px] md:text-sm font-semibold"><Icon size={16} strokeWidth={1.6} /> {label}</span>
+                    <ArrowRight size={15} className={`hidden lg:block ${active ? 'text-brand-deep' : 'text-white/50'}`} />
                   </button>
                 );
               })}
@@ -238,12 +260,12 @@ export const Shop = () => {
 
       {/* ── Category pills ── */}
       <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-3 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2 md:py-3 flex gap-2 overflow-x-auto no-scrollbar">
           {(['All', ...PRODUCT_CATEGORIES.map((c) => c.id)] as (ProductCategory | 'All')[]).map((c) => (
             <button
               key={c}
               onClick={() => selectCategory(c)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition-all border ${
+              className={`flex-shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[12px] md:text-[13px] font-medium transition-all border ${
                 category === c
                   ? 'bg-brand-deep text-white border-brand-deep'
                   : 'bg-brand-surface text-brand-deep border-brand-line hover:border-brand-deep'
@@ -256,7 +278,7 @@ export const Shop = () => {
       </div>
 
       {/* ── Catalog ── */}
-      <section className="px-6 md:px-12 lg:px-20 py-10">
+      <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Filters */}
           <aside className={`lg:col-span-3 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
@@ -363,7 +385,7 @@ export const Shop = () => {
 
             {/* Grid */}
             {loading && PRODUCTS.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="card-peacock">
                     <div className="aspect-[4/3] skeleton" />
@@ -376,13 +398,17 @@ export const Shop = () => {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="py-28 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface">
-                <p className="font-serif italic text-2xl text-brand-primary mb-2">Nothing matches yet</p>
-                <p className="text-brand-muted text-sm mb-6">Try loosening a filter or two.</p>
-                <button onClick={clearAll} className="btn-primary text-sm">Clear all filters</button>
-              </div>
+              search.trim() ? (
+                <RequestProduct query={search.trim()} onClear={clearAll} />
+              ) : (
+                <div className="py-28 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface">
+                  <p className="font-serif italic text-2xl text-brand-primary mb-2">Nothing matches yet</p>
+                  <p className="text-brand-muted text-sm mb-6">Try loosening a filter or two.</p>
+                  <button onClick={clearAll} className="btn-primary text-sm">Clear all filters</button>
+                </div>
+              )
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {filtered.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
               </div>
             )}

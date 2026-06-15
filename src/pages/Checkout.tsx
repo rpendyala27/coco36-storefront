@@ -157,9 +157,16 @@ export const Checkout = () => {
   };
 
   // ── Submit handler ──────────────────────────────────────────────────────────
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError(null);
+
+    // Contact is required (the page is no longer a <form>, so we check here —
+    // see the <div> wrapper note below).
+    if (!form.name.trim() || !form.phone.trim()) {
+      setError('Please enter your name and phone number.');
+      return;
+    }
 
     // Server-side validation will reject non-UUID variant IDs with a 400.
     // We surface a clearer error to the user before submission.
@@ -342,7 +349,10 @@ export const Checkout = () => {
           </div>
         </header>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* Not a <form>: the inline AddressForm renders its own <form>, and
+            nesting forms is invalid HTML. The place-order button submits via
+            onClick instead. */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Forms */}
           <div className="lg:col-span-7 space-y-12">
             {/* Contact */}
@@ -542,7 +552,8 @@ export const Checkout = () => {
               )}
 
               <button
-                type="submit"
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={submitting}
                 className="btn-primary w-full !py-5 disabled:opacity-50"
               >
@@ -562,7 +573,7 @@ export const Checkout = () => {
               </p>
             </div>
           </aside>
-        </form>
+        </div>
       </div>
     </div>
   );
