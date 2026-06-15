@@ -26,13 +26,13 @@ const OFFERINGS = [
   {
     icon: Cpu,
     title: 'Technical Support',
-    description: 'Application labs in Mumbai, Lyon, and São Paulo. Full sensory panels, R&D pilots, regulatory dossiers.',
+    description: 'Hands-on application support: sensory panels, R&D pilots, and regulatory dossiers for your target market.',
   },
 ];
 
 const INDUSTRIES = [
-  { icon: Building2, title: 'Confectionery Manufacturers', stat: '40+ partner brands' },
-  { icon: CookingPot, title: 'Industrial Bakeries',         stat: '12-country presence' },
+  { icon: Building2, title: 'Confectionery Manufacturers', stat: 'Single-origin couverture' },
+  { icon: CookingPot, title: 'Industrial Bakeries',         stat: 'Custom flour & grain blends' },
   { icon: IceCream,  title: 'Frozen Dessert Brands',        stat: 'Custom inclusion blends' },
   { icon: Wine,      title: 'Beverage Brands',              stat: 'Cold-extraction profiles' },
 ];
@@ -130,7 +130,7 @@ export const Partnerships = () => {
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">What We Offer</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for brands.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
-              Four pillars of co-creation, supported by our application labs and R&D specialists.
+              Four pillars of co-creation, backed by hands-on R&D and application support.
             </p>
           </header>
 
