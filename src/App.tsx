@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
-import { AIDock } from './components/AIDock';
 import { CookieBanner } from './components/CookieBanner';
 import { PincodePopup } from './components/PincodePopup';
 // The Shop catalog IS the landing page (catalog-first). Eagerly imported
@@ -101,7 +100,6 @@ export default function App() {
       <div className="min-h-screen selection:bg-brand-primary selection:text-brand-paper">
         <Navigation />
         <CartDrawer />
-        <AIDock />
         <CookieBanner />
         <PincodePopup />
         <main>
