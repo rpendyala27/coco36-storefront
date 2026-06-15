@@ -380,7 +380,7 @@ export const Checkout = () => {
               </h2>
 
               {addresses.length > 0 && !addingShip && (
-                <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   {addresses.map((a) => (
                     <AddressPickCard key={a.id} a={a} selected={selectedShipId === a.id} onSelect={() => setShipId(a.id)} />
                   ))}
@@ -425,7 +425,7 @@ export const Checkout = () => {
                 {!billSameAsShip && (
                   <>
                     {addresses.length > 0 && !addingBill && (
-                      <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         {addresses.map((a) => (
                           <AddressPickCard key={a.id} a={a} selected={selectedBillId === a.id} onSelect={() => setBillId(a.id)} showGstin />
                         ))}
