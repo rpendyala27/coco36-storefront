@@ -5,7 +5,7 @@ import { ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
 import { PHASES } from '../data/thirtySixSteps';
 
 export const ThirtySixSteps = () => {
-  const [expanded, setExpanded] = useState<string | null>('seed-and-soil');
+  const [expanded, setExpanded] = useState<string | null>('origin');
 
   return (
     <div className="bg-brand-paper">
@@ -20,22 +20,22 @@ export const ThirtySixSteps = () => {
             <span className="italic">from crop to craft.</span>
           </h1>
           <p className="text-xl md:text-2xl text-brand-ink/70 leading-relaxed font-serif italic max-w-3xl mx-auto">
-            Every ingredient we ship follows a rigorous, transparent process — six phases, thirty-six checkpoints, one promise: the integrity of origin, end to end.
+            Every ingredient we ship moves through the same framework: six phases and thirty-six checkpoints, built to protect the integrity of origin, from crop to craft.
           </p>
 
-          {/* Stats strip */}
+          {/* Framework strip — structural facts, not metrics */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 pt-10 border-t border-brand-ink/10">
             <div>
-              <div className="text-4xl font-serif italic text-brand-primary mb-1">2,400+</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Farmer Partners</p>
-            </div>
-            <div>
-              <div className="text-4xl font-serif italic text-brand-primary mb-1">14</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Days Avg. Harvest → Ship</p>
+              <div className="text-4xl font-serif italic text-brand-primary mb-1">06</div>
+              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Phases</p>
             </div>
             <div>
               <div className="text-4xl font-serif italic text-brand-primary mb-1">36</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Logged Checkpoints</p>
+              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Checkpoints</p>
+            </div>
+            <div>
+              <div className="text-4xl font-serif italic text-brand-primary mb-1">All 6</div>
+              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Categories</p>
             </div>
           </div>
         </div>
@@ -137,7 +137,8 @@ export const ThirtySixSteps = () => {
                         <div className="relative aspect-[4/3] lg:aspect-auto bg-brand-surface overflow-hidden order-last lg:order-first">
                           <img
                             src={phase.image}
-                            alt={phase.title}
+                            alt=""
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                             className="w-full h-full object-cover grayscale-[0.3]"
                           />
                           <div className="absolute bottom-6 left-6 bg-brand-paper px-4 py-2">
@@ -180,9 +181,9 @@ export const ThirtySixSteps = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-t border-brand-ink/10 bg-brand-surface">
         <div className="max-w-4xl mx-auto text-center">
           <Sparkles size={28} strokeWidth={1.5} className="mx-auto text-brand-primary mb-6" />
-          <h2 className="text-4xl md:text-5xl mb-6">Trace your batch.</h2>
+          <h2 className="text-4xl md:text-5xl mb-6">One standard, every lot.</h2>
           <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic mb-10 max-w-2xl mx-auto">
-            Every COCO36 product ships with a QR-coded provenance log linking to its specific harvest, fermentation, and lab data.
+            From the grower who raised it to the kitchen where you finish it, this is the framework every COCO36 ingredient is held to, whichever category it belongs to.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -195,7 +196,7 @@ export const ThirtySixSteps = () => {
               to="/impact"
               className="btn-ghost !px-8 !py-4"
             >
-              Read Impact Report
+              Our commitments
             </Link>
           </div>
         </div>
