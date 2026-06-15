@@ -6,7 +6,7 @@ import type React from 'react';
  * scaling beyond friends-and-family orders.
  */
 export const Terms = () => {
-  const lastUpdated = '24 May 2026';
+  const lastUpdated = '15 June 2026';
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-3xl mx-auto text-brand-ink">
       <h1 className="text-4xl font-bold mb-3">Terms of sale</h1>
@@ -14,8 +14,10 @@ export const Terms = () => {
 
       <Section title="The seller">
         <p>
-          COCO36 is operated by Natural Origin Intl., India. By placing an
-          order you agree to these terms and to our{' '}
+          COCO36 is a brand operated by COCO36 Foods Pvt Ltd, India. Our
+          full seller details, legal name, registered address, FSSAI licence,
+          and (once registered) GSTIN, appear on the tax invoice for every order.
+          By placing an order you agree to these terms and to our{' '}
           <a href="/privacy" className="text-brand-primary hover:underline">privacy notice</a>.
         </p>
       </Section>
@@ -61,6 +63,14 @@ export const Terms = () => {
         </p>
       </Section>
 
+      <Section title="Governing law & jurisdiction">
+        <p>
+          These terms are governed by and construed under the laws of India.
+          Any dispute is subject to the exclusive jurisdiction of the courts at
+          Visakhapatnam, Andhra Pradesh.
+        </p>
+      </Section>
+
       <Section title="Contact">
         <p>
           Questions or disputes:{' '}
@@ -69,6 +79,11 @@ export const Terms = () => {
           </a>.
         </p>
       </Section>
+
+      <p className="text-xs text-brand-muted/70 mt-10 pt-6 border-t border-brand-line">
+        These terms are a plain-language summary for our soft launch and are not legal advice;
+        they will be replaced with a counsel-reviewed version as we scale.
+      </p>
     </div>
   );
 };

@@ -248,13 +248,13 @@ export const RecipeConsultant = () => {
                 }}
                 placeholder="Ask about a recipe, technique, or substitution…"
                 rows={2}
-                className="flex-1 resize-none bg-transparent px-3 py-2 text-base placeholder:font-serif placeholder:italic placeholder:text-brand-muted/50 focus:outline-none"
+                className="flex-1 resize-none bg-transparent px-3 py-2 text-base placeholder:text-brand-muted/50 focus:outline-none"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="shrink-0 px-5 py-3 bg-brand-ink text-brand-paper text-[10px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all duration-300 flex items-center gap-2 disabled:opacity-30"
+                className="btn-primary shrink-0 !px-5 !py-2.5 text-sm disabled:opacity-30"
               >
                 Send <Send size={12} />
               </button>

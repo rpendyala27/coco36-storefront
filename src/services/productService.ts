@@ -1,5 +1,12 @@
 import { supabase } from '../lib/supabase';
-import { Product, ProductCategory } from '../types';
+import { Product, ProductCategory, ProductBadge, ProductTag } from '../types';
+
+/** tag slug → display badge (designation tags only). */
+const TAG_TO_BADGE: Record<string, ProductBadge> = {
+  'bestseller':      'Best Seller',
+  'new-arrival':     'New',
+  'limited-edition': 'Limited Harvest',
+};
 
 /**
  * Supabase product reader for the storefront.
@@ -24,6 +31,15 @@ function mapSupabaseProduct(row: any): Product {
     (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
 
+  // product_tags → { slug, label }[]. Designation tags also map to badges.
+  const tags: ProductTag[] = (row.product_tags ?? [])
+    .map((pt: any) => pt.tag)
+    .filter(Boolean)
+    .map((t: any) => ({ slug: t.slug as string, label: t.label as string }));
+  const badges: ProductBadge[] = tags
+    .map((t) => TAG_TO_BADGE[t.slug])
+    .filter((b): b is ProductBadge => Boolean(b));
+
   return {
     id:       row.id,
     sku:      row.sku ?? '',
@@ -35,7 +51,8 @@ function mapSupabaseProduct(row: any): Product {
     imageHover: hover?.url,
     category: (row.category?.name ?? 'Cocoa & Chocolate') as ProductCategory,
     description: row.description_md ?? '',
-    badges:   [], // future: derive from product_tags
+    badges,
+    tags,
     sizes: variants.map((v: any) => ({
       id:           v.id,                  // = variant_id, used at checkout
       label:        v.size_label,
@@ -92,7 +109,8 @@ export const productService = {
         id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
         variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
         images:product_images(id, url, is_primary, sort_order, alt_text),
-        category:categories(id, name, slug)
+        category:categories(id, name, slug),
+        product_tags(tag:tags(slug, label))
       `)
       .eq('status', 'active')
       .order('name');
@@ -114,7 +132,8 @@ export const productService = {
         id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
         variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
         images:product_images(id, url, is_primary, sort_order, alt_text),
-        category:categories(id, name, slug)
+        category:categories(id, name, slug),
+        product_tags(tag:tags(slug, label))
       `)
       .eq('id', id)
       .eq('status', 'active')

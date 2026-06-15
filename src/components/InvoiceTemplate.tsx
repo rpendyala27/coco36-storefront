@@ -44,7 +44,7 @@ export function InvoiceTemplate({
             <img src={ic.logoUrl} alt={settings.storeName} className="h-12 mb-3" />
           ) : (
             <div className="text-3xl font-extrabold">
-              COCO<span className="text-[#E8445A]">36</span>
+              COCO<span className="text-[#0c6e6b]">36</span>
             </div>
           )}
           <p className="font-bold text-base">{seller.legalName}</p>

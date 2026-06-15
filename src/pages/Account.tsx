@@ -17,6 +17,15 @@ interface OrderRow {
   item_count?:  number;
 }
 
+interface AddrRow {
+  id:      string;
+  line1:   string;
+  line2:   string | null;
+  city:    string;
+  state:   string;
+  pincode: string;
+}
+
 /**
  * /account — customer landing page.
  *
@@ -31,6 +40,7 @@ export const Account = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [addresses, setAddresses] = useState<AddrRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +69,25 @@ export const Account = () => {
           })),
         );
       }
+
+      // Saved addresses — RLS returns only this customer's rows. Orders write a
+      // shipping + billing row each time, so dedupe by content.
+      const { data: addrData } = await supabase
+        .from('addresses')
+        .select('id, line1, line2, city, state, pincode, created_at')
+        .order('created_at', { ascending: false });
+      if (addrData) {
+        const seen = new Set<string>();
+        const unique: AddrRow[] = [];
+        for (const a of addrData as any[]) {
+          const key = `${a.line1}|${a.line2 ?? ''}|${a.city}|${a.state}|${a.pincode}`.toLowerCase().trim();
+          if (seen.has(key) || !a.line1) continue;
+          seen.add(key);
+          unique.push(a);
+        }
+        setAddresses(unique.slice(0, 8));
+      }
+
       setLoading(false);
     })();
   }, [user, navigate]);
@@ -84,18 +113,15 @@ export const Account = () => {
               Hi, {(profile?.name ?? user.email?.split('@')[0] ?? 'there').split(' ')[0]}.
             </h1>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 px-5 py-3 border border-brand-ink/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-ink hover:text-brand-paper transition-all w-fit"
-          >
-            <LogOut size={13} /> Sign Out
+          <button onClick={handleSignOut} className="btn-ghost !px-5 !py-2.5 text-sm w-fit">
+            <LogOut size={14} /> Sign out
           </button>
         </header>
 
         {/* ── Profile card ─────────────────────────────────────────────── */}
         <section>
           <SectionHeader icon={<User size={14} />} title="Profile" />
-          <div className="bg-white border border-brand-ink/10 p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
             <Detail label="Name"  value={profile?.name  ?? '—'} />
             <Detail label="Email" value={profile?.email ?? user.email ?? '—'} />
             <Detail label="Phone" value={profile?.phone ?? '—'} />
@@ -105,7 +131,7 @@ export const Account = () => {
         {/* ── Orders ───────────────────────────────────────────────────── */}
         <section>
           <SectionHeader icon={<Package size={14} />} title="Orders" subtitle={`${orders.length} order${orders.length === 1 ? '' : 's'}`} />
-          <div className="bg-white border border-brand-ink/10">
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden">
             {loading ? (
               <div className="p-10 text-center text-sm text-brand-muted">Loading orders…</div>
             ) : orders.length === 0 ? (
@@ -158,13 +184,28 @@ export const Account = () => {
           </div>
         </section>
 
-        {/* ── Addresses (placeholder) ───────────────────────────────────── */}
+        {/* ── Addresses ─────────────────────────────────────────────────── */}
         <section>
-          <SectionHeader icon={<MapPin size={14} />} title="Saved Addresses" />
-          <div className="bg-white border border-brand-ink/10 p-6">
-            <p className="text-sm text-brand-muted">
-              Addresses you've shipped to will appear here. Manage from your next checkout.
-            </p>
+          <SectionHeader
+            icon={<MapPin size={14} />}
+            title="Saved Addresses"
+            subtitle={addresses.length ? `${addresses.length} saved` : undefined}
+          />
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6">
+            {addresses.length === 0 ? (
+              <p className="text-sm text-brand-muted">
+                Addresses you've shipped to will appear here, ready to reuse at your next checkout.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {addresses.map((a) => (
+                  <li key={a.id} className="border border-brand-line rounded-lg p-4">
+                    <p className="text-sm text-brand-ink leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+                    <p className="text-xs text-brand-muted mt-1">{a.city}, {a.state} {a.pincode}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       </div>

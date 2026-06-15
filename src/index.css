@@ -1,77 +1,89 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..700,0..100&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans:  "Inter", "Segoe UI", "Helvetica Neue", sans-serif;
-  --font-serif: "Newsreader", serif;
+  /* ─── Type — peacock redesign ───────────────────────────────
+     Fraunces (display serif) · DM Sans (body/UI) · JetBrains Mono (codes) */
+  --font-sans:  "DM Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Fraunces", "Times New Roman", Georgia, serif;
+  --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
-  /* ─── Reds (CTA + accent) ───────────────────────── */
-  --color-brand-primary:        #ef405b;  /* main CTA, badges, active nav */
-  --color-brand-primary-bright: #ff1e55;  /* hover, highlights */
-  --color-brand-coral:          #fd535f;  /* secondary badges, ribbons */
+  /* ─── Peacock teal — primary brand scale ────────────────────
+     Token NAMES kept from the old palette so existing components inherit
+     the new skin; values remapped to peacock (see design/STOREFRONT_REDESIGN.md). */
+  --color-brand-primary:        #15715f;  /* teal — CTAs, links, active */
+  --color-brand-primary-bright: #1c8a73;  /* hover */
+  --color-brand-coral:          #2a9d86;  /* repurposed → sea-green */
 
-  /* ─── Yellows (energy) ──────────────────────────── */
-  --color-brand-yellow:         #ffde2f;  /* stars, prices */
-  --color-brand-amber:          #fab73d;  /* offer tags, premium */
-  --color-brand-lemon:          #f7e447;  /* subtle accents */
+  /* Peacock gold — SPARING accent only (NEW badge, cart count) */
+  --color-brand-yellow:         #c08a2e;
+  --color-brand-amber:          #c08a2e;
+  --color-brand-lemon:          #e0c084;
 
-  /* ─── Purples (trust / dark surfaces) ───────────── */
-  --color-brand-purple:         #4b1f64;  /* header/footer */
-  --color-brand-berry:          #730a6b;  /* gradient endpoint */
-  --color-brand-indigo:         #3b0366;  /* deep text, borders */
+  /* Deep teal — dark surfaces (topbar, footer, dark bands) */
+  --color-brand-purple:         #0a3c33;
+  --color-brand-berry:          #04231d;
+  --color-brand-indigo:         #0a3c33;  /* headings / deep text */
 
-  /* ─── Neutrals ──────────────────────────────────── */
-  --color-brand-paper:          #faf8f5;  /* warm off-white page bg */
-  --color-brand-surface:        #f5f5f5;  /* dividers, inactive */
-  --color-brand-ink:            #282c3f;  /* charcoal body */
-  --color-brand-muted:          #686b78;  /* secondary text */
+  /* Neutrals — white canvas, faint-teal surfaces, ink-teal text */
+  --color-brand-paper:          #ffffff;  /* page bg (white) */
+  --color-brand-surface:        #f3faf7;  /* cards / faint teal tint */
+  --color-brand-band:           #e7f3ef;  /* muted band / hover */
+  --color-brand-ink:            #102420;  /* near-black teal body */
+  --color-brand-muted:          #5e7370;  /* secondary text */
+
+  /* Convenience aliases for new peacock components */
+  --color-brand-teal:           #15715f;
+  --color-brand-sea:            #2a9d86;
+  --color-brand-deep:           #0a3c33;
+  --color-brand-line:           rgba(16, 36, 32, 0.14);
 }
 
 @layer base {
   body {
     @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-primary selection:text-white;
-    background-color: #faf8f5;
-    /* Kraft recycled paper texture — subtle ivory with organic fibre noise */
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(75, 31, 100, 0.02), transparent 70%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='kraft'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.40  0 0 0 0 0.20  0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23kraft)'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 800 800' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='fibres'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.02 0.6' numOctaves='2' seed='8'/%3E%3CfeColorMatrix values='0 0 0 0 0.45  0 0 0 0 0.30  0 0 0 0 0.15  0 0 0 0.10 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23fibres)'/%3E%3C/svg%3E");
-    background-size: 400px 400px, 800px 800px;
-    background-attachment: fixed;
+    background-color: #ffffff;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans font-bold tracking-tight text-brand-indigo;
-    font-feature-settings: "ss01", "cv11";
+    @apply font-serif font-normal tracking-tight text-brand-indigo;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
   }
 }
 
 @layer components {
-  /* SVG kraft-grain noise overlay */
-  .bg-noise {
-    @apply fixed inset-0 pointer-events-none z-[1] opacity-[0.04];
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' seed='5'/%3E%3CfeColorMatrix values='0 0 0 0 0.4   0 0 0 0 0.25  0 0 0 0 0.1   0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Editorial italic display (Fraunces italic) */
+  .display-italic {
+    @apply font-serif italic font-normal;
   }
 
-  /* Drop-cap accent (kept for editorial moments) */
-  .drop-cap::first-letter {
-    @apply float-left font-serif text-[5rem] leading-[0.8] pt-[0.2rem] pr-[0.5rem] pl-[0.1rem] text-brand-primary italic font-normal;
+  /* Eyebrow / mono label */
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.14em] text-brand-muted;
   }
 
-  /* Swiggy-style card */
-  .card-eco {
-    @apply bg-white rounded-2xl shadow-[0_2px_12px_rgba(40,44,63,0.06)] hover:shadow-[0_12px_32px_rgba(40,44,63,0.12)] transition-all duration-300 hover:-translate-y-1 overflow-hidden;
+  /* Peacock card — flat, faint-teal surface, hairline border */
+  .card-peacock {
+    @apply bg-white border border-brand-line rounded-lg overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(10,40,33,0.13)];
   }
 
-  /* Buttons */
+  /* Primary transactional CTA — SOLID deep teal for max affordance + contrast
+     (Add to bag, Place order, Checkout). High-contrast = converts. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-brand-primary text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-primary-bright transition-all duration-200 shadow-[0_4px_14px_rgba(239,64,91,0.35)] hover:shadow-[0_6px_20px_rgba(255,30,85,0.45)];
+    @apply inline-flex items-center justify-center gap-2 text-white font-semibold rounded-full px-6 py-3 transition-colors duration-200;
+    background-color: #0c6e6b;
   }
+  .btn-primary:hover { background-color: #0a3c33; }
+
+  /* Hero / brand-moment CTA — the peacock teal→sea-green gradient (iridescence) */
+  .btn-gradient {
+    @apply inline-flex items-center justify-center gap-2 text-white font-semibold rounded-full px-6 py-3 transition-all duration-200;
+    background-image: linear-gradient(135deg, #0c6e6b 0%, #2a9d86 100%);
+  }
+  .btn-gradient:hover { filter: brightness(1.05); }
+
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 bg-white text-brand-ink font-semibold rounded-xl px-6 py-3 border border-brand-surface hover:border-brand-primary hover:text-brand-primary transition-all duration-200;
-  }
-  .btn-purple {
-    @apply inline-flex items-center justify-center gap-2 bg-brand-purple text-white font-semibold rounded-xl px-6 py-3 hover:bg-brand-berry transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 bg-white text-brand-deep font-semibold rounded-full px-6 py-3 border border-brand-deep hover:bg-brand-band transition-all duration-200;
   }
 
   /* Pill badge */
@@ -80,12 +92,15 @@
   }
 }
 
-/* GSAP scroll-reveal initial state (visible by default to avoid FOUC if JS fails) */
-.gsap-reveal { will-change: transform, opacity; }
-
 /* Scrollbar polish */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Marquee — live sourcing ticker */
+@keyframes co-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 
 /* Skeleton shimmer */
 @keyframes shimmer {
@@ -93,7 +108,28 @@
   100% { background-position: 800px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #f0eeea 0%, #f8f6f2 50%, #f0eeea 100%);
+  background: linear-gradient(90deg, #eef4f3 0%, #f7fbfa 50%, #eef4f3 100%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
+}
+
+/* ── Accessibility ─────────────────────────────────────────── */
+/* Visible keyboard focus on every interactive element (many use
+   focus:outline-none for mouse; this restores it for keyboard users). */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #15715f;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Respect prefers-reduced-motion: stop the sourcing ticker, shimmer,
+   card reveals, and long transitions for motion-sensitive users. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

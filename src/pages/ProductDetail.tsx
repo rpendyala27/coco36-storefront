@@ -1,287 +1,299 @@
-import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
-import { ArrowLeft, ArrowRight, Star, Minus, Plus, ShoppingBag, Truck, Shield, Award, Heart, Share2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Minus, Plus, ShoppingBag, ChevronDown, Check, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
 import { formatMoney } from '../lib/currency';
 import { useProduct, useProducts } from '../hooks/useProducts';
+import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 
-const SPEC_BANK = [
-  { label: 'Origin Verified',     value: '36-step traceable' },
-  { label: 'Shelf Life',          value: '24 months sealed' },
-  { label: 'Packaging',           value: 'Glass jar, recyclable' },
-  { label: 'Storage',             value: 'Cool, dry, away from light' },
-  { label: 'Allergens',           value: 'Processed in shared facility' },
-];
+const CERT_DIETARY = new Set(['organic', 'fair-trade', 'single-origin', 'vegan', 'gluten-free', 'sugar-free']);
+const isCertTag = (slug: string) => slug.startsWith('cert:') || CERT_DIETARY.has(slug);
+const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
 export const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-
   const { product, loading } = useProduct(id);
   const { products } = useProducts();
-  const [selectedSizeId, setSelectedSizeId] = useState<string>(product?.sizes[0]?.id ?? '');
+  const cfg = useStoreConfig();
+
+  const [selectedSizeId, setSelectedSizeId] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState(0);
+  const [showSticky, setShowSticky] = useState(false);
+  const [open, setOpen] = useState({ description: true, details: false, certs: false });
+
+  useEffect(() => {
+    if (product && !product.sizes.some((s) => s.id === selectedSizeId)) {
+      setSelectedSizeId(product.sizes[0]?.id ?? '');
+    }
+  }, [product, selectedSizeId]);
+
+  useEffect(() => {
+    const onScroll = () => setShowSticky(window.scrollY > 520);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (product) document.title = `${product.name} · COCO36`;
+  }, [product]);
 
   const related = useMemo(
-    () => product ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : [],
+    () => (product ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : []),
     [product, products],
   );
 
-  // While the catalogue is still streaming from Supabase, show a skeleton —
-  // NOT a "Product not found" page. Previously this fired prematurely whenever
-  // the URL was a slug that only matched after the DB fetch resolved.
   if (loading && !product) {
     return (
-      <div className="min-h-screen pt-32 px-6 max-w-5xl mx-auto animate-pulse">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="aspect-square bg-brand-surface" />
+      <div className="min-h-screen pt-28 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="aspect-square skeleton rounded-xl" />
           <div className="space-y-4">
-            <div className="h-8 w-2/3 bg-brand-surface" />
-            <div className="h-4 w-1/3 bg-brand-surface" />
-            <div className="h-32 w-full bg-brand-surface mt-6" />
-            <div className="h-12 w-48 bg-brand-surface mt-6" />
+            <div className="h-4 w-1/3 skeleton rounded" />
+            <div className="h-10 w-2/3 skeleton rounded" />
+            <div className="h-24 w-full skeleton rounded mt-6" />
+            <div className="h-12 w-48 skeleton rounded mt-6" />
           </div>
         </div>
       </div>
     );
   }
 
-  // Only show 404 once we KNOW the catalogue has loaded and the product
-  // really doesn't exist.
   if (!product) {
     return (
-      <div className="min-h-screen pt-32 px-6 text-center">
-        <h1 className="text-4xl mb-6 font-bold text-brand-indigo">Product not found.</h1>
+      <div className="min-h-screen pt-28 px-6 text-center">
+        <h1 className="text-4xl mb-6">Product not found.</h1>
         <Link to="/shop" className="btn-primary inline-flex">← Back to Shop</Link>
       </div>
     );
   }
 
-  const selectedSize     = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
-  const minPricePaise    = Math.min(...product.sizes.map((s) => s.priceInPaise));
-  const originalPaise    = Math.round(minPricePaise * 1.18); // 18% faux discount
-  const totalPricePaise  = selectedSize.priceInPaise * quantity;
+  const selectedSize    = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
+  const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * quantity;
+  const certTags        = (product.tags ?? []).filter((t) => isCertTag(t.slug));
+  const gallery         = [product.image, product.imageHover].filter(Boolean) as string[];
 
-  const handleAddToCart = () => addItem(product, selectedSize, quantity);
-  const handleBuyNow    = () => { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 200); };
+  const handleAddToCart = () => selectedSize && addItem(product, selectedSize, quantity);
+  const handleBuyNow    = () => { if (selectedSize) { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 150); } };
+  const toggle = (k: keyof typeof open) => setOpen((s) => ({ ...s, [k]: !s[k] }));
 
   return (
-    <div className="bg-brand-paper pt-16 md:pt-[72px]">
+    <div className="bg-brand-paper pt-20 min-h-screen">
       {/* Breadcrumb */}
-      <div className="px-4 md:px-8 lg:px-12 pt-6 max-w-7xl mx-auto">
-        <nav className="text-xs text-brand-muted flex items-center gap-2 font-medium">
-          <Link to="/" className="hover:text-brand-primary transition-colors">Home</Link>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-6">
+        <nav className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand-muted flex items-center gap-2">
+          <Link to="/shop" className="text-brand-primary hover:underline">Shop</Link>
           <span className="opacity-40">/</span>
-          <Link to="/shop" className="hover:text-brand-primary transition-colors">Shop</Link>
+          <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-brand-primary">{product.category}</Link>
           <span className="opacity-40">/</span>
-          <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-brand-primary transition-colors">{product.category}</Link>
-          <span className="opacity-40">/</span>
-          <span className="text-brand-indigo font-semibold">{product.name}</span>
+          <span className="text-brand-deep">{product.name}</span>
         </nav>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
-        {/* IMAGE / MEDIA SIDE */}
-        <section>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-brand-muted hover:text-brand-primary transition-colors mb-4 group"
-          >
-            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Back
-          </button>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            className="relative aspect-square bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(40,44,63,0.08)]"
-          >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-            {product.badges && (
-              <div className="absolute top-4 left-4 flex flex-col gap-2">
-                {product.badges.map((b) => (
-                  <span
-                    key={b}
-                    className={`pill shadow-md ${
-                      b === 'Best Seller'    ? 'bg-brand-amber text-brand-indigo' :
-                      b === 'New'            ? 'bg-brand-yellow text-brand-indigo' :
-                      b === 'Limited Harvest'? 'bg-brand-purple text-white' :
-                      'bg-brand-coral text-white'
-                    }`}
-                  >
-                    {b}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Wishlist + share */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
-              <button className="size-10 rounded-full bg-white text-brand-ink hover:text-brand-primary hover:scale-110 transition-all flex items-center justify-center shadow-md">
-                <Heart size={16} strokeWidth={2} />
-              </button>
-              <button className="size-10 rounded-full bg-white text-brand-ink hover:text-brand-primary hover:scale-110 transition-all flex items-center justify-center shadow-md">
-                <Share2 size={16} strokeWidth={2} />
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Trust strip */}
-          <div className="hidden lg:grid grid-cols-3 gap-3 mt-5">
-            {[
-              { icon: Truck,  label: `Free shipping ${formatMoney(250000)}+` },
-              { icon: Shield, label: '30-day guarantee' },
-              { icon: Award,  label: 'Verified origin' },
-            ].map((item) => (
-              <div key={item.label} className="card-eco !rounded-xl p-3 flex items-center gap-2 hover:!translate-y-0">
-                <item.icon size={16} strokeWidth={2} className="text-brand-primary shrink-0" />
-                <span className="text-[10px] uppercase tracking-widest font-bold text-brand-ink leading-tight">{item.label}</span>
-              </div>
-            ))}
+      {/* Main */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+        {/* Gallery */}
+        <div className="lg:sticky lg:top-28">
+          <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-deep">
+            {gallery[activeImage]
+              ? <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              : <div className="w-full h-full flex items-center justify-center font-mono text-xs uppercase tracking-wide text-white/60">No image</div>}
           </div>
-        </section>
-
-        {/* BUY PANEL */}
-        <section>
-          <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-2">{product.brand}</p>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight text-brand-indigo mb-3">{product.name}</h1>
-          <p className="text-sm text-brand-muted mb-4">{product.origin} · SKU {product.sku}</p>
-
-          {/* Rating */}
-          {product.rating && (
-            <div className="flex items-center gap-3 mb-5">
-              <span className="inline-flex items-center gap-1 bg-brand-yellow/20 text-brand-indigo px-2.5 py-1 rounded-md font-bold text-sm">
-                <Star size={13} strokeWidth={2.5} className="fill-brand-yellow text-brand-yellow" />
-                {product.rating.toFixed(1)}
-              </span>
-              <span className="text-sm text-brand-muted">{product.reviewCount} reviews</span>
-            </div>
-          )}
-
-          <p className="text-base text-brand-ink leading-relaxed mb-6">
-            {product.description}
-          </p>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {product.tag.split('·').map((t) => (
-              <span key={t} className="text-[10px] uppercase tracking-widest text-brand-muted bg-brand-surface px-3 py-1.5 rounded-full font-bold">
-                {t.trim()}
-              </span>
-            ))}
-          </div>
-
-          {/* Price */}
-          <div className="flex items-baseline gap-3 mb-6 pb-6 border-b border-brand-surface">
-            <span className="text-4xl font-bold text-brand-indigo">{formatMoney(selectedSize.priceInPaise)}</span>
-            <span className="text-lg text-brand-muted line-through">{formatMoney(originalPaise)}</span>
-            <span className="pill bg-brand-coral text-white">
-              SAVE {Math.round((1 - selectedSize.priceInPaise / originalPaise) * 100)}%
-            </span>
-            {!selectedSize.inStock && <span className="pill bg-brand-ink text-white">Out of Stock</span>}
-          </div>
-
-          {/* Size selector */}
-          <div className="mb-6">
-            <h3 className="text-xs uppercase tracking-widest font-bold mb-3">
-              Size — <span className="text-brand-muted">{selectedSize.label}</span>
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {product.sizes.map((s) => (
+          {gallery.length > 1 && (
+            <div className="flex gap-3 mt-3">
+              {gallery.map((src, i) => (
                 <button
-                  key={s.id}
-                  onClick={() => setSelectedSizeId(s.id)}
-                  disabled={!s.inStock}
-                  className={`px-4 py-3 text-left rounded-xl border-2 transition-all ${
-                    selectedSizeId === s.id
-                      ? 'border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/20'
-                      : 'border-brand-surface hover:border-brand-ink/30'
-                  } ${!s.inStock ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
+                  key={i}
+                  onClick={() => setActiveImage(i)}
+                  className={`size-20 rounded-lg overflow-hidden border-2 transition-colors ${i === activeImage ? 'border-brand-primary' : 'border-brand-line'}`}
                 >
-                  <div className="text-xs font-bold text-brand-ink">{s.label}</div>
-                  <div className="text-sm font-bold text-brand-indigo mt-1">{formatMoney(s.priceInPaise)}</div>
+                  <img src={src} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Qty + Add to cart */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="flex items-center bg-white border border-brand-surface rounded-xl shrink-0 self-start">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="px-4 py-3 hover:text-brand-primary transition-colors" aria-label="Decrease quantity">
-                <Minus size={14} strokeWidth={2.5} />
-              </button>
-              <span className="px-5 font-bold text-brand-indigo tabular-nums">{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)} className="px-4 py-3 hover:text-brand-primary transition-colors" aria-label="Increase quantity">
-                <Plus size={14} strokeWidth={2.5} />
-              </button>
-            </div>
+        {/* Buy panel */}
+        <div>
+          <p className="eyebrow text-brand-primary mb-3">{product.category} · {countryOf(product.origin)}</p>
+          <h1 className="font-serif text-4xl md:text-5xl leading-[1.02] text-brand-deep">{product.name}</h1>
+          <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-deep font-medium">{product.brand}</span></p>
 
-            <button
-              onClick={handleAddToCart}
-              disabled={!selectedSize.inStock}
-              className="btn-primary flex-1 !py-4 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ShoppingBag size={15} /> Add to Cart — {formatMoney(totalPricePaise)}
-            </button>
-          </div>
-
-          <button
-            onClick={handleBuyNow}
-            disabled={!selectedSize.inStock}
-            className="btn-ghost w-full !py-4 !border-2 disabled:opacity-30 mb-8"
-          >
-            Buy It Now <ArrowRight size={14} />
-          </button>
-
-          {/* Specifications */}
-          <div className="bg-white rounded-2xl p-6 shadow-[0_2px_12px_rgba(40,44,63,0.06)] mb-6">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-brand-indigo mb-4 pb-3 border-b border-brand-surface">
-              Specifications
-            </h2>
-            <dl className="divide-y divide-brand-surface">
-              {SPEC_BANK.map((spec) => (
-                <div key={spec.label} className="flex justify-between py-3">
-                  <dt className="text-xs uppercase tracking-wider font-medium text-brand-muted">{spec.label}</dt>
-                  <dd className="text-sm font-semibold text-brand-ink">{spec.value}</dd>
-                </div>
+          {/* Cert tags */}
+          {certTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-5">
+              {certTags.map((t) => (
+                <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                  <Check size={11} strokeWidth={3} /> {t.label}
+                </span>
               ))}
-            </dl>
+            </div>
+          )}
+
+          {/* Price */}
+          <div className="flex items-baseline gap-2 mt-6 pb-6 border-b border-brand-line">
+            <span className="font-serif text-4xl text-brand-deep">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
+            {selectedSize && <span className="text-sm text-brand-muted">/ {selectedSize.label}</span>}
+            {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-deep text-white ml-2">Out of stock</span>}
           </div>
 
-          <Link
-            to="/36-steps"
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-brand-primary hover:gap-4 transition-all"
-          >
-            View full supply chain traceability <ArrowRight size={13} />
-          </Link>
-        </section>
+          {/* Description (lede) */}
+          {product.description && (
+            <p className="text-[15px] leading-relaxed text-brand-muted mt-6 max-w-[60ch]">{product.description}</p>
+          )}
+
+          {/* Size selector */}
+          {product.sizes.length > 1 && (
+            <div className="mt-7">
+              <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3">Size</div>
+              <div className="flex flex-wrap gap-2.5">
+                {product.sizes.map((s) => {
+                  const sel = selectedSizeId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedSizeId(s.id)}
+                      disabled={!s.inStock}
+                      className={`flex flex-col items-start px-4 py-2.5 rounded-lg border transition-all ${
+                        sel ? 'border-brand-primary bg-brand-surface ring-2 ring-brand-primary/15' : 'border-brand-line hover:border-brand-deep'
+                      } ${!s.inStock ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
+                    >
+                      <span className="text-sm font-semibold text-brand-deep">{s.label}</span>
+                      <span className="text-[11px] text-brand-muted">{formatMoney(s.priceInPaise)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Qty + add */}
+          <div className="flex gap-3 mt-7 flex-wrap">
+            <div className="flex items-center border border-brand-line rounded-full px-1.5">
+              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="size-10 flex items-center justify-center text-brand-deep hover:text-brand-primary" aria-label="Decrease quantity"><Minus size={15} strokeWidth={2.5} /></button>
+              <span className="min-w-8 text-center font-semibold tabular-nums">{quantity}</span>
+              <button onClick={() => setQuantity((q) => q + 1)} className="size-10 flex items-center justify-center text-brand-deep hover:text-brand-primary" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
+            </div>
+            <button onClick={handleAddToCart} disabled={!selectedSize?.inStock} className="btn-primary flex-1 min-w-[200px] !py-3.5 disabled:opacity-30 disabled:cursor-not-allowed">
+              <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
+            </button>
+            <button onClick={handleBuyNow} disabled={!selectedSize?.inStock} className="btn-ghost !py-3.5 px-7 disabled:opacity-30">Buy now</button>
+          </div>
+
+          {/* Ship note */}
+          <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
+            <Truck size={15} strokeWidth={1.75} className="text-brand-primary" />
+            Ships in <span className="text-brand-deep font-medium">2 days</span> from Bengaluru · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
+          </p>
+
+          {/* Accordions */}
+          <div className="mt-9">
+            <Acc title="Description" open={open.description} onToggle={() => toggle('description')}>
+              <p>{product.description || 'No description available for this lot yet.'}</p>
+            </Acc>
+            <Acc title="Details" open={open.details} onToggle={() => toggle('details')}>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-12">
+                {[
+                  ['Brand', product.brand],
+                  ['Origin', product.origin],
+                  ['Category', product.category],
+                  ['SKU', product.sku],
+                  ['Sizes', product.sizes.map((s) => s.label).join(', ')],
+                ].filter(([, v]) => v).map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-4 py-3 border-b border-brand-line/60">
+                    <dt className="text-sm text-brand-muted">{k}</dt>
+                    <dd className="text-sm font-medium text-brand-deep text-right">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Acc>
+            <Acc title="Certifications" open={open.certs} onToggle={() => toggle('certs')}>
+              {certTags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {certTags.map((t) => (
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                      <Check size={11} strokeWidth={3} /> {t.label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p>Certifications for this product are set by our sourcing team and shown here when available.</p>
+              )}
+            </Acc>
+          </div>
+
+          {/* For trade — persistent secondary conversion paths (B2B salesperson approach) */}
+          <div className="mt-8 rounded-xl border border-brand-line bg-brand-surface p-5">
+            <p className="eyebrow text-brand-primary mb-3">For professional kitchens &amp; brands</p>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/trade" className="btn-ghost !py-2.5 text-sm"><HandCoins size={15} /> Request bulk pricing</Link>
+              <Link to="/trade" className="inline-flex items-center gap-2 text-sm font-medium text-brand-deep border border-brand-line rounded-full px-5 py-2.5 hover:border-brand-deep transition-colors"><FileText size={15} /> Request spec sheet / CoA</Link>
+            </div>
+          </div>
+
+          {/* Content clustering — link adjacent resources, build buyer confidence */}
+          <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link to="/36-steps" className="inline-flex items-center gap-1.5 text-brand-primary hover:gap-2.5 transition-all"><Network size={15} /> See the 36-step trace <ArrowRight size={14} /></Link>
+            <Link to="/recipes" className="inline-flex items-center gap-1.5 text-brand-primary hover:gap-2.5 transition-all"><ChefHat size={15} /> Recipes with this <ArrowRight size={14} /></Link>
+          </div>
+        </div>
       </div>
 
-      {/* You may also like */}
+      {/* Reviews — structure present, never fabricated data */}
+      <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-12">
+        <div className="border-t border-brand-line pt-10">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <h2 className="font-serif text-3xl text-brand-deep">Reviews</h2>
+            <button className="btn-ghost !py-2.5 text-sm"><Star size={15} /> Write a review</button>
+          </div>
+          <div className="mt-6 rounded-xl border border-dashed border-brand-line bg-brand-surface px-6 py-12 text-center">
+            <p className="font-serif italic text-xl text-brand-primary mb-1">No reviews yet</p>
+            <p className="text-sm text-brand-muted">Be the first maker to review this lot.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pairs well with */}
       {related.length > 0 && (
-        <section className="px-4 md:px-8 lg:px-12 py-16 max-w-7xl mx-auto">
-          <header className="flex items-end justify-between mb-8">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-brand-primary mb-1">More like this</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-brand-indigo">You may also like</h2>
+        <section className="bg-brand-surface border-t border-brand-line mt-16">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-16">
+            <h2 className="font-serif text-3xl text-brand-deep">Pairs well with</h2>
+            <p className="text-sm text-brand-muted mt-1 mb-8">More from {product.category}.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
             </div>
-            <Link to="/shop" className="text-sm font-semibold text-brand-primary hover:text-brand-primary-bright">View all →</Link>
-          </header>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {related.map((p, i) => (
-              <ProductCard key={p.id} product={p} index={i} />
-            ))}
           </div>
         </section>
+      )}
+
+      {/* Sticky add-to-bag — meets the buyer at peak intent on scroll */}
+      {showSticky && selectedSize && (
+        <div className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(10,40,33,0.08)]">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
+            <div className="hidden sm:block min-w-0 flex-1">
+              <p className="font-serif text-lg text-brand-deep truncate">{product.name}</p>
+              <p className="text-xs text-brand-muted">{selectedSize.label}</p>
+            </div>
+            <span className="font-sans font-bold text-xl text-brand-deep tabular-nums">{formatMoney(totalPricePaise)}</span>
+            <button onClick={handleAddToCart} disabled={!selectedSize.inStock} className="btn-primary !py-3 px-8 disabled:opacity-30"><ShoppingBag size={15} /> Add to bag</button>
+          </div>
+        </div>
       )}
     </div>
   );
 };
+
+// Accordion row
+const Acc: React.FC<{ title: string; open: boolean; onToggle: () => void; children: React.ReactNode }> = ({ title, open, onToggle, children }) => (
+  <div className="border-t border-brand-line last:border-b">
+    <button onClick={onToggle} className="w-full flex items-center justify-between py-5 text-left">
+      <span className="font-serif text-xl text-brand-deep">{title}</span>
+      <ChevronDown size={20} className={`text-brand-primary transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && <div className="pb-6 text-[15px] leading-relaxed text-brand-muted max-w-[68ch]">{children}</div>}
+  </div>
+);

@@ -11,7 +11,7 @@ const OFFERINGS = [
   {
     icon: Layers,
     title: 'Custom Cocoa Blends',
-    description: 'Bespoke couverture profiles, single-origin matched to your application — from confectionery to ice cream.',
+    description: 'Bespoke couverture profiles, single-origin matched to your application, from confectionery to ice cream.',
   },
   {
     icon: Beaker,
@@ -26,20 +26,20 @@ const OFFERINGS = [
   {
     icon: Cpu,
     title: 'Technical Support',
-    description: 'Application labs in Mumbai, Lyon, and São Paulo. Full sensory panels, R&D pilots, regulatory dossiers.',
+    description: 'Hands-on application support: sensory panels, R&D pilots, and regulatory dossiers for your target market.',
   },
 ];
 
 const INDUSTRIES = [
-  { icon: Building2, title: 'Confectionery Manufacturers', stat: '40+ partner brands' },
-  { icon: CookingPot, title: 'Industrial Bakeries',         stat: '12-country presence' },
+  { icon: Building2, title: 'Confectionery Manufacturers', stat: 'Single-origin couverture' },
+  { icon: CookingPot, title: 'Industrial Bakeries',         stat: 'Custom flour & grain blends' },
   { icon: IceCream,  title: 'Frozen Dessert Brands',        stat: 'Custom inclusion blends' },
   { icon: Wine,      title: 'Beverage Brands',              stat: 'Cold-extraction profiles' },
 ];
 
 const PROCESS = [
   { num: '01', title: 'Brief',         desc: 'Initial scope: volumes, regulatory, sensory targets, timeline.' },
-  { num: '02', title: 'Prototype',     desc: 'Lab-scale samples — typically 3-4 iterations over 4-6 weeks.' },
+  { num: '02', title: 'Prototype',     desc: 'Lab-scale samples, typically 3-4 iterations over 4-6 weeks.' },
   { num: '03', title: 'Pilot',         desc: 'Production-floor trial run, full QA panel, packaging validation.' },
   { num: '04', title: 'Scale',         desc: 'Commercial launch with dedicated supply commitments.' },
   { num: '05', title: 'Optimization',  desc: 'Quarterly reviews, ongoing R&D, harvest-driven refinements.' },
@@ -97,11 +97,11 @@ export const Partnerships = () => {
               <span className="italic">for food makers.</span>
             </h1>
             <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-serif italic max-w-2xl mb-10">
-              From concept to production, we partner with brands to co-create scalable ingredient solutions — from custom cocoa blends to ready-to-use mixes.
+              From concept to production, we partner with brands to co-create scalable ingredient solutions, from custom cocoa blends to ready-to-use mixes.
             </p>
             <a
               href="#discuss"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all duration-500"
+              className="btn-primary !px-8 !py-4"
             >
               Discuss a project <ArrowRight size={14} />
             </a>
@@ -130,7 +130,7 @@ export const Partnerships = () => {
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">What We Offer</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for brands.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
-              Four pillars of co-creation, supported by our application labs and R&D specialists.
+              Four pillars of co-creation, backed by hands-on R&D and application support.
             </p>
           </header>
 
@@ -189,7 +189,7 @@ export const Partnerships = () => {
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Our Process</p>
             <h2 className="text-4xl md:text-6xl mb-6">Brief → Scale in five.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
-              A repeatable, transparent path — typically 3-6 months from first conversation to commercial launch.
+              A repeatable, transparent path, typically 3-6 months from first conversation to commercial launch.
             </p>
           </header>
 
@@ -245,7 +245,7 @@ export const Partnerships = () => {
                 <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Discuss a Project</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you're building.</h2>
                 <p className="text-lg text-brand-paper/70 font-serif italic">
-                  Volume, application, timing — the more context, the faster we can match you to the right specialist.
+                  Volume, application, timing, the more context, the faster we can match you to the right specialist.
                 </p>
               </header>
 
@@ -265,7 +265,7 @@ export const Partnerships = () => {
                         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                         placeholder={placeholder}
                         required
-                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30"
+                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30"
                       />
                     </div>
                   ))}
@@ -277,7 +277,7 @@ export const Partnerships = () => {
                     value={form.application}
                     onChange={(e) => setForm({ ...form, application: e.target.value })}
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic appearance-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg appearance-none"
                   >
                     <option value="" className="bg-brand-ink">Select…</option>
                     <option className="bg-brand-ink">Confectionery / Chocolate</option>
@@ -296,7 +296,7 @@ export const Partnerships = () => {
                     rows={5}
                     placeholder="Tell us what you're building, target launch date, sensory profile, anything else relevant…"
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30 resize-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30 resize-none"
                   />
                 </div>
 
@@ -308,9 +308,9 @@ export const Partnerships = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-5 bg-brand-primary text-brand-paper text-[11px] uppercase tracking-widest font-bold flex items-center justify-center gap-3 hover:bg-brand-paper hover:text-brand-ink transition-all duration-500 disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-white text-brand-deep font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Sending…' : <>Submit Brief <Send size={14} /></>}
+                  {submitting ? 'Sending…' : <>Submit brief <Send size={14} /></>}
                 </button>
               </form>
             </>
