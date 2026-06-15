@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet } from 'lucide-react';
+import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, RotateCcw } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { readPincode } from '../components/PincodePopup';
+import { shippingFor, freeShippingRemaining } from '../lib/shipping';
+import { useStoreConfig } from '../lib/storeConfig';
 
-const FREE_SHIPPING_THRESHOLD_PAISE = 250000; // ₹2,500
-const SHIPPING_PAISE = 9900;                  // ₹99
 const DRAFT_KEY = 'coco36.checkout-draft';
 
 declare global {
@@ -24,6 +24,7 @@ export const Checkout = () => {
   const { items, clear } = useCart();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const cfg = useStoreConfig();
 
   // Detect legacy items (static-catalogue sizeIds aren't valid variant UUIDs).
   // We DO NOT auto-remove them — earlier we did and it caused phantom
@@ -96,15 +97,26 @@ export const Checkout = () => {
   // Paise end-to-end — Supabase, cart, checkout, payment gateway all agree.
   const totals = useMemo(() => {
     const subtotal_paise = items.reduce((sum, it) => sum + it.unitPriceInPaise * it.quantity, 0);
-    const shipping_paise = subtotal_paise >= FREE_SHIPPING_THRESHOLD_PAISE
-      ? 0
-      : (items.length > 0 ? SHIPPING_PAISE : 0);
+    const shipping_paise = shippingFor(subtotal_paise, cfg);
+    const cod_paise      = form.paymentMethod === 'cod' ? cfg.codSurchargePaise : 0;
     return {
       subtotal_paise,
       shipping_paise,
-      total_paise: subtotal_paise + shipping_paise,
+      cod_paise,
+      total_paise: subtotal_paise + shipping_paise + cod_paise,
     };
-  }, [items]);
+  }, [items, form.paymentMethod, cfg]);
+
+  // Pincode → auto-fill city/state (cuts two fields → less decision fatigue).
+  const lookupPincode = async (pin: string) => {
+    if (!/^\d{6}$/.test(pin)) return;
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+      const po = data?.[0]?.PostOffice?.[0];
+      if (po) setForm((f) => ({ ...f, city: f.city || po.District, state: f.state || po.State }));
+    } catch { /* offline / API down — user types manually */ }
+  };
 
   // ── Submit handler ──────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,7 +188,7 @@ export const Checkout = () => {
         order_id: razorpayOrderId,
         prefill:  { name: form.name, email: form.email, contact: form.phone },
         notes:    { orderId, orderNumber },
-        theme:    { color: '#E8445A' },
+        theme:    { color: '#15715f' },
         handler:  () => {
           // Razorpay JS handler fires on successful authorisation.
           // The webhook on the server is the real source of truth — but for
@@ -207,11 +219,8 @@ export const Checkout = () => {
     return (
       <div className="min-h-screen pt-32 px-6 flex flex-col items-center justify-center text-center">
         <h1 className="text-4xl mb-6">Your cart is empty.</h1>
-        <Link
-          to="/shop"
-          className="px-10 py-4 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all"
-        >
-          Browse the Shop
+        <Link to="/shop" className="btn-primary !px-8 !py-4">
+          Browse the shop
         </Link>
       </div>
     );
@@ -240,17 +249,11 @@ export const Checkout = () => {
           A confirmation email is on its way. You'll receive tracking details once your shipment leaves origin.
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <Link
-            to="/shop"
-            className="px-10 py-4 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all"
-          >
-            Continue Shopping
+          <Link to="/shop" className="btn-primary !px-8 !py-4">
+            Continue shopping
           </Link>
-          <button
-            onClick={() => navigate('/')}
-            className="px-10 py-4 border border-brand-ink/20 text-[11px] uppercase tracking-widest font-bold hover:border-brand-ink transition-all"
-          >
-            Back to Home
+          <button onClick={() => navigate('/')} className="btn-ghost !px-8 !py-4">
+            Back to home
           </button>
         </div>
       </div>
@@ -269,9 +272,23 @@ export const Checkout = () => {
           Continue Shopping
         </Link>
 
-        <header className="mb-12 border-b border-brand-ink/10 pb-8">
-          <span className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-3 block">Secure Checkout</span>
-          <h1 className="text-5xl md:text-6xl">Place Your Order.</h1>
+        <header className="mb-8 border-b border-brand-line pb-8">
+          <span className="eyebrow text-brand-primary mb-3 block">Secure Checkout</span>
+          <h1 className="text-5xl md:text-6xl">Place your order.</h1>
+          {/* Endowed progress — the cart step is already done, so this feels almost finished */}
+          <div className="flex items-center gap-3 mt-6 max-w-md">
+            {['Cart', 'Details', 'Payment'].map((s, i) => (
+              <React.Fragment key={s}>
+                <div className="flex items-center gap-2">
+                  <span className={`size-6 rounded-full flex items-center justify-center text-[11px] font-bold ${i === 0 ? 'bg-brand-primary text-white' : i === 1 ? 'bg-brand-deep text-white' : 'bg-brand-band text-brand-muted'}`}>
+                    {i === 0 ? <Check size={12} strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={`text-[12px] font-medium ${i < 2 ? 'text-brand-deep' : 'text-brand-muted'}`}>{s}</span>
+                </div>
+                {i < 2 && <div className={`flex-1 h-px ${i === 0 ? 'bg-brand-deep' : 'bg-brand-line'}`} />}
+              </React.Fragment>
+            ))}
+          </div>
         </header>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -279,30 +296,33 @@ export const Checkout = () => {
           <div className="lg:col-span-7 space-y-12">
             {/* Contact */}
             <section>
-              <h2 className="text-2xl mb-6 flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand-ink text-brand-paper text-xs flex items-center justify-center font-sans not-italic">1</span>
+              <h2 className="text-2xl mb-2 flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-sans not-italic">1</span>
                 Contact
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required col={2} />
-                <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required />
-                <Field label="Phone" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required placeholder="+91 …" />
+              {!user && <p className="text-sm text-brand-muted mb-5 ml-10">Checking out as guest — no account needed.</p>}
+              <div className="grid grid-cols-1 gap-5 mt-4">
+                <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="name" />
+                <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required autoComplete="email" />
+                <Field label="Phone" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required placeholder="+91 …" autoComplete="tel" />
               </div>
             </section>
 
             {/* Shipping */}
             <section>
               <h2 className="text-2xl mb-6 flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand-ink text-brand-paper text-xs flex items-center justify-center font-sans not-italic">2</span>
+                <span className="w-7 h-7 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-sans not-italic">2</span>
                 <Truck size={18} strokeWidth={1.5} className="text-brand-muted" />
                 Shipping Address
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Field label="Address Line 1" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} required col={2} />
-                <Field label="Address Line 2 (optional)" value={form.line2} onChange={(v) => setForm({ ...form, line2: v })} col={2} />
-                <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
-                <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required />
-                <Field label="Pincode" value={form.pincode} onChange={(v) => setForm({ ...form, pincode: v })} required col={2} />
+              <div className="grid grid-cols-1 gap-5">
+                <Field label="Pincode" value={form.pincode} onChange={(v) => { setForm({ ...form, pincode: v }); lookupPincode(v); }} required autoComplete="postal-code" placeholder="6-digit PIN — city & state auto-fill" />
+                <Field label="Address Line 1" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} required autoComplete="address-line1" />
+                <Field label="Address Line 2 (optional)" value={form.line2} onChange={(v) => setForm({ ...form, line2: v })} autoComplete="address-line2" />
+                <div className="grid grid-cols-2 gap-5">
+                  <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} required autoComplete="address-level2" />
+                  <Field label="State" value={form.state} onChange={(v) => setForm({ ...form, state: v })} required autoComplete="address-level1" />
+                </div>
               </div>
             </section>
 
@@ -344,7 +364,7 @@ export const Checkout = () => {
                 {items.map((item) => (
                   <li key={`${item.productId}-${item.sizeId}`} className="flex gap-4">
                     <div className="relative w-16 h-20 shrink-0 bg-brand-paper overflow-hidden">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover grayscale" />
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-brand-ink text-brand-paper text-[10px] font-bold flex items-center justify-center">
                         {item.quantity}
                       </span>
@@ -360,7 +380,7 @@ export const Checkout = () => {
                 ))}
               </ul>
 
-              <div className="space-y-3 pt-6 border-t border-brand-ink/10 text-sm">
+              <div className="space-y-3 pt-6 border-t border-brand-line text-sm">
                 <div className="flex justify-between">
                   <span className="text-brand-muted">Subtotal</span>
                   <span className="font-semibold">{formatMoney(totals.subtotal_paise)}</span>
@@ -369,19 +389,25 @@ export const Checkout = () => {
                   <span className="text-brand-muted">Shipping</span>
                   <span className="font-semibold">
                     {totals.shipping_paise === 0
-                      ? <span className="text-brand-ink text-[10px] uppercase tracking-widest font-bold">Free</span>
+                      ? <span className="text-brand-primary text-[10px] uppercase tracking-widest font-bold">Free</span>
                       : formatMoney(totals.shipping_paise)}
                   </span>
                 </div>
-                <div className="flex justify-between pt-3 border-t border-brand-ink/10 items-baseline">
-                  <span className="text-[11px] uppercase tracking-widest font-bold">Total</span>
-                  <span className="text-3xl font-bold text-brand-ink">{formatMoney(totals.total_paise)}</span>
+                {totals.cod_paise > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-brand-muted">COD handling</span>
+                    <span className="font-semibold">{formatMoney(totals.cod_paise)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-3 border-t border-brand-line items-baseline">
+                  <span className="text-[11px] uppercase tracking-widest font-bold">Total · incl. taxes</span>
+                  <span className="font-serif text-3xl text-brand-deep">{formatMoney(totals.total_paise)}</span>
                 </div>
               </div>
 
-              {totals.subtotal_paise < FREE_SHIPPING_THRESHOLD_PAISE && (
-                <p className="text-[10px] uppercase tracking-widest text-brand-muted text-center bg-brand-paper py-3 border border-brand-ink/10">
-                  Add <span className="text-brand-ink font-bold">{formatMoney(FREE_SHIPPING_THRESHOLD_PAISE - totals.subtotal_paise)}</span> more for free shipping
+              {freeShippingRemaining(totals.subtotal_paise, cfg) > 0 && (
+                <p className="text-[12px] text-brand-muted text-center bg-brand-paper py-3 border border-brand-line rounded">
+                  Add <span className="text-brand-deep font-bold">{formatMoney(freeShippingRemaining(totals.subtotal_paise, cfg))}</span> more for free shipping
                 </p>
               )}
 
@@ -401,14 +427,21 @@ export const Checkout = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="btn-primary w-full !py-5 !text-[11px] disabled:opacity-50"
+                className="btn-primary w-full !py-5 disabled:opacity-50"
               >
-                <Lock size={13} /> {submitting ? 'Processing…' : `Place Order — ${formatMoney(totals.total_paise)}`}
+                <Lock size={14} /> {submitting ? 'Processing…' : `Place order — ${formatMoney(totals.total_paise)}`}
               </button>
 
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted text-center font-bold opacity-60">
+              {/* Trust cluster — reduces amygdala-driven suspicion at the decision point */}
+              <div className="flex items-center justify-center gap-4 text-[10px] uppercase tracking-wide text-brand-muted font-medium">
+                <span className="inline-flex items-center gap-1"><Lock size={11} /> Secure</span>
+                <span className="inline-flex items-center gap-1"><RotateCcw size={11} /> 7-day returns</span>
+                <span className="inline-flex items-center gap-1"><ShieldCheck size={11} /> FSSAI licensed</span>
+              </div>
+
+              <p className="text-[11px] text-brand-muted text-center opacity-70">
                 By placing this order you agree to our{' '}
-                <Link to="/terms" className="underline hover:text-brand-ink">terms</Link>.
+                <Link to="/terms" className="underline hover:text-brand-deep">terms</Link>.
               </p>
             </div>
           </aside>
@@ -429,11 +462,11 @@ interface FieldProps {
   type?: string;
   required?: boolean;
   placeholder?: string;
-  col?: 1 | 2;
+  autoComplete?: string;
 }
-function Field({ label, value, onChange, type = 'text', required, placeholder, col = 1 }: FieldProps) {
+function Field({ label, value, onChange, type = 'text', required, placeholder, autoComplete }: FieldProps) {
   return (
-    <div className={col === 2 ? 'sm:col-span-2 space-y-1' : 'space-y-1'}>
+    <div className="space-y-1">
       <label className="text-[10px] uppercase tracking-widest font-bold opacity-50 block">{label}</label>
       <input
         type={type}
@@ -441,7 +474,8 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, c
         onChange={(e) => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        className="w-full bg-transparent border-b border-brand-ink/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic"
+        autoComplete={autoComplete}
+        className="w-full bg-transparent border-b border-brand-line py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-muted/50 placeholder:not-italic"
       />
     </div>
   );

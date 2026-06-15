@@ -5,7 +5,7 @@ import type React from 'react';
  * Act compliance — replace with counsel-reviewed version before scaling.
  */
 export const Privacy = () => {
-  const lastUpdated = '24 May 2026';
+  const lastUpdated = '15 June 2026';
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-3xl mx-auto text-brand-ink">
       <h1 className="text-4xl font-bold mb-3">Privacy notice</h1>
@@ -13,7 +13,7 @@ export const Privacy = () => {
 
       <Section title="Who we are">
         <p>
-          COCO36 is operated by Natural Origin Intl. We sell origin-traceable
+          COCO36 is operated by COCO36 Foods Pvt Ltd. We sell origin-traceable
           ingredients direct to home kitchens and craft makers from{' '}
           <a href="https://coco36.com" className="text-brand-primary hover:underline">coco36.com</a>.
         </p>
@@ -74,6 +74,27 @@ export const Privacy = () => {
           via your browser settings.
         </p>
       </Section>
+
+      <Section title="Grievance officer (DPDP Act, 2023)">
+        <p>
+          For any question, complaint, or request about your personal data,
+          contact our Grievance Officer at{' '}
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">pendyalarohan27@gmail.com</a>.
+          We acknowledge within 48 hours and aim to resolve within 30 days.
+        </p>
+      </Section>
+
+      <Section title="Children">
+        <p>
+          COCO36 is intended for buyers aged 18 and over. We do not knowingly
+          collect personal data from children.
+        </p>
+      </Section>
+
+      <p className="text-xs text-brand-muted/70 mt-10 pt-6 border-t border-brand-line">
+        This notice is a plain-language summary for our soft launch and is not legal advice;
+        it will be replaced with a counsel-reviewed version as we scale.
+      </p>
     </div>
   );
 };

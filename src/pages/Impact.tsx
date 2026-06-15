@@ -200,14 +200,14 @@ export const Impact = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="#"
-              className="px-10 py-5 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold flex items-center justify-center gap-3 hover:bg-brand-primary transition-all duration-500 group"
+              className="btn-primary !px-8 !py-4 group"
             >
               Download PDF (4.2 MB)
               <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
             <Link
               to="/36-steps"
-              className="px-10 py-5 border border-brand-ink/20 text-[11px] uppercase tracking-widest font-bold hover:border-brand-ink transition-all duration-500 flex items-center justify-center gap-2"
+              className="btn-ghost !px-8 !py-4"
             >
               See the 36-step method <ArrowRight size={14} />
             </Link>

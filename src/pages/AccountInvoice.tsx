@@ -88,7 +88,7 @@ export const AccountInvoice = () => {
       setSettings({
         storeName: pickStr(map.get('store.name'), 'COCO36'),
         seller: {
-          legalName:    pickStr(map.get('seller.legal_name'),    'Natural Origin International'),
+          legalName:    pickStr(map.get('seller.legal_name'),    'COCO36 Foods Pvt Ltd'),
           gstin:        pickStr(map.get('seller.gstin'),         ''),
           pan:          pickStr(map.get('seller.pan'),           ''),
           addressLine1: pickStr(map.get('seller.address_line1'), ''),

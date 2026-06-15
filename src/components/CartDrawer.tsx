@@ -1,15 +1,18 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle } from 'lucide-react';
+import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
+import { shippingFor, freeShippingRemaining, freeShippingProgress } from '../lib/shipping';
+import { useStoreConfig } from '../lib/storeConfig';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
 
 export const CartDrawer: React.FC = () => {
   const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, itemCount } = useCart();
+  const cfg = useStoreConfig();
   const legacyCount = items.filter(it => isLegacy(it.sizeId)).length;
   const removeAllLegacy = () => {
     items.filter(it => isLegacy(it.sizeId)).forEach(it => removeItem(it.productId, it.sizeId));
@@ -44,7 +47,7 @@ export const CartDrawer: React.FC = () => {
                   <ShoppingBag size={18} strokeWidth={2} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-brand-indigo">Your cart</h2>
+                  <h2 className="font-serif text-xl text-brand-deep">Your cart</h2>
                   <p className="text-xs text-brand-muted">
                     {itemCount} {itemCount === 1 ? 'item' : 'items'}
                   </p>
@@ -151,26 +154,56 @@ export const CartDrawer: React.FC = () => {
             </div>
 
             {/* Footer / Checkout */}
-            {items.length > 0 && (
-              <footer className="border-t border-brand-surface px-6 py-5 space-y-4 bg-white">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-sm text-brand-muted font-medium">Subtotal</span>
-                  <span className="text-2xl font-bold text-brand-indigo">{formatMoney(subtotal)}</span>
-                </div>
-                <p className="text-xs text-brand-muted">
-                  Shipping and taxes calculated at checkout.
-                </p>
-                <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
-                  Checkout <ArrowRight size={14} />
-                </Link>
-                <button
-                  onClick={closeCart}
-                  className="w-full text-center text-xs font-semibold text-brand-muted hover:text-brand-primary transition-colors py-1"
-                >
-                  Continue shopping
-                </button>
-              </footer>
-            )}
+            {items.length > 0 && (() => {
+              const shipping = shippingFor(subtotal, cfg);
+              const remaining = freeShippingRemaining(subtotal, cfg);
+              const pct = freeShippingProgress(subtotal, cfg);
+              return (
+                <footer className="border-t border-brand-line px-6 py-5 space-y-4 bg-white">
+                  {/* Endowed progress toward free shipping */}
+                  <div>
+                    {remaining > 0 ? (
+                      <p className="text-[13px] text-brand-deep mb-2">
+                        Add <span className="font-semibold">{formatMoney(remaining)}</span> more for <span className="font-semibold">free shipping</span>
+                      </p>
+                    ) : (
+                      <p className="text-[13px] text-brand-primary font-medium mb-2 flex items-center gap-1.5">
+                        <Check size={14} strokeWidth={2.5} /> Free shipping unlocked
+                      </p>
+                    )}
+                    <div className="h-1.5 rounded-full bg-brand-band overflow-hidden">
+                      <div className="h-full rounded-full bg-brand-primary transition-all duration-300" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Radical cost transparency — no surprises at checkout */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-brand-muted">Subtotal</span>
+                      <span className="font-medium text-brand-deep">{formatMoney(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-brand-muted">Shipping</span>
+                      <span className="font-medium text-brand-deep">{shipping === 0 ? 'Free' : formatMoney(shipping)}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline pt-2 border-t border-brand-line">
+                      <span className="text-sm font-medium text-brand-deep">Total <span className="text-brand-muted font-normal">· incl. taxes</span></span>
+                      <span className="font-serif text-2xl text-brand-deep">{formatMoney(subtotal + shipping)}</span>
+                    </div>
+                  </div>
+
+                  <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
+                    Checkout <ArrowRight size={14} />
+                  </Link>
+                  <button
+                    onClick={closeCart}
+                    className="w-full text-center text-xs font-semibold text-brand-muted hover:text-brand-primary transition-colors py-1"
+                  >
+                    Continue shopping
+                  </button>
+                </footer>
+              );
+            })()}
           </motion.aside>
         </>
       )}

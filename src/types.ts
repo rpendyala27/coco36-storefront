@@ -27,11 +27,17 @@ export type ProductCategory =
   | 'Spices & Pantry'
   | 'Mixes & Kits';
 
+/** A product_tag resolved to its label. `slug` may be namespaced, e.g. `cert:coa`. */
+export interface ProductTag {
+  slug: string;
+  label: string;
+}
+
 export interface Product {
   id: string;
   sku: string;
   name: string;
-  brand: string;          // e.g. "COCO36 House", "Anamalai Co-op"
+  brand: string;          // maker/estate label — Supplier → Brand → Product
   origin: string;
   tag: string;
   image: string;
@@ -39,6 +45,9 @@ export interface Product {
   category: ProductCategory;
   description: string;
   badges?: ProductBadge[];
+  /** All product_tags (designation, dietary, and `cert:*` certification tags).
+   *  Storefront renders cert/dietary tags as placeholders — no fabricated numbers. */
+  tags?: ProductTag[];
   sizes: ProductSize[];
   rating?: number;
   reviewCount?: number;

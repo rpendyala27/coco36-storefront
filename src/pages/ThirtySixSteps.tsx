@@ -187,13 +187,13 @@ export const ThirtySixSteps = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/shop"
-              className="px-10 py-5 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all duration-500 flex items-center justify-center gap-3"
+              className="btn-primary !px-8 !py-4"
             >
               Shop ingredients <ArrowRight size={14} />
             </Link>
             <Link
               to="/impact"
-              className="px-10 py-5 border border-brand-ink/20 text-[11px] uppercase tracking-widest font-bold hover:border-brand-ink transition-all duration-500"
+              className="btn-ghost !px-8 !py-4"
             >
               Read Impact Report
             </Link>

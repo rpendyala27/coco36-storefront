@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 570" role="img" aria-label="COCO36 logomark">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8b78a"></stop>
+      <stop offset="0.5" stop-color="#b8915f"></stop>
+      <stop offset="1" stop-color="#8a6840"></stop>
+    </linearGradient>
+    <radialGradient id="bean" cx="0.5" cy="0.4" r="0.62">
+      <stop offset="0" stop-color="#4a2f1c"></stop>
+      <stop offset="0.45" stop-color="#2a1a0f"></stop>
+      <stop offset="1" stop-color="#0b0805"></stop>
+    </radialGradient>
+    <clipPath id="lclip"><circle cx="120" cy="220" r="200"></circle></clipPath>
+  </defs>
+
+  <g fill="none" stroke="#8a9ab4" stroke-width="1" opacity="0.14">
+    <circle cx="120" cy="220" r="200"></circle>
+    <circle cx="320" cy="220" r="200"></circle>
+  </g>
+
+  <g clip-path="url(#lclip)"><circle cx="320" cy="220" r="200" fill="url(#bean)"></circle></g>
+
+  <g fill="none" stroke="url(#gold)" stroke-width="1" opacity="0.65">
+    <path d="M220 52.6 A195 195 0 0 1 220 387.4"></path>
+    <path d="M220 52.6 A195 195 0 0 0 220 387.4"></path>
+  </g>
+
+  <g fill="none" stroke="url(#gold)" stroke-width="4.2" stroke-linecap="round" opacity="0.82">
+    <path d="M137.4 20.8 A200 200 0 0 1 137.4 419.2"></path>
+    <path d="M302.6 20.8 A200 200 0 0 0 302.6 419.2"></path>
+  </g>
+
+  <text x="220" y="490" text-anchor="middle" fill="#f4ede0">
+    <tspan font-family="DM Sans, Helvetica Neue, Arial, sans-serif" font-weight="600" font-size="44" letter-spacing="4">COCO</tspan><tspan font-family="Fraunces, Georgia, serif" font-style="italic" font-weight="300" font-size="54" font-variation-settings="'opsz' 144, 'SOFT' 50">36</tspan>
+  </text>
+
+  <text x="196" y="535" text-anchor="end" font-family="DM Sans, sans-serif" font-weight="500" font-size="13" letter-spacing="3.5" fill="#6f7c8c">ORGANIC CROP</text>
+  <g stroke="#b8915f" stroke-width="1.2" stroke-linecap="round">
+    <line x1="220" y1="524" x2="220" y2="536"></line>
+    <line x1="214" y1="530" x2="226" y2="530"></line>
+    <circle cx="220" cy="530" r="3.5" fill="none" stroke="#b8915f" stroke-width="0.8"></circle>
+  </g>
+  <text x="244" y="535" text-anchor="start" font-family="DM Sans, sans-serif" font-weight="500" font-size="13" letter-spacing="3.5" fill="#6f7c8c">ORIGINAL CRAFT</text>
+</svg>

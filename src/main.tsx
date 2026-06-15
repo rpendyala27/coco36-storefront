@@ -25,9 +25,9 @@ function GlobalErrorFallback() {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', padding: '2rem',
-      fontFamily: 'system-ui, sans-serif', textAlign: 'center', background: '#FAF8F4',
+      fontFamily: 'system-ui, sans-serif', textAlign: 'center', background: '#ffffff',
     }}>
-      <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: '#1A0A2E' }}>
+      <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', color: '#0a3c33' }}>
         Something went wrong.
       </h1>
       <p style={{ color: '#666', marginBottom: '2rem', maxWidth: 480 }}>
@@ -36,7 +36,7 @@ function GlobalErrorFallback() {
       <a
         href="/"
         style={{
-          padding: '0.875rem 2rem', background: '#E8445A', color: 'white',
+          padding: '0.875rem 2rem', background: '#0c6e6b', color: 'white',
           textDecoration: 'none', fontSize: '0.75rem', fontWeight: 'bold',
           letterSpacing: '0.15em', textTransform: 'uppercase',
         }}

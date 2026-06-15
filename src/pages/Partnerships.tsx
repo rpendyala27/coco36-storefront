@@ -101,7 +101,7 @@ export const Partnerships = () => {
             </p>
             <a
               href="#discuss"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-brand-ink text-brand-paper text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary transition-all duration-500"
+              className="btn-primary !px-8 !py-4"
             >
               Discuss a project <ArrowRight size={14} />
             </a>
@@ -265,7 +265,7 @@ export const Partnerships = () => {
                         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                         placeholder={placeholder}
                         required
-                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30"
+                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30"
                       />
                     </div>
                   ))}
@@ -277,7 +277,7 @@ export const Partnerships = () => {
                     value={form.application}
                     onChange={(e) => setForm({ ...form, application: e.target.value })}
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic appearance-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg appearance-none"
                   >
                     <option value="" className="bg-brand-ink">Select…</option>
                     <option className="bg-brand-ink">Confectionery / Chocolate</option>
@@ -296,7 +296,7 @@ export const Partnerships = () => {
                     rows={5}
                     placeholder="Tell us what you're building, target launch date, sensory profile, anything else relevant…"
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:font-serif placeholder:italic placeholder:text-brand-paper/30 resize-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30 resize-none"
                   />
                 </div>
 
@@ -308,9 +308,9 @@ export const Partnerships = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-5 bg-brand-primary text-brand-paper text-[11px] uppercase tracking-widest font-bold flex items-center justify-center gap-3 hover:bg-brand-paper hover:text-brand-ink transition-all duration-500 disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-white text-brand-deep font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
                 >
-                  {submitting ? 'Sending…' : <>Submit Brief <Send size={14} /></>}
+                  {submitting ? 'Sending…' : <>Submit brief <Send size={14} /></>}
                 </button>
               </form>
             </>

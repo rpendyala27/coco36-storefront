@@ -84,18 +84,15 @@ export const Account = () => {
               Hi, {(profile?.name ?? user.email?.split('@')[0] ?? 'there').split(' ')[0]}.
             </h1>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 px-5 py-3 border border-brand-ink/20 text-[10px] uppercase tracking-widest font-bold hover:bg-brand-ink hover:text-brand-paper transition-all w-fit"
-          >
-            <LogOut size={13} /> Sign Out
+          <button onClick={handleSignOut} className="btn-ghost !px-5 !py-2.5 text-sm w-fit">
+            <LogOut size={14} /> Sign out
           </button>
         </header>
 
         {/* ── Profile card ─────────────────────────────────────────────── */}
         <section>
           <SectionHeader icon={<User size={14} />} title="Profile" />
-          <div className="bg-white border border-brand-ink/10 p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
             <Detail label="Name"  value={profile?.name  ?? '—'} />
             <Detail label="Email" value={profile?.email ?? user.email ?? '—'} />
             <Detail label="Phone" value={profile?.phone ?? '—'} />
@@ -105,7 +102,7 @@ export const Account = () => {
         {/* ── Orders ───────────────────────────────────────────────────── */}
         <section>
           <SectionHeader icon={<Package size={14} />} title="Orders" subtitle={`${orders.length} order${orders.length === 1 ? '' : 's'}`} />
-          <div className="bg-white border border-brand-ink/10">
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden">
             {loading ? (
               <div className="p-10 text-center text-sm text-brand-muted">Loading orders…</div>
             ) : orders.length === 0 ? (
@@ -161,7 +158,7 @@ export const Account = () => {
         {/* ── Addresses (placeholder) ───────────────────────────────────── */}
         <section>
           <SectionHeader icon={<MapPin size={14} />} title="Saved Addresses" />
-          <div className="bg-white border border-brand-ink/10 p-6">
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6">
             <p className="text-sm text-brand-muted">
               Addresses you've shipped to will appear here. Manage from your next checkout.
             </p>
