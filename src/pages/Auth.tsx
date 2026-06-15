@@ -38,6 +38,17 @@ export const AuthPage = () => {
           options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
         if (signUpErr) throw signUpErr;
+
+        // With email-enumeration protection on, Supabase doesn't error on a
+        // duplicate signup — it returns a user with an EMPTY `identities` array
+        // (and no session). Detect that and show a clear "already exists"
+        // message instead of the misleading "check your email to confirm".
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setError('An account with this email already exists — please sign in below.');
+          setIsLogin(true);
+          return;
+        }
+
         if (data.user) {
           try {
             await fetch(`${API_URL}/api/customers/signup`, {
