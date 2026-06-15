@@ -5,7 +5,7 @@ import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, Rotate
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
-import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
+import { API_URL, RAZORPAY_KEY_ID, supabase } from '../lib/supabase';
 import { readPincode } from '../components/PincodePopup';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
@@ -19,6 +19,17 @@ declare global {
 }
 
 type PaymentMethod = 'prepaid' | 'cod';
+
+interface SavedAddress {
+  id: string;
+  name: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  created_at: string;
+}
 
 export const Checkout = () => {
   const { items, clear } = useCart();
@@ -38,6 +49,8 @@ export const Checkout = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
 
   // ── Form state ──────────────────────────────────────────────────────────────
   // Restore from sessionStorage so a refresh/back-button doesn't lose input.
@@ -71,6 +84,58 @@ export const Checkout = () => {
       phone: f.phone || profile?.phone || '',
     }));
   }, [user, profile]);
+
+  // ── Login required ──────────────────────────────────────────────────────────
+  // Checkout is gated so orders attach to the customer profile and the saved
+  // address book works. AuthProvider only renders children once auth resolves,
+  // so `user` is final here — no loading race.
+  useEffect(() => {
+    if (!user) navigate('/auth?redirect=/checkout', { replace: true });
+  }, [user, navigate]);
+
+  // ── Saved address book ───────────────────────────────────────────────────────
+  // RLS returns only this customer's addresses (customer_id = auth.uid()).
+  // Orders save shipping+billing rows every time, so we dedupe by content and
+  // keep the most recent few.
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    (async () => {
+      const { data } = await supabase
+        .from('addresses')
+        .select('id, name, line1, line2, city, state, pincode, created_at')
+        .order('created_at', { ascending: false });
+      if (!active || !data) return;
+      const seen = new Set<string>();
+      const unique: SavedAddress[] = [];
+      for (const a of data as SavedAddress[]) {
+        const key = `${a.line1}|${a.line2 ?? ''}|${a.city}|${a.state}|${a.pincode}`.toLowerCase().trim();
+        if (seen.has(key) || !a.line1) continue;
+        seen.add(key);
+        unique.push(a);
+      }
+      setSavedAddresses(unique.slice(0, 6));
+    })();
+    return () => { active = false; };
+  }, [user]);
+
+  const applyAddress = (a: SavedAddress) => {
+    setSelectedAddressId(a.id);
+    setForm((f) => ({
+      ...f,
+      name:    f.name || a.name,
+      line1:   a.line1,
+      line2:   a.line2 ?? '',
+      city:    a.city,
+      state:   a.state,
+      pincode: a.pincode,
+    }));
+  };
+
+  const useNewAddress = () => {
+    setSelectedAddressId(null);
+    setForm((f) => ({ ...f, line1: '', line2: '', city: '', state: '', pincode: readPincode() ?? '' }));
+  };
 
   // Persist the draft on every change. sessionStorage — not localStorage —
   // so it lives for the tab session but doesn't outlive a browser restart.
@@ -214,6 +279,9 @@ export const Checkout = () => {
     }
   };
 
+  // While redirecting unauthenticated users to /auth, render nothing.
+  if (!user) return null;
+
   // ── Empty cart guard ────────────────────────────────────────────────────────
   if (items.length === 0 && step !== 'confirmed') {
     return (
@@ -300,10 +368,12 @@ export const Checkout = () => {
                 <span className="w-7 h-7 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-sans not-italic">1</span>
                 Contact
               </h2>
-              {!user && <p className="text-sm text-brand-muted mb-5 ml-10">Checking out as guest — no account needed.</p>}
+              <p className="text-sm text-brand-muted mb-5 ml-10">
+                Signed in as <span className="font-medium text-brand-deep">{form.email}</span>.
+              </p>
               <div className="grid grid-cols-1 gap-5 mt-4">
                 <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="name" />
-                <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required autoComplete="email" />
+                <Field label="Email" type="email" value={form.email} onChange={() => {}} required readOnly autoComplete="email" />
                 <Field label="Phone" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required placeholder="+91 …" autoComplete="tel" />
               </div>
             </section>
@@ -315,6 +385,33 @@ export const Checkout = () => {
                 <Truck size={18} strokeWidth={1.5} className="text-brand-muted" />
                 Shipping Address
               </h2>
+
+              {savedAddresses.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-3">Use a saved address</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {savedAddresses.map((a) => (
+                      <button
+                        type="button"
+                        key={a.id}
+                        onClick={() => applyAddress(a)}
+                        className={`text-left border p-3.5 rounded-lg transition-colors ${selectedAddressId === a.id ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
+                      >
+                        <p className="text-sm text-brand-deep leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+                        <p className="text-xs text-brand-muted mt-0.5">{a.city}, {a.state} {a.pincode}</p>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={useNewAddress}
+                      className={`text-left border border-dashed p-3.5 rounded-lg text-sm font-medium transition-colors ${selectedAddressId === null ? 'border-brand-deep text-brand-deep' : 'border-brand-line text-brand-muted hover:border-brand-deep hover:text-brand-deep'}`}
+                    >
+                      + Use a new address
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-5">
                 <Field label="Pincode" value={form.pincode} onChange={(v) => { setForm({ ...form, pincode: v }); lookupPincode(v); }} required autoComplete="postal-code" placeholder="6-digit PIN — city & state auto-fill" />
                 <Field label="Address Line 1" value={form.line1} onChange={(v) => setForm({ ...form, line1: v })} required autoComplete="address-line1" />
@@ -463,8 +560,9 @@ interface FieldProps {
   required?: boolean;
   placeholder?: string;
   autoComplete?: string;
+  readOnly?: boolean;
 }
-function Field({ label, value, onChange, type = 'text', required, placeholder, autoComplete }: FieldProps) {
+function Field({ label, value, onChange, type = 'text', required, placeholder, autoComplete, readOnly }: FieldProps) {
   return (
     <div className="space-y-1">
       <label className="text-[10px] uppercase tracking-widest font-bold opacity-50 block">{label}</label>
@@ -475,7 +573,8 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, a
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full bg-transparent border-b border-brand-line py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-muted/50 placeholder:not-italic"
+        readOnly={readOnly}
+        className={`w-full bg-transparent border-b border-brand-line py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-muted/50 placeholder:not-italic ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
       />
     </div>
   );

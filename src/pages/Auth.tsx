@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase, API_URL } from '../lib/supabase';
 
@@ -19,6 +19,10 @@ export const AuthPage = () => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Internal-only redirect target (prevents open-redirect via the query string).
+  const redirectParam = params.get('redirect');
+  const redirectTo = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/';
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +31,7 @@ export const AuthPage = () => {
       if (isLogin) {
         const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
         if (signInErr) throw signInErr;
-        navigate('/');
+        navigate(redirectTo);
       } else {
         const { data, error: signUpErr } = await supabase.auth.signUp({
           email, password,
@@ -43,7 +47,7 @@ export const AuthPage = () => {
             });
           } catch { /* non-fatal */ }
         }
-        if (data.session) navigate('/');
+        if (data.session) navigate(redirectTo);
         else setMessage('Check your email to confirm your account.');
       }
     } catch (err: any) {

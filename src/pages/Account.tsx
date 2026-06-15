@@ -17,6 +17,15 @@ interface OrderRow {
   item_count?:  number;
 }
 
+interface AddrRow {
+  id:      string;
+  line1:   string;
+  line2:   string | null;
+  city:    string;
+  state:   string;
+  pincode: string;
+}
+
 /**
  * /account — customer landing page.
  *
@@ -31,6 +40,7 @@ export const Account = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [addresses, setAddresses] = useState<AddrRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +69,25 @@ export const Account = () => {
           })),
         );
       }
+
+      // Saved addresses — RLS returns only this customer's rows. Orders write a
+      // shipping + billing row each time, so dedupe by content.
+      const { data: addrData } = await supabase
+        .from('addresses')
+        .select('id, line1, line2, city, state, pincode, created_at')
+        .order('created_at', { ascending: false });
+      if (addrData) {
+        const seen = new Set<string>();
+        const unique: AddrRow[] = [];
+        for (const a of addrData as any[]) {
+          const key = `${a.line1}|${a.line2 ?? ''}|${a.city}|${a.state}|${a.pincode}`.toLowerCase().trim();
+          if (seen.has(key) || !a.line1) continue;
+          seen.add(key);
+          unique.push(a);
+        }
+        setAddresses(unique.slice(0, 8));
+      }
+
       setLoading(false);
     })();
   }, [user, navigate]);
@@ -155,13 +184,28 @@ export const Account = () => {
           </div>
         </section>
 
-        {/* ── Addresses (placeholder) ───────────────────────────────────── */}
+        {/* ── Addresses ─────────────────────────────────────────────────── */}
         <section>
-          <SectionHeader icon={<MapPin size={14} />} title="Saved Addresses" />
+          <SectionHeader
+            icon={<MapPin size={14} />}
+            title="Saved Addresses"
+            subtitle={addresses.length ? `${addresses.length} saved` : undefined}
+          />
           <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6">
-            <p className="text-sm text-brand-muted">
-              Addresses you've shipped to will appear here. Manage from your next checkout.
-            </p>
+            {addresses.length === 0 ? (
+              <p className="text-sm text-brand-muted">
+                Addresses you've shipped to will appear here, ready to reuse at your next checkout.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {addresses.map((a) => (
+                  <li key={a.id} className="border border-brand-line rounded-lg p-4">
+                    <p className="text-sm text-brand-ink leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+                    <p className="text-xs text-brand-muted mt-1">{a.city}, {a.state} {a.pincode}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       </div>

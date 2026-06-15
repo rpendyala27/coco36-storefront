@@ -55,24 +55,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (active) setProfile((data as CustomerProfile | null) ?? null);
     }
 
-    // Initial session
+    // Safety net: never gate the whole app on auth for more than 3s. If
+    // getSession() stalls (e.g. a slow token refresh on a returning session),
+    // we still render the shell instead of showing a blank page.
+    const safety = setTimeout(() => { if (active) setLoading(false); }, 3000);
+
+    // Initial session — render as soon as we know the auth state; the profile
+    // row loads in the background (every page tolerates a null profile).
     void (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!active) return;
       setUser(session?.user ?? null);
-      await loadProfile(session?.user ?? null);
-      if (active) setLoading(false);
+      setLoading(false);
+      clearTimeout(safety);
+      void loadProfile(session?.user ?? null);
     })();
 
-    // Future changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Future changes — profile loads in the background, never blocks render.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       setUser(session?.user ?? null);
-      await loadProfile(session?.user ?? null);
+      void loadProfile(session?.user ?? null);
     });
 
     return () => {
       active = false;
+      clearTimeout(safety);
       subscription.unsubscribe();
     };
   }, []);
