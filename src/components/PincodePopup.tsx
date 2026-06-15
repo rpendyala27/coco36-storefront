@@ -79,10 +79,10 @@ export const PincodePopup = () => {
           if (code && validPincode(code)) {
             save(code);
           } else {
-            setError('Could not detect your pincode — please enter it manually.');
+            setError('Could not detect your pincode, please enter it manually.');
           }
         } catch {
-          setError('Lookup failed — please enter your pincode manually.');
+          setError('Lookup failed, please enter your pincode manually.');
         } finally {
           setLocating(false);
         }
@@ -90,8 +90,8 @@ export const PincodePopup = () => {
       err => {
         setLocating(false);
         setError(err.code === err.PERMISSION_DENIED
-          ? 'Location permission denied — please enter your pincode.'
-          : 'Could not get your location — please enter your pincode.');
+          ? 'Location permission denied, please enter your pincode.'
+          : 'Could not get your location, please enter your pincode.');
       },
       { enableHighAccuracy: false, maximumAge: 600_000, timeout: 8_000 },
     );

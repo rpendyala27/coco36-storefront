@@ -28,7 +28,7 @@ const CRAFTS: { key: string; label: string; category: ProductCategory; Icon: typ
   { key: 'cafes',        label: 'Cafés',        category: 'Sugars & Sweeteners', Icon: Coffee },
   { key: 'cooks',        label: 'Home cooks',   category: 'Spices & Pantry',     Icon: CookingPot },
 ];
-const ROTATING = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'makers'];
+const ROTATING = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cooks'];
 
 // Brand trust marks (site-wide positioning claims, not per-product numbers).
 const TRUST_MARKS: { label: string; Icon: typeof Candy }[] = [
@@ -111,7 +111,7 @@ export const Shop = () => {
     return [...m.entries()].sort((a, b) => b[1].count - a[1].count);
   }, [inCategory]);
 
-  // Live sourcing ticker — derived from the real catalogue.
+  // Live sourcing ticker, derived from the real catalogue.
   const ticker = useMemo(
     () => PRODUCTS.slice(0, 14).map((p, i) => ({
       text: `${p.name} · ${countryOf(p.origin)}`,
@@ -173,11 +173,11 @@ export const Shop = () => {
               Find your secret <em className="display-italic text-brand-primary">ingredient</em>
             </h1>
             <p className="mt-5 text-brand-muted text-sm md:text-base">
-              Sourced direct from origin — built for{' '}
-              <span className="text-brand-deep font-medium">{ROTATING[wordIdx]}</span>.
+              Sourced direct from origin, built for{' '}
+              <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-deep font-medium">{ROTATING[wordIdx]}</span>
             </p>
 
-            {/* Prominent search — the primary tool for intent-driven buyers (law of least effort) */}
+            {/* Prominent search, the primary tool for intent-driven buyers (law of least effort) */}
             <div className="mt-7 flex items-center gap-2 bg-white border border-brand-line rounded-full pl-5 pr-2 py-2 max-w-lg shadow-[0_2px_10px_rgba(10,40,33,0.06)] focus-within:border-brand-primary transition-colors">
               <Search size={18} className="text-brand-primary shrink-0" />
               <input
@@ -390,11 +390,11 @@ export const Shop = () => {
         </div>
       </section>
 
-      {/* Trust strip — certifications, not numbers */}
+      {/* Trust strip, certifications, not numbers */}
       <section className="border-t border-brand-line px-6 md:px-12 lg:px-20 py-14 bg-brand-surface">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
           {[
-            { title: 'Direct from origin', desc: 'Sourced from named makers and estates — never through anonymous brokers.' },
+            { title: 'Direct from origin', desc: 'Sourced from named makers and estates, never through anonymous brokers.' },
             { title: 'Certified & traceable', desc: 'Certifications shown per product, set by our sourcing team.' },
             { title: `Free shipping over ${freeShippingLabel(cfg)}`, desc: `Across India, with a ${cfg.returnWindowDays}-day quality guarantee on every order.` },
           ].map((it) => (

@@ -2,7 +2,7 @@ import type React from 'react';
 
 /**
  * Soft-launch privacy notice. Plain-language summary written for India DPDP
- * Act compliance — replace with counsel-reviewed version before scaling.
+ * Act compliance, replace with counsel-reviewed version before scaling.
  */
 export const Privacy = () => {
   const lastUpdated = '15 June 2026';
@@ -21,7 +21,7 @@ export const Privacy = () => {
 
       <Section title="What we collect">
         <ul className="list-disc pl-6 space-y-1">
-          <li>Account: name, email, phone — when you sign up or place an order.</li>
+          <li>Account: name, email, phone, when you sign up or place an order.</li>
           <li>Shipping addresses you save against your account.</li>
           <li>Order, payment status, and shipment tracking events.</li>
           <li>Cookies and local storage for cart state, session, and pincode preference.</li>
@@ -31,10 +31,10 @@ export const Privacy = () => {
 
       <Section title="Why we use it">
         <ul className="list-disc pl-6 space-y-1">
-          <li>Fulfil your order — payments via Razorpay, shipping via Shiprocket.</li>
+          <li>Fulfil your order, payments via Razorpay, shipping via Shiprocket.</li>
           <li>Send transactional email via Resend (order placed, packed, shipped).</li>
           <li>Customer support and dispute resolution.</li>
-          <li>Improve the product — debug errors, fix broken flows.</li>
+          <li>Improve the product, debug errors, fix broken flows.</li>
         </ul>
       </Section>
 

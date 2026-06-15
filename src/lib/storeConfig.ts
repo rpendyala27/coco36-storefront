@@ -20,7 +20,7 @@ export interface StoreConfig {
  * Keep in sync with the admin `settings` defaults.
  */
 export const DEFAULT_CONFIG: StoreConfig = {
-  freeShippingPaise: 99900,  // ₹999 (matches settings.shipping.free_threshold_paise)
+  freeShippingPaise: 120000, // ₹1,200 (matches settings.shipping.free_threshold_paise)
   flatShippingPaise: 9900,   // ₹99
   codSurchargePaise: 5000,   // ₹50
   returnWindowDays:  7,

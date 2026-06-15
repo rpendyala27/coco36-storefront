@@ -15,8 +15,8 @@ export const Terms = () => {
       <Section title="The seller">
         <p>
           COCO36 is a brand operated by COCO36 Foods Pvt Ltd, India. Our
-          full seller details — legal name, registered address, FSSAI licence,
-          and (once registered) GSTIN — appear on the tax invoice for every order.
+          full seller details, legal name, registered address, FSSAI licence,
+          and (once registered) GSTIN, appear on the tax invoice for every order.
           By placing an order you agree to these terms and to our{' '}
           <a href="/privacy" className="text-brand-primary hover:underline">privacy notice</a>.
         </p>

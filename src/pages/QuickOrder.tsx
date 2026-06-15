@@ -58,7 +58,7 @@ export const QuickOrder = () => {
           <p className="eyebrow text-brand-primary mb-3">For trade buyers</p>
           <h1 className="font-serif text-4xl md:text-6xl text-brand-deep">Quick order</h1>
           <p className="mt-4 text-brand-muted max-w-xl">
-            Know your SKUs? Skip the browse — enter codes and quantities, or upload a CSV, and add it all to your bag in one go.
+            Know your SKUs? Skip the browse, enter codes and quantities, or upload a CSV, and add it all to your bag in one go.
           </p>
         </div>
       </section>
@@ -83,7 +83,7 @@ export const QuickOrder = () => {
             <button onClick={() => submit(rows)} className="btn-primary"><ShoppingBag size={15} /> Add all to bag</button>
             <label className="btn-ghost cursor-pointer"><Upload size={15} /> Upload CSV<input type="file" accept=".csv,text/csv" onChange={onCsv} className="hidden" /></label>
           </div>
-          <p className="mt-3 text-xs text-brand-muted">CSV format: one line per item — <code className="font-mono">SKU,quantity</code>.</p>
+          <p className="mt-3 text-xs text-brand-muted">CSV format: one line per item, <code className="font-mono">SKU,quantity</code>.</p>
         </div>
 
         <aside>
@@ -98,7 +98,7 @@ export const QuickOrder = () => {
                   <div className="min-w-0">
                     <span className="font-mono text-xs text-brand-muted">{r.sku}</span>
                     <p className="text-brand-deep">
-                      {r.status === 'added' ? `Added ${r.qty}× ${r.name}` : r.status === 'oos' ? `${r.name} — out of stock` : 'SKU not found'}
+                      {r.status === 'added' ? `Added ${r.qty}× ${r.name}` : r.status === 'oos' ? `${r.name}, out of stock` : 'SKU not found'}
                     </p>
                   </div>
                 </div>

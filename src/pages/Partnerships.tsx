@@ -11,7 +11,7 @@ const OFFERINGS = [
   {
     icon: Layers,
     title: 'Custom Cocoa Blends',
-    description: 'Bespoke couverture profiles, single-origin matched to your application — from confectionery to ice cream.',
+    description: 'Bespoke couverture profiles, single-origin matched to your application, from confectionery to ice cream.',
   },
   {
     icon: Beaker,
@@ -39,7 +39,7 @@ const INDUSTRIES = [
 
 const PROCESS = [
   { num: '01', title: 'Brief',         desc: 'Initial scope: volumes, regulatory, sensory targets, timeline.' },
-  { num: '02', title: 'Prototype',     desc: 'Lab-scale samples — typically 3-4 iterations over 4-6 weeks.' },
+  { num: '02', title: 'Prototype',     desc: 'Lab-scale samples, typically 3-4 iterations over 4-6 weeks.' },
   { num: '03', title: 'Pilot',         desc: 'Production-floor trial run, full QA panel, packaging validation.' },
   { num: '04', title: 'Scale',         desc: 'Commercial launch with dedicated supply commitments.' },
   { num: '05', title: 'Optimization',  desc: 'Quarterly reviews, ongoing R&D, harvest-driven refinements.' },
@@ -97,7 +97,7 @@ export const Partnerships = () => {
               <span className="italic">for food makers.</span>
             </h1>
             <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-serif italic max-w-2xl mb-10">
-              From concept to production, we partner with brands to co-create scalable ingredient solutions — from custom cocoa blends to ready-to-use mixes.
+              From concept to production, we partner with brands to co-create scalable ingredient solutions, from custom cocoa blends to ready-to-use mixes.
             </p>
             <a
               href="#discuss"
@@ -189,7 +189,7 @@ export const Partnerships = () => {
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Our Process</p>
             <h2 className="text-4xl md:text-6xl mb-6">Brief → Scale in five.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
-              A repeatable, transparent path — typically 3-6 months from first conversation to commercial launch.
+              A repeatable, transparent path, typically 3-6 months from first conversation to commercial launch.
             </p>
           </header>
 
@@ -245,7 +245,7 @@ export const Partnerships = () => {
                 <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Discuss a Project</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you're building.</h2>
                 <p className="text-lg text-brand-paper/70 font-serif italic">
-                  Volume, application, timing — the more context, the faster we can match you to the right specialist.
+                  Volume, application, timing, the more context, the faster we can match you to the right specialist.
                 </p>
               </header>
 

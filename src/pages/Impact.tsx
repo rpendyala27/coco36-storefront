@@ -6,7 +6,7 @@ const PILLARS = [
   {
     icon: Leaf,
     title: 'Regenerative Farming',
-    description: 'Soil-first agroforestry — biodiverse, water-positive, carbon-sequestering. Verified annually by independent auditors.',
+    description: 'Soil-first agroforestry, biodiverse, water-positive, carbon-sequestering. Verified annually by independent auditors.',
     metric: '68%',
     metricLabel: 'volume regen-sourced',
   },
@@ -27,7 +27,7 @@ const PILLARS = [
   {
     icon: HeartHandshake,
     title: 'Community Investment',
-    description: 'School scholarships, mobile health clinics, women-led co-op funding — reinvested from each kilo shipped.',
+    description: 'School scholarships, mobile health clinics, women-led co-op funding, reinvested from each kilo shipped.',
     metric: '$2.1M',
     metricLabel: 'reinvested in 2024',
   },
@@ -39,7 +39,7 @@ const STORIES = [
     region: 'Tamil Nadu, India',
     years: 'Partner since 2017',
     quote:
-      'COCO36 paid us a 42% premium for our last Trinitario harvest. That funded the new fermentation pavilion — the difference between selling beans and selling craft.',
+      'COCO36 paid us a 42% premium for our last Trinitario harvest. That funded the new fermentation pavilion, the difference between selling beans and selling craft.',
     author: 'Lakshmi Iyer · Co-op Lead',
     image: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?auto=format&fit=crop&q=85&w=900',
   },
@@ -48,7 +48,7 @@ const STORIES = [
     region: 'Antalaha, Madagascar',
     years: 'Partner since 2019',
     quote:
-      'For the first time, we know who buys every bean we cure. Our daughters now go to secondary school — that wasn\'t possible before.',
+      'For the first time, we know who buys every bean we cure. Our daughters now go to secondary school, that wasn\'t possible before.',
     author: 'Marcellin Rasoanaivo · Curing Master',
     image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=85&w=900',
   },
@@ -57,7 +57,7 @@ const STORIES = [
     region: 'Aragua, Venezuela',
     years: 'Partner since 2021',
     quote:
-      'Our soil carbon went up 14% in three years. The land is healing — and we are paid for that work, not just the cocoa.',
+      'Our soil carbon went up 14% in three years. The land is healing, and we are paid for that work, not just the cocoa.',
     author: 'Carlos Mendoza · Founder',
     image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&q=85&w=900',
   },
@@ -109,7 +109,7 @@ export const Impact = () => {
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Our Four Pillars</p>
             <h2 className="text-4xl md:text-6xl mb-6">How we operate.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
-              Every commercial decision is weighed against four pillars — published openly, audited annually.
+              Every commercial decision is weighed against four pillars, published openly, audited annually.
             </p>
           </header>
 
@@ -180,7 +180,7 @@ export const Impact = () => {
                     "{story.quote}"
                   </blockquote>
                   <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">
-                    — {story.author}
+                    {story.author}
                   </p>
                 </div>
               </motion.article>
