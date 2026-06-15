@@ -15,6 +15,11 @@ interface AuthContextType {
   profile: CustomerProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  /** True once a password-recovery link has been opened (Supabase fires the
+   *  PASSWORD_RECOVERY event after the reset link lands). The /auth page uses
+   *  this to show a "set a new password" form. */
+  passwordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -23,6 +28,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   isAdmin: false,
+  passwordRecovery: false,
+  clearPasswordRecovery: () => {},
   signOut: async () => {},
 });
 
@@ -37,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser]       = useState<User | null>(null);
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -72,8 +80,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
 
     // Future changes — profile loads in the background, never blocks render.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      // A reset link landing on the site fires PASSWORD_RECOVERY before any
+      // navigation; flag it so /auth can show the set-new-password form instead
+      // of bouncing the (now session-bearing) user away.
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       setUser(session?.user ?? null);
       void loadProfile(session?.user ?? null);
     });
@@ -95,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = false;
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), signOut }}>
       {!loading && children}
     </AuthContext.Provider>
   );
