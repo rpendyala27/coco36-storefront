@@ -39,11 +39,12 @@ export const AuthPage = () => {
         });
         if (signUpErr) throw signUpErr;
 
-        // With email-enumeration protection on, Supabase doesn't error on a
-        // duplicate signup — it returns a user with an EMPTY `identities` array
-        // (and no session). Detect that and show a clear "already exists"
-        // message instead of the misleading "check your email to confirm".
-        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+        // Email-enumeration protection: a duplicate signup returns NO error and
+        // NO session — and on this supabase-js version, a null `user` as well
+        // (a genuine new signup always returns data.user). So a null user here
+        // means the email is already registered. Show that instead of the
+        // misleading "check your email to confirm".
+        if (!data.user && !data.session) {
           setError('An account with this email already exists — please sign in below.');
           setIsLogin(true);
           return;
