@@ -92,9 +92,9 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
 
         {/* Price + quick-add */}
         <div className="mt-auto pt-4 border-t border-brand-line flex items-end justify-between gap-2 md:gap-3">
-          <div className="leading-none">
+          <div className="leading-none min-w-0">
             <span className="font-sans font-bold text-lg md:text-xl text-brand-deep tabular-nums">{formatMoney(minPricePaise)}</span>
-            {unitLabel && <span className="text-[11px] text-brand-muted ml-1.5">/ {unitLabel}</span>}
+            {unitLabel && <span className="block truncate text-[11px] text-brand-muted">/ {unitLabel}</span>}
             {hasOptions && <div className="text-[11px] text-brand-muted mt-1">From</div>}
           </div>
           <button onClick={onAddClick} className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap">

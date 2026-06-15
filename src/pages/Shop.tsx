@@ -191,9 +191,9 @@ export const Shop = () => {
     <div className="pt-20 bg-brand-paper min-h-screen">
       {/* ── Hero ── */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-7 md:py-12 lg:py-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 lg:gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-7 md:py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 lg:gap-16 items-center min-w-0">
           {/* Left: headline + trust marks */}
-          <div>
+          <div className="min-w-0">
             <p className="eyebrow text-brand-primary mb-3 md:mb-6">The pure-ingredient marketplace</p>
             <h1 className="text-4xl md:text-7xl leading-[0.95]">
               Find your secret <em className="display-italic text-brand-primary">ingredient</em>
@@ -214,7 +214,7 @@ export const Shop = () => {
             </div>
 
             {/* Trust marks — single compact scroll row on mobile, wraps on desktop */}
-            <div className="mt-4 md:mt-7 flex md:flex-wrap gap-x-4 md:gap-x-6 gap-y-2 overflow-x-auto no-scrollbar -mx-1 px-1">
+            <div className="mt-4 md:mt-7 flex md:flex-wrap gap-x-4 md:gap-x-6 gap-y-2 overflow-x-auto no-scrollbar">
               {TRUST_MARKS.map(({ label, Icon }) => (
                 <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-primary whitespace-nowrap">
                   <Icon size={14} strokeWidth={1.5} /> {label}
