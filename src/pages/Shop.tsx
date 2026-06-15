@@ -307,7 +307,7 @@ export const Shop = () => {
                 <p className="text-[13px] text-brand-muted leading-relaxed mb-3">
                   Bulk pricing, custom blends and volume terms for verified kitchens & brands.
                 </p>
-                <a href="/partnerships" className="eyebrow text-brand-deep hover:text-brand-primary transition-colors">
+                <a href="/trade" className="eyebrow text-brand-deep hover:text-brand-primary transition-colors">
                   Apply for trade →
                 </a>
               </div>

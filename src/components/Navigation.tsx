@@ -77,7 +77,7 @@ export const Navigation: React.FC = () => {
                 <Search size={18} strokeWidth={1.75} />
               </button>
               <NavLink to="/quick-order" className="hidden lg:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Quick order</NavLink>
-              <NavLink to="/partnerships" className="hidden md:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Trade</NavLink>
+              <NavLink to="/trade" className="hidden md:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Trade</NavLink>
               {user ? (
                 <ProfileDropdown />
               ) : (

@@ -15,6 +15,7 @@ const ProductDetail    = lazy(() => import('./pages/ProductDetail').then(m => ({
 const ThirtySixSteps   = lazy(() => import('./pages/ThirtySixSteps').then(m => ({ default: m.ThirtySixSteps })));
 const RecipeConsultant = lazy(() => import('./pages/RecipeConsultant').then(m => ({ default: m.RecipeConsultant })));
 const Partnerships     = lazy(() => import('./pages/Partnerships').then(m => ({ default: m.Partnerships })));
+const Trade            = lazy(() => import('./pages/Trade').then(m => ({ default: m.Trade })));
 const Impact           = lazy(() => import('./pages/Impact').then(m => ({ default: m.Impact })));
 const AuthPage           = lazy(() => import('./pages/Auth').then(m => ({ default: m.AuthPage })));
 const Checkout           = lazy(() => import('./pages/Checkout').then(m => ({ default: m.Checkout })));
@@ -29,9 +30,10 @@ const Terms              = lazy(() => import('./pages/Terms').then(m => ({ defau
 const ROUTE_TITLES: Record<string, string> = {
   '/':             'Shop ingredients',
   '/shop':         'Shop ingredients',
-  '/36-steps':     '36 Steps — traceability',
+  '/36-steps':     '36 Steps · traceability',
   '/recipes':      'Recipe consultant',
-  '/partnerships': 'Partnerships & trade',
+  '/partnerships': 'Partnerships & innovation',
+  '/trade':        'Trade & wholesale',
   '/impact':       'Impact',
   '/checkout':     'Checkout',
   '/auth':         'Sign in',
@@ -39,6 +41,8 @@ const ROUTE_TITLES: Record<string, string> = {
   '/privacy':      'Privacy',
   '/terms':        'Terms',
 };
+
+const CANONICAL_ORIGIN = 'https://coco36.com';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -49,8 +53,20 @@ function ScrollToTop() {
       document.title = `${base} · COCO36`;
     } else if (!pathname.startsWith('/shop/') && !pathname.startsWith('/account/') && !pathname.startsWith('/track/')) {
       // PDP / order detail / tracking set their own titles; everything else falls back.
-      document.title = 'COCO36 — From crop to craft';
+      document.title = 'COCO36 · From crop to craft';
     }
+
+    // Canonical URL — `/` and `/shop` render the same catalog, so both point at
+    // the home URL to avoid duplicate-content. Everything else is self-canonical
+    // (path only, query/hash stripped).
+    const canonicalPath = pathname === '/shop' ? '/' : pathname;
+    let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'canonical';
+      document.head.appendChild(link);
+    }
+    link.href = CANONICAL_ORIGIN + canonicalPath;
   }, [pathname]);
   return null;
 }
@@ -101,6 +117,7 @@ export default function App() {
               <Route path="/36-steps" element={<ThirtySixSteps />} />
               <Route path="/recipes" element={<RecipeConsultant />} />
               <Route path="/partnerships" element={<Partnerships />} />
+              <Route path="/trade" element={<Trade />} />
               <Route path="/impact" element={<Impact />} />
 
               {/* Commerce flow */}
@@ -125,7 +142,6 @@ export default function App() {
 
               {/* Legacy redirects */}
               <Route path="/traceability" element={<Navigate to="/36-steps" replace />} />
-              <Route path="/trade" element={<Navigate to="/partnerships" replace />} />
               <Route path="/catalog" element={<Navigate to="/shop" replace />} />
               <Route path="/catalog/:id" element={<ProductDetail />} />
 
@@ -151,7 +167,7 @@ export default function App() {
                   </div>
                 </div>
                 <p className="text-sm text-white/70 leading-relaxed max-w-xs mb-6">
-                  Origin ingredients, crafted for the kitchens of tomorrow. Direct from heritage farms across 12 countries.
+                  Origin ingredients, crafted for the kitchens of tomorrow. Direct from heritage farms and estates at origin.
                 </p>
                 <div className="flex gap-2">
                   <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-primary text-white flex items-center justify-center transition-colors text-xs font-bold">IG</a>
@@ -183,8 +199,8 @@ export default function App() {
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-sea mb-5">Business</h4>
                 <ul className="space-y-3 text-sm text-white/70">
                   <li><a href="/partnerships" className="hover:text-brand-sea transition-colors">Partnerships</a></li>
+                  <li><a href="/trade" className="hover:text-brand-sea transition-colors">Trade &amp; Wholesale</a></li>
                   <li><a href="/auth" className="hover:text-brand-sea transition-colors">Partner Portal</a></li>
-                  <li><a href="#" className="hover:text-brand-sea transition-colors">Wholesale</a></li>
                 </ul>
               </div>
             </div>

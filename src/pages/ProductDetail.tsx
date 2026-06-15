@@ -230,8 +230,8 @@ export const ProductDetail = () => {
           <div className="mt-8 rounded-xl border border-brand-line bg-brand-surface p-5">
             <p className="eyebrow text-brand-primary mb-3">For professional kitchens &amp; brands</p>
             <div className="flex flex-wrap gap-3">
-              <Link to="/partnerships" className="btn-ghost !py-2.5 text-sm"><HandCoins size={15} /> Request bulk pricing</Link>
-              <Link to="/partnerships" className="inline-flex items-center gap-2 text-sm font-medium text-brand-deep border border-brand-line rounded-full px-5 py-2.5 hover:border-brand-deep transition-colors"><FileText size={15} /> Request spec sheet / CoA</Link>
+              <Link to="/trade" className="btn-ghost !py-2.5 text-sm"><HandCoins size={15} /> Request bulk pricing</Link>
+              <Link to="/trade" className="inline-flex items-center gap-2 text-sm font-medium text-brand-deep border border-brand-line rounded-full px-5 py-2.5 hover:border-brand-deep transition-colors"><FileText size={15} /> Request spec sheet / CoA</Link>
             </div>
           </div>
 
