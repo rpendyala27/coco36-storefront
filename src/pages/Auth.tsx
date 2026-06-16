@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase, API_URL } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Customer auth page — login + signup + password reset, all on Supabase Auth.
@@ -10,11 +11,13 @@ import { supabase, API_URL } from '../lib/supabase';
  * Next.js admin API (service role bypasses RLS).
  */
 export const AuthPage = () => {
+  const { user, passwordRecovery, clearPasswordRecovery } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
   const [phone, setPhone]     = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [error, setError]     = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,6 +26,13 @@ export const AuthPage = () => {
   // Internal-only redirect target (prevents open-redirect via the query string).
   const redirectParam = params.get('redirect');
   const redirectTo = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/';
+
+  // After email confirmation (or if an already-signed-in user opens /auth) we
+  // have a session — move them along. EXCEPT mid password-recovery, where we
+  // want to keep them here to set a new password.
+  useEffect(() => {
+    if (user && !passwordRecovery) navigate(redirectTo, { replace: true });
+  }, [user, passwordRecovery, navigate, redirectTo]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +48,18 @@ export const AuthPage = () => {
           options: { emailRedirectTo: `${window.location.origin}/auth` },
         });
         if (signUpErr) throw signUpErr;
+
+        // Email-enumeration protection: a duplicate signup returns NO error and
+        // NO session — and on this supabase-js version, a null `user` as well
+        // (a genuine new signup always returns data.user). So a null user here
+        // means the email is already registered. Show that instead of the
+        // misleading "check your email to confirm".
+        if (!data.user && !data.session) {
+          setError('An account with this email already exists — please sign in below.');
+          setIsLogin(true);
+          return;
+        }
+
         if (data.user) {
           try {
             await fetch(`${API_URL}/api/customers/signup`, {
@@ -69,6 +91,23 @@ export const AuthPage = () => {
     }
   };
 
+  // Set a new password after a recovery link landed (PASSWORD_RECOVERY gives us
+  // a short-lived authenticated session; updateUser sets the new password).
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(''); setMessage(''); setLoading(true);
+    try {
+      const { error: updErr } = await supabase.auth.updateUser({ password: newPassword });
+      if (updErr) throw updErr;
+      clearPasswordRecovery();
+      navigate(redirectTo, { replace: true });
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not update your password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-primary text-[15px] text-brand-deep placeholder:text-brand-muted/60 transition-colors';
 
   return (
@@ -80,6 +119,30 @@ export const AuthPage = () => {
         className="max-w-md w-full bg-white p-8 sm:p-10 border border-brand-line rounded-2xl shadow-[0_8px_24px_rgba(10,40,33,0.08)]"
       >
         <img src="/coco36-floral.png" alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
+
+        {passwordRecovery ? (
+          /* ── Set a new password (lands here from the reset email link) ───── */
+          <>
+            <p className="eyebrow text-brand-primary text-center mb-2">Reset password</p>
+            <h1 className="font-serif text-4xl text-center text-brand-deep mb-1">Set a new password</h1>
+            <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for your account.</p>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-muted block">New password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" size={16} />
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} autoComplete="new-password" className={`${inputClass} pl-10`} required />
+                </div>
+              </div>
+              {error && <p className="text-red-600 text-sm">{error}</p>}
+              {message && <p className="text-brand-primary text-sm">{message}</p>}
+              <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">
+                {loading ? 'Working…' : 'Update password'} <ArrowRight size={15} />
+              </button>
+            </form>
+          </>
+        ) : (
+        <>
         <p className="eyebrow text-brand-primary text-center mb-2">{isLogin ? 'Welcome back' : 'Join COCO36'}</p>
         <h1 className="font-serif text-4xl text-center text-brand-deep mb-1">
           {isLogin ? 'Sign in' : 'Create account'}
@@ -136,6 +199,8 @@ export const AuthPage = () => {
             </button>
           )}
         </div>
+        </>
+        )}
       </motion.div>
     </div>
   );
