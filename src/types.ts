@@ -17,20 +17,24 @@ export interface ProductSize {
   inStock: boolean;
 }
 
-export type ProductBadge = 'Best Seller' | 'New' | 'Limited Harvest' | 'Staff Pick';
+/** Display label for a designation badge. Sourced from `designation`-kind tags
+ *  (or the static catalogue) — no longer a hardcoded union. */
+export type ProductBadge = string;
 
-export type ProductCategory =
-  | 'Cocoa & Chocolate'
-  | 'Flours & Grains'
-  | 'Sugars & Sweeteners'
-  | 'Extracts & Flavors'
-  | 'Spices & Pantry'
-  | 'Mixes & Kits';
+/** Loosened from a hardcoded 6-name union — categories are now DB-driven and
+ *  hierarchical. Filtering uses `categoryId` (subtree rollup) with the tree from
+ *  `useCategories`; `category` stays as the display name. */
+export type ProductCategory = string;
 
-/** A product_tag resolved to its label. `slug` may be namespaced, e.g. `cert:coa`. */
+/** Semantic class of a tag — drives the storefront filter groups + badges,
+ *  replacing the old hardcoded slug sets. Mirrors `tags.kind` in Postgres. */
+export type TagKind = 'certification' | 'dietary' | 'designation' | 'use_case' | 'attribute';
+
+/** A product_tag resolved to its label + kind. */
 export interface ProductTag {
   slug: string;
   label: string;
+  kind: TagKind;
 }
 
 export interface Product {
@@ -42,11 +46,18 @@ export interface Product {
   tag: string;
   image: string;
   imageHover?: string;
+  /** Display name of the product's category. Hierarchical filtering uses
+   *  `categoryId` (rolled up over the subtree), not this string. */
   category: ProductCategory;
+  /** DB category id — the real filter key (any level of the tree). */
+  categoryId?: string;
+  /** Category slug — used for URL state on the shop. */
+  categorySlug?: string;
   description: string;
+  /** Designation badges (Best Seller, New…) — derived from `designation` tags. */
   badges?: ProductBadge[];
-  /** All product_tags (designation, dietary, and `cert:*` certification tags).
-   *  Storefront renders cert/dietary tags as placeholders — no fabricated numbers. */
+  /** All product_tags with their `kind`. The storefront groups filters by kind
+   *  (certification / dietary / use_case) and renders designation tags as badges. */
   tags?: ProductTag[];
   sizes: ProductSize[];
   rating?: number;
