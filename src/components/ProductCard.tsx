@@ -6,10 +6,6 @@ import { Product, ProductSize } from '../types';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 
-const CERT_DIETARY = new Set(['organic', 'fair-trade', 'single-origin', 'vegan', 'gluten-free', 'sugar-free']);
-const isCertTag = (slug: string) => slug.startsWith('cert:') || CERT_DIETARY.has(slug);
-const DESIGNATION = new Set(['bestseller', 'new-arrival', 'limited-edition']);
-
 interface Props {
   product: Product;
   index?: number;
@@ -25,8 +21,13 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   const hasOptions    = product.sizes.length > 1;
   const unitLabel     = product.sizes.length === 1 ? product.sizes[0].label : '';
 
-  const badges   = (product.badges ?? []).slice(0, 2);
-  const certTags = (product.tags ?? []).filter((t) => isCertTag(t.slug) && !DESIGNATION.has(t.slug)).slice(0, 3);
+  // Badges = designation-kind tags (data-driven); fall back to the static
+  // `badges` strings for the warm-start catalogue. Chips = cert + dietary tags.
+  const designationTags = (product.tags ?? []).filter((t) => t.kind === 'designation');
+  const badgeItems = designationTags.length
+    ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
+    : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
+  const certTags = (product.tags ?? []).filter((t) => t.kind === 'certification' || t.kind === 'dietary').slice(0, 3);
 
   const flash = () => { setAdded(true); setTimeout(() => setAdded(false), 1200); };
   const add = (size: ProductSize, e?: React.MouseEvent) => {
@@ -50,8 +51,8 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       className="card-peacock group flex flex-col h-full"
     >
       {/* Image */}
-      <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-deep">
-        {product.image && (
+      <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
+        {product.image ? (
           <img
             src={product.image}
             alt={product.name}
@@ -59,15 +60,20 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             loading="lazy"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
           />
+        ) : (
+          // Clean "awaiting photo" placeholder (light, not a dark void) — until the catalog reseed adds real images.
+          <div className="absolute inset-0 flex items-center justify-center bg-brand-surface">
+            <span className="font-serif text-5xl text-brand-deep/15 select-none">{product.name.charAt(0)}</span>
+          </div>
         )}
         <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start">
-          {badges.map((b) => (
-            <span key={b} className={`font-mono text-[10px] uppercase tracking-[0.1em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b === 'New' ? 'bg-brand-yellow text-white' : 'bg-white/90 text-brand-deep'}`}>
-              {b}
+          {badgeItems.map((b) => (
+            <span key={b.label} className={`font-mono text-[10px] uppercase tracking-[0.1em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-yellow text-white' : 'bg-white/90 text-brand-deep'}`}>
+              {b.label}
             </span>
           ))}
         </div>
-        <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm text-brand-deep flex items-center justify-center">
+        <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-deep flex items-center justify-center">
           <ArrowRight size={15} strokeWidth={2} />
         </span>
       </Link>

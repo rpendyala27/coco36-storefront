@@ -1,23 +1,27 @@
 import { supabase } from '../lib/supabase';
-import { Product, ProductCategory, ProductBadge, ProductTag } from '../types';
-
-/** tag slug → display badge (designation tags only). */
-const TAG_TO_BADGE: Record<string, ProductBadge> = {
-  'bestseller':      'Best Seller',
-  'new-arrival':     'New',
-  'limited-edition': 'Limited Harvest',
-};
+import { Product, ProductTag } from '../types';
 
 /**
  * Supabase product reader for the storefront.
  *
- * Maps the relational schema (products + variants + images + categories)
+ * Maps the relational schema (products + variants + images + categories + tags)
  * down into the flat Product shape the Vite UI expects.
  *
- * Pricing is paise end-to-end — both Supabase and the storefront agree
- * on `selling_price_paise` as the canonical money type. No conversion
- * happens here.
+ * Taxonomy is now data-driven: the product carries its `categoryId` (the real
+ * filter key — the storefront rolls filtering up over the category subtree) and
+ * every tag carries its `kind`, so filter groups + badges derive from the data
+ * instead of hardcoded slug lists.
+ *
+ * Pricing is paise end-to-end — no conversion happens here.
  */
+
+const PRODUCT_SELECT = `
+  id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
+  variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
+  images:product_images(id, url, is_primary, sort_order, alt_text),
+  category:categories(id, name, slug, parent_id),
+  product_tags(tag:tags(slug, label, kind))
+`;
 
 /** Supabase row → Vite Product shape. */
 function mapSupabaseProduct(row: any): Product {
@@ -31,14 +35,12 @@ function mapSupabaseProduct(row: any): Product {
     (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
 
-  // product_tags → { slug, label }[]. Designation tags also map to badges.
+  // product_tags → { slug, label, kind }[]. Designation tags surface as badges.
   const tags: ProductTag[] = (row.product_tags ?? [])
     .map((pt: any) => pt.tag)
     .filter(Boolean)
-    .map((t: any) => ({ slug: t.slug as string, label: t.label as string }));
-  const badges: ProductBadge[] = tags
-    .map((t) => TAG_TO_BADGE[t.slug])
-    .filter((b): b is ProductBadge => Boolean(b));
+    .map((t: any) => ({ slug: t.slug as string, label: t.label as string, kind: (t.kind ?? 'attribute') }));
+  const badges = tags.filter((t) => t.kind === 'designation').map((t) => t.label);
 
   return {
     id:       row.id,
@@ -49,7 +51,9 @@ function mapSupabaseProduct(row: any): Product {
     tag:      row.tag_line ?? '',
     image:    primary?.url ?? '',
     imageHover: hover?.url,
-    category: (row.category?.name ?? 'Cocoa & Chocolate') as ProductCategory,
+    category:     row.category?.name ?? 'Uncategorized',
+    categoryId:   row.category?.id,
+    categorySlug: row.category?.slug,
     description: row.description_md ?? '',
     badges,
     tags,
@@ -77,14 +81,6 @@ export const productService = {
       callback(list);
     })();
 
-    // Realtime channel — refetches on any product/variant/image change
-    const channel = supabase
-      .channel('public:products')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },        () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' }, () => refetch())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_images' },   () => refetch())
-      .subscribe();
-
     let refetchTimer: ReturnType<typeof setTimeout> | null = null;
     function refetch() {
       // Debounce — coalesces multi-row updates into one refetch
@@ -94,6 +90,18 @@ export const productService = {
         callback(list);
       }, 200);
     }
+
+    // Realtime channel — refetches on any product/variant/image OR taxonomy
+    // change (categories / tags / product_tags) so admin edits reflect live.
+    const channel = supabase
+      .channel('public:products')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },         () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' },  () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_images' },     () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' },         () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tags' },               () => refetch())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_tags' },       () => refetch())
+      .subscribe();
 
     return () => {
       if (refetchTimer) clearTimeout(refetchTimer);
@@ -105,13 +113,7 @@ export const productService = {
   async list(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
-      .select(`
-        id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
-        variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
-        images:product_images(id, url, is_primary, sort_order, alt_text),
-        category:categories(id, name, slug),
-        product_tags(tag:tags(slug, label))
-      `)
+      .select(PRODUCT_SELECT)
       .eq('status', 'active')
       .order('name');
 
@@ -128,13 +130,7 @@ export const productService = {
   async get(id: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from('products')
-      .select(`
-        id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
-        variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
-        images:product_images(id, url, is_primary, sort_order, alt_text),
-        category:categories(id, name, slug),
-        product_tags(tag:tags(slug, label))
-      `)
+      .select(PRODUCT_SELECT)
       .eq('id', id)
       .eq('status', 'active')
       .maybeSingle();

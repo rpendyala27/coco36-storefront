@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Minus, Plus, ShoppingBag, ChevronDown, Check, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
@@ -7,8 +7,6 @@ import { formatMoney } from '../lib/currency';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 
-const CERT_DIETARY = new Set(['organic', 'fair-trade', 'single-origin', 'vegan', 'gluten-free', 'sugar-free']);
-const isCertTag = (slug: string) => slug.startsWith('cert:') || CERT_DIETARY.has(slug);
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
 export const ProductDetail = () => {
@@ -23,7 +21,7 @@ export const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
-  const [open, setOpen] = useState({ description: true, details: false, certs: false });
+  const [open, setOpen] = useState({ description: true, details: false, certs: false, dietary: false });
 
   useEffect(() => {
     if (product && !product.sizes.some((s) => s.id === selectedSizeId)) {
@@ -73,7 +71,10 @@ export const ProductDetail = () => {
 
   const selectedSize    = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
   const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * quantity;
-  const certTags        = (product.tags ?? []).filter((t) => isCertTag(t.slug));
+  // Driven by tag.kind (like Shop/ProductCard) — no hardcoded slug sets.
+  const certTags        = (product.tags ?? []).filter((t) => t.kind === 'certification');
+  const dietaryTags     = (product.tags ?? []).filter((t) => t.kind === 'dietary');
+  const markTags        = [...certTags, ...dietaryTags];
   const gallery         = [product.image, product.imageHover].filter(Boolean) as string[];
 
   const handleAddToCart = () => selectedSize && addItem(product, selectedSize, quantity);
@@ -123,12 +124,12 @@ export const ProductDetail = () => {
           <h1 className="font-serif text-4xl md:text-5xl leading-[1.02] text-brand-deep">{product.name}</h1>
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-deep font-medium">{product.brand}</span></p>
 
-          {/* Cert tags */}
-          {certTags.length > 0 && (
+          {/* Cert + dietary marks */}
+          {markTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-5">
-              {certTags.map((t) => (
+              {markTags.map((t) => (
                 <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
-                  <Check size={11} strokeWidth={3} /> {t.label}
+                  {t.kind === 'dietary' ? <Leaf size={11} strokeWidth={2} /> : <Check size={11} strokeWidth={3} />} {t.label}
                 </span>
               ))}
             </div>
@@ -223,7 +224,19 @@ export const ProductDetail = () => {
               ) : (
                 <p>Certifications for this product are set by our sourcing team and shown here when available.</p>
               )}
+              <p className="text-[12px] text-brand-muted mt-3">Certification documents shared on request.</p>
             </Acc>
+            {dietaryTags.length > 0 && (
+              <Acc title="Dietary" open={open.dietary} onToggle={() => toggle('dietary')}>
+                <div className="flex flex-wrap gap-2">
+                  {dietaryTags.map((t) => (
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-deep bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                      <Leaf size={11} strokeWidth={2} /> {t.label}
+                    </span>
+                  ))}
+                </div>
+              </Acc>
+            )}
           </div>
 
           {/* For trade — persistent secondary conversion paths (B2B salesperson approach) */}
