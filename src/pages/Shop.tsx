@@ -163,6 +163,12 @@ export const Shop = () => {
     meta.content = desc;
   }, [activeCategory, search]);
 
+  // Live-sourcing ticker — origins currently in the catalogue (the scrolling bulletin).
+  const ticker = useMemo(
+    () => PRODUCTS.slice(0, 14).map((p) => `${p.name} · ${countryOf(p.origin)}`),
+    [PRODUCTS],
+  );
+
   // ── Filter + sort ──
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -252,6 +258,19 @@ export const Shop = () => {
             </div>
           </div>
         </div>
+
+        {/* Live sourcing ticker — the scrolling bulletin of origins, light to match the landing */}
+        {ticker.length > 0 && (
+          <div className="border-t border-brand-line bg-brand-paper overflow-hidden py-2.5">
+            <div className="flex w-max" style={{ animation: 'co-marquee 45s linear infinite' }}>
+              {[...ticker, ...ticker].map((t, i) => (
+                <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-primary whitespace-nowrap">
+                  <span className="size-1.5 rounded-full bg-brand-primary/60 flex-shrink-0" /> {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ── Category nav (L1 row + drill row) ── */}
