@@ -49,6 +49,9 @@ const TRUST_MARKS: { label: string; Icon: typeof Cookie }[] = [
   { label: 'India Organic',       Icon: Sprout },
 ];
 
+// Earthy/peacock dot tones cycled across the live-sourcing ticker.
+const TICKER_DOTS = ['#15715f', '#2a9d86', '#c08a2e', '#5cb6a3', '#0a4f5c', '#92cfc2'];
+
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
 export const Shop = () => {
@@ -164,8 +167,12 @@ export const Shop = () => {
   }, [activeCategory, search]);
 
   // Live-sourcing ticker — origins currently in the catalogue (the scrolling bulletin).
+  // Each entry carries an earthy dot tone cycled from the palette.
   const ticker = useMemo(
-    () => PRODUCTS.slice(0, 14).map((p) => `${p.name} · ${countryOf(p.origin)}`),
+    () => PRODUCTS.slice(0, 14).map((p, i) => ({
+      text: `${p.name} · ${countryOf(p.origin)}`,
+      dot:  TICKER_DOTS[i % TICKER_DOTS.length],
+    })),
     [PRODUCTS],
   );
 
@@ -265,7 +272,7 @@ export const Shop = () => {
             <div className="flex w-max" style={{ animation: 'co-marquee 45s linear infinite' }}>
               {[...ticker, ...ticker].map((t, i) => (
                 <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-primary whitespace-nowrap">
-                  <span className="size-1.5 rounded-full bg-brand-primary/60 flex-shrink-0" /> {t}
+                  <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: t.dot }} /> {t.text}
                 </span>
               ))}
             </div>
