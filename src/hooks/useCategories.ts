@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 export interface Category {
-  id:        string;
-  slug:      string;
-  name:      string;
-  parentId:  string | null;
-  sortOrder: number;
-  imageUrl:  string | null;
+  id:          string;
+  slug:        string;
+  name:        string;
+  parentId:    string | null;
+  sortOrder:   number;
+  imageUrl:    string | null;
+  description: string | null;
 }
 
 export interface CategoryTree {
@@ -39,7 +40,7 @@ export function useCategories(): { tree: CategoryTree; loading: boolean } {
     async function load() {
       const { data, error } = await supabase
         .from('categories')
-        .select('id, slug, name, parent_id, sort_order, image_url')
+        .select('id, slug, name, parent_id, sort_order, image_url, description')
         .is('deleted_at', null)
         .order('sort_order', { ascending: true })
         .order('name', { ascending: true });
@@ -47,7 +48,8 @@ export function useCategories(): { tree: CategoryTree; loading: boolean } {
       if (!error && data) {
         setCats(data.map((c: any) => ({
           id: c.id, slug: c.slug, name: c.name,
-          parentId: c.parent_id, sortOrder: c.sort_order ?? 0, imageUrl: c.image_url,
+          parentId: c.parent_id, sortOrder: c.sort_order ?? 0,
+          imageUrl: c.image_url, description: c.description ?? null,
         })));
       }
       setLoading(false);

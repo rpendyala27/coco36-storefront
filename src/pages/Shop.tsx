@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronRight, X, Filter,
   Candy, CakeSlice, Wheat, Coffee, CookingPot,
   FileCheck, Network, HandCoins, Leaf, Sprout,
+  Cookie, CupSoda, IceCream, Soup,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
@@ -30,6 +31,14 @@ const AUDIENCE_ICONS: { slug: string; Icon: typeof Candy }[] = [
   { slug: 'bakers',       Icon: Wheat },
   { slug: 'cafes',        Icon: Coffee },
   { slug: 'home-cooks',   Icon: CookingPot },
+];
+// "By application" quick entries — also use_case tags, but the activity (not the
+// maker persona). Presentation only; matches are data-driven via product_tags.
+const APPLICATION_ICONS: { slug: string; Icon: typeof Candy }[] = [
+  { slug: 'baking',   Icon: Cookie },
+  { slug: 'drinks',   Icon: CupSoda },
+  { slug: 'desserts', Icon: IceCream },
+  { slug: 'savory',   Icon: Soup },
 ];
 const ROTATING = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cooks'];
 
@@ -141,12 +150,30 @@ export const Shop = () => {
       .filter((g) => g.rows.length > 0);
   }, [inCategory]);
 
-  // Audience tiles for "Shop by Craft" — use_case tags present in the catalogue.
-  const audiences = useMemo(() => {
+  // Use_case tags present in the catalogue, split into "craft" personas + "application".
+  const useCasePresent = useMemo(() => {
     const present = new Map<string, string>();
     PRODUCTS.forEach((p) => (p.tags ?? []).forEach((t) => { if (t.kind === 'use_case') present.set(t.slug, t.label); }));
-    return AUDIENCE_ICONS.filter((a) => present.has(a.slug)).map((a) => ({ ...a, label: present.get(a.slug)! }));
+    return present;
   }, [PRODUCTS]);
+  const audiences    = useMemo(() => AUDIENCE_ICONS.filter((a) => useCasePresent.has(a.slug)).map((a) => ({ ...a, label: useCasePresent.get(a.slug)! })), [useCasePresent]);
+  const applications = useMemo(() => APPLICATION_ICONS.filter((a) => useCasePresent.has(a.slug)).map((a) => ({ ...a, label: useCasePresent.get(a.slug)! })), [useCasePresent]);
+
+  const activeCategory = categoryId ? tree.byId.get(categoryId) ?? null : null;
+
+  // Basic SEO for category / search views (SPA — set title + meta description).
+  useEffect(() => {
+    const q = search.trim();
+    document.title = activeCategory ? `${activeCategory.name} — COCO36`
+      : q ? `“${q}” — COCO36`
+      : 'COCO36 — Pure-ingredient marketplace for makers';
+    const desc = activeCategory?.description
+      || (activeCategory ? `Shop ${activeCategory.name} at COCO36 — origin ingredients for makers, sourced direct.`
+      : 'Origin ingredients for makers — cocoa, flours, sugars, extracts and spices, sourced direct from origin.');
+    let meta = document.head.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'description'; document.head.appendChild(meta); }
+    meta.content = desc;
+  }, [activeCategory, search]);
 
   const ticker = useMemo(
     () => PRODUCTS.slice(0, 14).map((p, i) => ({ text: `${p.name} · ${countryOf(p.origin)}`, dot: TICKER_DOTS[i % TICKER_DOTS.length] })),
@@ -318,6 +345,58 @@ export const Shop = () => {
         )}
       </div>
 
+      {/* ── Shop by category (image-led discovery, landing state only) ── */}
+      {!categoryId && !search.trim() && tree.roots.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-10">
+          <div className="flex items-end justify-between mb-5">
+            <h2 className="font-serif text-2xl md:text-3xl text-brand-deep">Shop by category</h2>
+            <span className="hidden md:inline font-mono text-[11px] uppercase tracking-wide text-brand-muted">
+              {tree.roots.length} departments
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+            {tree.roots.map((c) => (
+              <button key={c.id} onClick={() => selectCategory(c.id)} className="group text-left">
+                <div className="aspect-[4/5] rounded-xl overflow-hidden border border-brand-line relative">
+                  {c.imageUrl ? (
+                    <img src={c.imageUrl} alt={c.name} loading="lazy"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-deep to-brand-primary">
+                      <span className="font-serif text-3xl text-white/90">{c.name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-3 pt-9">
+                    <p className="text-white font-semibold text-[13px] md:text-sm leading-tight">{c.name}</p>
+                  </div>
+                </div>
+                {c.description && (
+                  <p className="mt-1.5 text-[12px] text-brand-muted line-clamp-2 leading-snug">{c.description}</p>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {applications.length > 0 && (
+            <div className="mt-7 flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[11px] uppercase tracking-wide text-brand-muted mr-1">By application</span>
+              {applications.map(({ slug, label, Icon }) => (
+                <button
+                  key={slug}
+                  onClick={() => {
+                    toggleSet(tagSlugs, slug, setTagSlugs);
+                    requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-brand-line text-[13px] text-brand-deep hover:border-brand-deep transition-colors"
+                >
+                  <Icon size={14} strokeWidth={1.7} /> {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── Catalog ── */}
       <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -365,6 +444,14 @@ export const Shop = () => {
 
           {/* Listing */}
           <div className="lg:col-span-9">
+            {activeCategory && (
+              <div className="mb-6">
+                <h1 className="font-serif text-2xl md:text-3xl text-brand-deep">{activeCategory.name}</h1>
+                {activeCategory.description && (
+                  <p className="text-sm text-brand-muted mt-1.5 max-w-2xl leading-relaxed">{activeCategory.description}</p>
+                )}
+              </div>
+            )}
             <div className="flex justify-between items-center gap-4 mb-6 flex-wrap min-h-9">
               <div className="flex gap-2 flex-wrap items-center">
                 <button onClick={() => setFiltersOpen(!filtersOpen)} className="lg:hidden flex items-center gap-2 px-3 py-1.5 border border-brand-line rounded-full text-[12px] font-medium">
