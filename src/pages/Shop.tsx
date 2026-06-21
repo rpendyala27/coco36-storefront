@@ -228,22 +228,22 @@ export const Shop = () => {
     <div className="pt-20 bg-brand-paper min-h-screen">
       {/* ── Hero ── */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-11 min-w-0">
-          <div className="min-w-0 max-w-2xl">
-            <p className="eyebrow text-brand-primary mb-3 md:mb-5">The pure-ingredient marketplace</p>
-            <h1 className="text-4xl md:text-7xl leading-[0.95]">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
+          <div className="min-w-0 max-w-3xl mx-auto text-center">
+            <p className="eyebrow text-brand-primary mb-3 md:mb-4">The pure-ingredient marketplace</p>
+            <h1 className="text-4xl md:text-6xl leading-[0.98]">
               Find your secret <em className="display-italic text-brand-primary">ingredient</em>
             </h1>
-            <p className="mt-3 md:mt-5 text-brand-muted text-sm md:text-base">
+            <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
               Sourced direct from origin, built for{' '}
               <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-deep font-medium">{ROTATING[wordIdx]}</span>
             </p>
 
-            <div className="mt-4 md:mt-7 max-w-lg">
+            <div className="mt-5 md:mt-6 max-w-xl mx-auto">
               <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
             </div>
 
-            <div className="mt-4 md:mt-7 flex md:flex-wrap gap-x-4 md:gap-x-6 gap-y-2 overflow-x-auto no-scrollbar">
+            <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
               {TRUST_MARKS.map(({ label, Icon }) => (
                 <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-primary whitespace-nowrap">
                   <Icon size={14} strokeWidth={1.5} /> {label}
@@ -298,18 +298,23 @@ export const Shop = () => {
       {!categoryId && !search.trim() && applications.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 flex items-center gap-2 flex-wrap">
           <span className="font-mono text-[11px] uppercase tracking-wide text-brand-muted mr-1">Shop by use</span>
-          {applications.map(({ slug, label, Icon }) => (
-            <button
-              key={slug}
-              onClick={() => {
-                toggleSet(tagSlugs, slug, setTagSlugs);
-                requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-brand-line text-[13px] text-brand-deep hover:border-brand-deep hover:bg-brand-surface transition-colors"
-            >
-              <Icon size={14} strokeWidth={1.7} /> {label}
-            </button>
-          ))}
+          {applications.map(({ slug, label, Icon }) => {
+            const active = tagSlugs.has(slug);
+            return (
+              <button
+                key={slug}
+                onClick={() => {
+                  toggleSet(tagSlugs, slug, setTagSlugs);
+                  requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+                }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[13px] transition-colors ${
+                  active ? 'bg-brand-deep text-white border-brand-deep' : 'text-brand-deep border-brand-line hover:border-brand-deep hover:bg-brand-surface'
+                }`}
+              >
+                <Icon size={14} strokeWidth={1.7} /> {label}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -317,13 +322,18 @@ export const Shop = () => {
       <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Filters */}
-          <aside className={`lg:col-span-3 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+          <aside className={`lg:col-span-3 ${filtersOpen ? 'fixed inset-0 z-50 bg-brand-paper overflow-y-auto px-5 pt-5 pb-28 lg:static lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0' : 'hidden lg:block'}`}>
             <div className="lg:sticky lg:top-40 space-y-7">
               <div className="flex justify-between items-center pb-2 border-b border-brand-deep">
                 <h3 className="font-serif italic text-lg text-brand-deep">Filters</h3>
-                {activeCount > 0 && (
-                  <button onClick={clearAll} className="text-[13px] font-medium text-brand-primary border-b border-brand-primary/40">Clear all</button>
-                )}
+                <div className="flex items-center gap-4">
+                  {activeCount > 0 && (
+                    <button onClick={clearAll} className="text-[13px] font-medium text-brand-primary border-b border-brand-primary/40">Clear all</button>
+                  )}
+                  <button onClick={() => setFiltersOpen(false)} className="lg:hidden text-brand-deep p-1 -mr-1" aria-label="Close filters">
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               {originFacets.length > 0 && (
@@ -356,6 +366,18 @@ export const Shop = () => {
                 <a href="/trade" className="eyebrow text-brand-deep hover:text-brand-primary transition-colors">Apply for trade →</a>
               </div>
             </div>
+
+            {/* Mobile-only sticky "show results" bar — closes the filter sheet + jumps to the grid */}
+            {filtersOpen && (
+              <div className="fixed bottom-0 inset-x-0 z-50 bg-white border-t border-brand-line p-3 lg:hidden">
+                <button
+                  onClick={() => { setFiltersOpen(false); requestAnimationFrame(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }}
+                  className="btn-primary w-full !py-3"
+                >
+                  Show {filtered.length} result{filtered.length === 1 ? '' : 's'}
+                </button>
+              </div>
+            )}
           </aside>
 
           {/* Listing */}

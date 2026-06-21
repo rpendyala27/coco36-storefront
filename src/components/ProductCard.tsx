@@ -51,8 +51,8 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       className="card-peacock group flex flex-col h-full"
     >
       {/* Image */}
-      <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-deep">
-        {product.image && (
+      <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
+        {product.image ? (
           <img
             src={product.image}
             alt={product.name}
@@ -60,6 +60,11 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             loading="lazy"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
           />
+        ) : (
+          // Clean "awaiting photo" placeholder (light, not a dark void) — until the catalog reseed adds real images.
+          <div className="absolute inset-0 flex items-center justify-center bg-brand-surface">
+            <span className="font-serif text-5xl text-brand-deep/15 select-none">{product.name.charAt(0)}</span>
+          </div>
         )}
         <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start">
           {badgeItems.map((b) => (
@@ -68,7 +73,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             </span>
           ))}
         </div>
-        <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm text-brand-deep flex items-center justify-center">
+        <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-deep flex items-center justify-center">
           <ArrowRight size={15} strokeWidth={2} />
         </span>
       </Link>
