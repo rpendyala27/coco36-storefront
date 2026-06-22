@@ -22,11 +22,11 @@ export const AIDock: React.FC = () => {
     >
       <Link
         to="/recipes"
-        className="group flex items-center gap-3 bg-gradient-to-br from-brand-purple to-brand-berry hover:from-brand-primary hover:to-brand-primary-bright text-white px-5 py-4 rounded-2xl shadow-[0_8px_30px_rgba(75,31,100,0.35)] hover:shadow-[0_10px_40px_rgba(239,64,91,0.4)] transition-all duration-300"
+        className="group flex items-center gap-3 bg-gradient-to-br from-brand-forest to-brand-forest-deep hover:from-brand-leaf hover:to-brand-leaf-bright text-white px-5 py-4 rounded-2xl shadow-[0_8px_30px_rgba(75,31,100,0.35)] hover:shadow-[0_10px_40px_rgba(239,64,91,0.4)] transition-all duration-300"
       >
         <div className="relative">
-          <Sparkles size={18} strokeWidth={2} className="text-brand-yellow group-hover:text-white transition-colors" />
-          <span className="absolute -top-1 -right-1 size-2 bg-brand-yellow rounded-full animate-pulse" />
+          <Sparkles size={18} strokeWidth={2} className="text-brand-gold group-hover:text-white transition-colors" />
+          <span className="absolute -top-1 -right-1 size-2 bg-brand-gold rounded-full animate-pulse" />
         </div>
         <div className="leading-tight">
           <div className="text-[10px] uppercase tracking-widest font-bold opacity-70">Ask</div>

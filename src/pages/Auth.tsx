@@ -108,7 +108,7 @@ export const AuthPage = () => {
     }
   };
 
-  const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-primary text-[15px] text-brand-deep placeholder:text-brand-muted/60 transition-colors';
+  const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-brand-surface px-6 py-12">
@@ -123,8 +123,8 @@ export const AuthPage = () => {
         {passwordRecovery ? (
           /* ── Set a new password (lands here from the reset email link) ───── */
           <>
-            <p className="eyebrow text-brand-primary text-center mb-2">Reset password</p>
-            <h1 className="font-serif text-4xl text-center text-brand-deep mb-1">Set a new password</h1>
+            <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
+            <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Set a new password</h1>
             <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for your account.</p>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-1.5">
@@ -135,7 +135,7 @@ export const AuthPage = () => {
                 </div>
               </div>
               {error && <p className="text-red-600 text-sm">{error}</p>}
-              {message && <p className="text-brand-primary text-sm">{message}</p>}
+              {message && <p className="text-brand-leaf text-sm">{message}</p>}
               <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">
                 {loading ? 'Working…' : 'Update password'} <ArrowRight size={15} />
               </button>
@@ -143,8 +143,8 @@ export const AuthPage = () => {
           </>
         ) : (
         <>
-        <p className="eyebrow text-brand-primary text-center mb-2">{isLogin ? 'Welcome back' : 'Join COCO36'}</p>
-        <h1 className="font-serif text-4xl text-center text-brand-deep mb-1">
+        <p className="eyebrow text-brand-leaf text-center mb-2">{isLogin ? 'Welcome back' : 'Join COCO36'}</p>
+        <h1 className="font-display text-4xl text-center text-brand-forest mb-1">
           {isLogin ? 'Sign in' : 'Create account'}
         </h1>
         <p className="text-center text-brand-muted text-sm mb-8">
@@ -182,7 +182,7 @@ export const AuthPage = () => {
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
-          {message && <p className="text-brand-primary text-sm">{message}</p>}
+          {message && <p className="text-brand-leaf text-sm">{message}</p>}
 
           <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">
             {loading ? 'Working…' : isLogin ? 'Sign in' : 'Create account'} <ArrowRight size={15} />
@@ -190,11 +190,11 @@ export const AuthPage = () => {
         </form>
 
         <div className="mt-7 flex flex-col items-center gap-3 text-sm">
-          <button onClick={() => { setIsLogin(!isLogin); setError(''); setMessage(''); }} className="text-brand-deep hover:text-brand-primary transition-colors">
+          <button onClick={() => { setIsLogin(!isLogin); setError(''); setMessage(''); }} className="text-brand-forest hover:text-brand-leaf transition-colors">
             {isLogin ? "Don't have an account? Sign up" : 'Already registered? Sign in'}
           </button>
           {isLogin && (
-            <button onClick={handleReset} className="text-brand-muted hover:text-brand-primary transition-colors text-[13px]">
+            <button onClick={handleReset} className="text-brand-muted hover:text-brand-leaf transition-colors text-[13px]">
               Forgot password?
             </button>
           )}

@@ -52,7 +52,7 @@ export const Track = () => {
       <div className="max-w-3xl mx-auto px-6 md:px-10 lg:px-16 py-12 space-y-10">
 
         <header className="border-b border-brand-ink/10 pb-6">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-2">Shipment Tracking</p>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-2">Shipment Tracking</p>
           <h1 className="text-4xl">AWB {awb}</h1>
         </header>
 
@@ -61,7 +61,7 @@ export const Track = () => {
         {!loading && !shipment && (
           <div className="bg-white border border-brand-ink/10 p-8 text-center">
             <p className="text-sm text-brand-muted mb-4">No shipment found for this AWB.</p>
-            <Link to="/" className="text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline">
+            <Link to="/" className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline">
               Back to home →
             </Link>
           </div>
@@ -79,7 +79,7 @@ export const Track = () => {
                 href={`https://shiprocket.co/tracking/${shipment.awb}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline"
+                className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
               >
                 Live updates <ArrowRight size={12} />
               </a>
@@ -95,7 +95,7 @@ export const Track = () => {
                     <li key={s.id} className="flex items-start gap-4">
                       <div
                         className={`size-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                          reached ? 'bg-brand-primary text-white' : 'bg-brand-surface text-brand-muted'
+                          reached ? 'bg-brand-leaf text-white' : 'bg-brand-surface text-brand-muted'
                         }`}
                       >
                         {s.icon}
@@ -105,7 +105,7 @@ export const Track = () => {
                           {s.label}
                         </p>
                         {current && (
-                          <p className="text-xs text-brand-primary uppercase tracking-widest font-bold mt-1">
+                          <p className="text-xs text-brand-leaf uppercase tracking-widest font-bold mt-1">
                             Current Status
                           </p>
                         )}
@@ -118,7 +118,7 @@ export const Track = () => {
 
             <p className="text-xs text-brand-muted text-center">
               Need help?{' '}
-              <a href="mailto:support@coco36.com" className="text-brand-primary hover:underline font-bold">
+              <a href="mailto:support@coco36.com" className="text-brand-leaf hover:underline font-bold">
                 support@coco36.com
               </a>
             </p>

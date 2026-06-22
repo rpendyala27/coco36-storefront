@@ -243,13 +243,13 @@ export const Shop = () => {
       <section className="bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
           <div className="min-w-0 max-w-3xl mx-auto text-center">
-            <p className="eyebrow text-brand-primary mb-3 md:mb-4">The pure-ingredient marketplace</p>
+            <p className="eyebrow text-brand-leaf mb-3 md:mb-4">The pure-ingredient marketplace</p>
             <h1 className="text-4xl md:text-6xl leading-[0.98]">
-              Find your secret <em className="display-italic text-brand-primary">ingredient</em>
+              Find your secret <em className="display-italic text-brand-leaf">ingredient</em>
             </h1>
             <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
               Sourced direct from origin, built for{' '}
-              <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-deep font-medium">{ROTATING[wordIdx]}</span>
+              <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-forest font-medium">{ROTATING[wordIdx]}</span>
             </p>
 
             <div className="mt-5 md:mt-6 max-w-xl mx-auto">
@@ -258,7 +258,7 @@ export const Shop = () => {
 
             <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
               {TRUST_MARKS.map(({ label, Icon }) => (
-                <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-primary whitespace-nowrap">
+                <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-leaf whitespace-nowrap">
                   <Icon size={14} strokeWidth={1.5} /> {label}
                 </span>
               ))}
@@ -271,7 +271,7 @@ export const Shop = () => {
           <div className="border-t border-brand-line bg-brand-paper overflow-hidden py-2.5">
             <div className="flex w-max" style={{ animation: 'co-marquee 45s linear infinite' }}>
               {[...ticker, ...ticker].map((t, i) => (
-                <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-primary whitespace-nowrap">
+                <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-leaf whitespace-nowrap">
                   <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: t.dot }} /> {t.text}
                 </span>
               ))}
@@ -296,7 +296,7 @@ export const Shop = () => {
                 {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
                 <button
                   onClick={() => selectCategory(c.id)}
-                  className={`shrink-0 ${c.id === categoryId ? 'text-brand-deep font-semibold' : 'text-brand-muted hover:text-brand-deep'}`}
+                  className={`shrink-0 ${c.id === categoryId ? 'text-brand-forest font-semibold' : 'text-brand-muted hover:text-brand-forest'}`}
                 >
                   {c.name}
                 </button>
@@ -309,7 +309,7 @@ export const Shop = () => {
                   <button
                     key={ch.id}
                     onClick={() => selectCategory(ch.id)}
-                    className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-deep hover:border-brand-deep transition-colors"
+                    className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-forest hover:border-brand-forest transition-colors"
                   >
                     {ch.name}
                   </button>
@@ -323,7 +323,7 @@ export const Shop = () => {
       {/* ── Shop by use — single light use_case quick-row (landing only) ── */}
       {!categoryId && !search.trim() && applications.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 flex items-center gap-2 flex-wrap">
-          <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted mr-1">Shop by use</span>
+          <span className="eyebrow mr-1">Shop by use</span>
           {applications.map(({ slug, label, Icon }) => {
             const active = tagSlugs.has(slug);
             return (
@@ -334,7 +334,7 @@ export const Shop = () => {
                   requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
                 }}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[13px] transition-colors ${
-                  active ? 'bg-brand-deep text-white border-brand-deep' : 'text-brand-deep border-brand-line hover:border-brand-deep hover:bg-brand-surface'
+                  active ? 'bg-brand-forest text-white border-brand-forest' : 'text-brand-forest border-brand-line hover:border-brand-forest hover:bg-brand-surface'
                 }`}
               >
                 <Icon size={14} strokeWidth={1.7} /> {label}
@@ -350,13 +350,13 @@ export const Shop = () => {
           {/* Filters */}
           <aside className={`lg:col-span-3 ${filtersOpen ? 'fixed inset-0 z-50 bg-brand-paper overflow-y-auto px-5 pt-5 pb-28 lg:static lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0' : 'hidden lg:block'}`}>
             <div className="lg:sticky lg:top-40 space-y-7">
-              <div className="flex justify-between items-center pb-2 border-b border-brand-deep">
-                <h3 className="font-serif italic text-lg text-brand-deep">Filters</h3>
+              <div className="flex justify-between items-center pb-2 border-b border-brand-forest">
+                <h3 className="font-display italic text-lg text-brand-forest">Filters</h3>
                 <div className="flex items-center gap-4">
                   {activeCount > 0 && (
-                    <button onClick={clearAll} className="text-[13px] font-medium text-brand-primary border-b border-brand-primary/40">Clear all</button>
+                    <button onClick={clearAll} className="text-[13px] font-medium text-brand-leaf border-b border-brand-leaf/40">Clear all</button>
                   )}
-                  <button onClick={() => setFiltersOpen(false)} className="lg:hidden text-brand-deep p-1 -mr-1" aria-label="Close filters">
+                  <button onClick={() => setFiltersOpen(false)} className="lg:hidden text-brand-forest p-1 -mr-1" aria-label="Close filters">
                     <X size={20} />
                   </button>
                 </div>
@@ -382,14 +382,14 @@ export const Shop = () => {
                 <input type="range" min={200} max={priceCeil} step={100} value={priceVal} onChange={(e) => setMaxRupees(Number(e.target.value))} className="w-full accent-[#4e7d24]" />
                 <div className="flex justify-between font-mono text-[11px] text-brand-muted mt-1">
                   <span>₹200</span>
-                  <span className="text-brand-deep">₹{priceVal.toLocaleString('en-IN')}+</span>
+                  <span className="text-brand-forest">₹{priceVal.toLocaleString('en-IN')}+</span>
                 </div>
               </FacetGroup>
 
-              <div className="p-5 border border-brand-primary/20 bg-brand-surface rounded-lg">
-                <p className="eyebrow text-brand-primary mb-2">For trade</p>
+              <div className="p-5 border border-brand-leaf/20 bg-brand-surface rounded-lg">
+                <p className="eyebrow text-brand-leaf mb-2">For trade</p>
                 <p className="text-[13px] text-brand-muted leading-relaxed mb-3">Bulk pricing, custom blends and volume terms for verified kitchens &amp; brands.</p>
-                <a href="/trade" className="eyebrow text-brand-deep hover:text-brand-primary transition-colors">Apply for trade →</a>
+                <a href="/trade" className="eyebrow text-brand-forest hover:text-brand-leaf transition-colors">Apply for trade →</a>
               </div>
             </div>
 
@@ -410,7 +410,7 @@ export const Shop = () => {
           <div className="lg:col-span-9">
             {activeCategory && (
               <div className="mb-6">
-                <h1 className="font-serif text-2xl md:text-3xl text-brand-deep">{activeCategory.name}</h1>
+                <h1 className="font-display text-2xl md:text-3xl text-brand-forest">{activeCategory.name}</h1>
                 {activeCategory.description && (
                   <p className="text-sm text-brand-muted mt-1.5 max-w-2xl leading-relaxed">{activeCategory.description}</p>
                 )}
@@ -426,15 +426,15 @@ export const Shop = () => {
                 {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
               </div>
               <div className="flex items-center gap-4 flex-shrink-0">
-                <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
+                <span className="eyebrow whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
                 <div className="relative">
-                  <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-brand-line rounded-full text-[13px] font-medium hover:border-brand-deep transition-all">
+                  <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-brand-line rounded-full text-[13px] font-medium hover:border-brand-forest transition-all">
                     Sort · {SORT_LABELS[sortKey]} <ChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
                   </button>
                   {sortOpen && (
                     <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-brand-line rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.13)] z-30 overflow-hidden">
                       {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-                        <button key={k} onClick={() => { setSortKey(k); setSortOpen(false); }} className={`w-full text-left px-4 py-2.5 text-[13px] hover:bg-brand-surface transition-colors ${sortKey === k ? 'text-brand-primary font-semibold' : 'text-brand-deep'}`}>
+                        <button key={k} onClick={() => { setSortKey(k); setSortOpen(false); }} className={`w-full text-left px-4 py-2.5 text-[13px] hover:bg-brand-surface transition-colors ${sortKey === k ? 'text-brand-leaf font-semibold' : 'text-brand-forest'}`}>
                           {SORT_LABELS[k]}
                         </button>
                       ))}
@@ -447,7 +447,7 @@ export const Shop = () => {
             {loading && PRODUCTS.length === 0 ? (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="card-peacock">
+                  <div key={i} className="card">
                     <div className="aspect-[4/3] skeleton" />
                     <div className="p-5 space-y-3"><div className="h-3 w-2/3 skeleton rounded" /><div className="h-5 w-1/2 skeleton rounded" /><div className="h-4 w-1/3 skeleton rounded mt-6" /></div>
                   </div>
@@ -458,7 +458,7 @@ export const Shop = () => {
                 <RequestProduct query={search.trim()} onClear={clearAll} />
               ) : (
                 <div className="py-28 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface">
-                  <p className="font-serif italic text-2xl text-brand-primary mb-2">Nothing matches yet</p>
+                  <p className="font-display italic text-2xl text-brand-leaf mb-2">Nothing matches yet</p>
                   <p className="text-brand-muted text-sm mb-6">Try loosening a filter or two.</p>
                   <button onClick={clearAll} className="btn-primary text-sm">Clear all filters</button>
                 </div>
@@ -480,7 +480,7 @@ export const Shop = () => {
             { title: `Free shipping over ${freeShippingLabel(cfg)}`, desc: `Across India, with a ${cfg.returnWindowDays}-day quality guarantee on every order.` },
           ].map((it) => (
             <div key={it.title}>
-              <h4 className="font-serif text-xl mb-3 text-brand-deep">{it.title}</h4>
+              <h4 className="font-display text-xl mb-3 text-brand-forest">{it.title}</h4>
               <p className="text-sm text-brand-muted leading-relaxed">{it.desc}</p>
             </div>
           ))}
@@ -501,7 +501,7 @@ const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
   <button
     onClick={onClick}
     className={`flex-shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[12px] md:text-[13px] font-medium transition-all border ${
-      active ? 'bg-brand-deep text-white border-brand-deep' : 'bg-brand-surface text-brand-deep border-brand-line hover:border-brand-deep'
+      active ? 'bg-brand-forest text-white border-brand-forest' : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
     }`}
   >
     {children}
@@ -510,23 +510,23 @@ const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
 
 const FacetGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="pb-6 border-b border-brand-line">
-    <h4 className="font-serif font-bold text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
+    <h4 className="eyebrow mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
     <div className="space-y-1.5">{children}</div>
   </div>
 );
 
 const FacetRow: React.FC<{ label: string; count: number; checked: boolean; onToggle: () => void }> = ({ label, count, checked, onToggle }) => (
   <button onClick={onToggle} className="w-full flex items-center gap-2.5 py-1 text-left group">
-    <span className={`size-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-brand-deep' : 'border-[1.5px] border-brand-line'}`}>
+    <span className={`size-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-brand-forest' : 'border-[1.5px] border-brand-line'}`}>
       {checked && (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>)}
     </span>
-    <span className={`text-sm flex-1 ${checked ? 'text-brand-deep font-medium' : 'text-brand-deep/80'} group-hover:text-brand-primary transition-colors`}>{label}</span>
+    <span className={`text-sm flex-1 ${checked ? 'text-brand-forest font-medium' : 'text-brand-forest/80'} group-hover:text-brand-leaf transition-colors`}>{label}</span>
     <span className="font-mono text-[11px] text-brand-muted tabular-nums">{count}</span>
   </button>
 );
 
 const Chip: React.FC<{ label: string; onRemove: () => void }> = ({ label, onRemove }) => (
-  <span className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-brand-deep text-white rounded-full text-[12px]">
+  <span className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-brand-forest text-white rounded-full text-[12px]">
     {label}
     <button onClick={onRemove} className="size-3.5 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/35 transition-colors">
       <X size={9} />

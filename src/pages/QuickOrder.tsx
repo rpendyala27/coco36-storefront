@@ -56,8 +56,8 @@ export const QuickOrder = () => {
     <div className="pt-20 min-h-screen bg-brand-paper">
       <section className="bg-brand-surface border-b border-brand-line">
         <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
-          <p className="eyebrow text-brand-primary mb-3">For trade buyers</p>
-          <h1 className="font-serif text-4xl md:text-6xl text-brand-deep">Quick order</h1>
+          <p className="eyebrow text-brand-leaf mb-3">For trade buyers</p>
+          <h1 className="font-display text-4xl md:text-6xl text-brand-forest">Quick order</h1>
           <p className="mt-4 text-brand-muted max-w-xl">
             Know your SKUs? Skip the browse, enter codes and quantities, or upload a CSV, and add it all to your bag in one go.
           </p>
@@ -67,18 +67,18 @@ export const QuickOrder = () => {
       <section className="max-w-4xl mx-auto px-6 md:px-12 py-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 items-start min-w-0">
         <div>
           <div className="space-y-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted px-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-display font-bold text-[11px] uppercase tracking-wide text-brand-muted px-1">
               <span>SKU</span><span>Qty</span><span />
             </div>
             {rows.map((r, i) => (
               <div key={i} className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 items-center">
-                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-CAO-001" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-primary font-mono" />
-                <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="w-full min-w-0 border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-primary tabular-nums" />
-                <button onClick={() => removeRow(i)} className="text-brand-muted hover:text-brand-primary flex justify-center" aria-label="Remove row"><Trash2 size={16} /></button>
+                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-CAO-001" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-leaf font-mono" />
+                <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="w-full min-w-0 border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-leaf tabular-nums" />
+                <button onClick={() => removeRow(i)} className="text-brand-muted hover:text-brand-leaf flex justify-center" aria-label="Remove row"><Trash2 size={16} /></button>
               </div>
             ))}
           </div>
-          <button onClick={addRow} className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-primary font-medium"><Plus size={15} /> Add row</button>
+          <button onClick={addRow} className="mt-3 inline-flex items-center gap-1.5 text-sm text-brand-leaf font-medium"><Plus size={15} /> Add row</button>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <button onClick={() => submit(rows)} className="btn-primary"><ShoppingBag size={15} /> Add all to bag</button>
@@ -90,15 +90,15 @@ export const QuickOrder = () => {
         <aside>
           {results.length > 0 && (
             <div className="rounded-xl border border-brand-line bg-white p-4 space-y-2.5 lg:sticky lg:top-28">
-              <h3 className="font-serif text-lg text-brand-deep mb-1">Result</h3>
+              <h3 className="font-display text-lg text-brand-forest mb-1">Result</h3>
               {results.map((r, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
                   {r.status === 'added'
-                    ? <Check size={15} className="text-brand-primary mt-0.5 shrink-0" strokeWidth={2.5} />
-                    : <AlertTriangle size={15} className="text-brand-yellow mt-0.5 shrink-0" />}
+                    ? <Check size={15} className="text-brand-leaf mt-0.5 shrink-0" strokeWidth={2.5} />
+                    : <AlertTriangle size={15} className="text-brand-gold mt-0.5 shrink-0" />}
                   <div className="min-w-0">
                     <span className="font-mono text-xs text-brand-muted">{r.sku}</span>
-                    <p className="text-brand-deep">
+                    <p className="text-brand-forest">
                       {r.status === 'added' ? `Added ${r.qty}× ${r.name}` : r.status === 'oos' ? `${r.name}, out of stock` : 'SKU not found'}
                     </p>
                   </div>

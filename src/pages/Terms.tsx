@@ -18,7 +18,7 @@ export const Terms = () => {
           full seller details, legal name, registered address, FSSAI licence,
           and (once registered) GSTIN, appear on the tax invoice for every order.
           By placing an order you agree to these terms and to our{' '}
-          <a href="/privacy" className="text-brand-primary hover:underline">privacy notice</a>.
+          <a href="/privacy" className="text-brand-leaf hover:underline">privacy notice</a>.
         </p>
       </Section>
 
@@ -74,7 +74,7 @@ export const Terms = () => {
       <Section title="Contact">
         <p>
           Questions or disputes:{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">
             pendyalarohan27@gmail.com
           </a>.
         </p>

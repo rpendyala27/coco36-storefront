@@ -62,10 +62,10 @@ export function RequestProduct({
   if (sent) {
     return (
       <div className={compact ? 'px-4 py-5 text-center' : 'py-16 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface'}>
-        <div className="inline-flex items-center justify-center size-10 rounded-full bg-brand-primary/10 text-brand-primary mb-3">
+        <div className="inline-flex items-center justify-center size-10 rounded-full bg-brand-leaf/10 text-brand-leaf mb-3">
           <Check size={20} strokeWidth={2} />
         </div>
-        <p className="text-sm text-brand-deep font-medium">Request logged — thank you.</p>
+        <p className="text-sm text-brand-forest font-medium">Request logged — thank you.</p>
         <p className="text-[12px] text-brand-muted mt-1">We'll be in touch about “{query}”.</p>
       </div>
     );
@@ -74,7 +74,7 @@ export function RequestProduct({
   return (
     <div className={compact ? 'px-4 py-4' : 'py-12 px-6 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface'}>
       {!compact && (
-        <p className="font-serif italic text-2xl text-brand-primary mb-1">No match for “{query}”.</p>
+        <p className="font-display italic text-2xl text-brand-leaf mb-1">No match for “{query}”.</p>
       )}
       <p className={`text-brand-muted ${compact ? 'text-[12px] mb-3' : 'text-sm mb-5'}`}>
         {compact ? `Can't find “${query}”?` : "Looking for something specific?"} Request it and our sourcing team will follow up.
@@ -87,7 +87,7 @@ export function RequestProduct({
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
             autoComplete="name"
-            className="flex-1 bg-white border border-brand-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+            className="flex-1 bg-white border border-brand-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
           />
           <input
             type="email"
@@ -95,7 +95,7 @@ export function RequestProduct({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             autoComplete="email"
-            className="flex-1 bg-white border border-brand-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+            className="flex-1 bg-white border border-brand-line rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
           />
         </div>
         <button type="submit" disabled={sending} className="btn-primary text-sm justify-center disabled:opacity-50">
@@ -106,7 +106,7 @@ export function RequestProduct({
       {error && <p className="text-[12px] text-red-600 mt-2">{error}</p>}
 
       {onClear && !compact && (
-        <button onClick={onClear} className="mt-4 text-[12px] text-brand-muted hover:text-brand-deep underline">
+        <button onClick={onClear} className="mt-4 text-[12px] text-brand-muted hover:text-brand-forest underline">
           Clear search
         </button>
       )}

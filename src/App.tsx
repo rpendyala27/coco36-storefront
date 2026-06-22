@@ -74,7 +74,7 @@ function ScrollToTop() {
 const RouteFallback = () => (
   <div className="min-h-[60vh] flex items-center justify-center pt-20">
     <div className="flex flex-col items-center gap-4">
-      <div className="size-10 rounded-full border-2 border-brand-primary/30 border-t-brand-primary animate-spin" />
+      <div className="size-10 rounded-full border-2 border-brand-leaf/30 border-t-brand-leaf animate-spin" />
       <p className="text-xs uppercase tracking-widest font-bold text-brand-muted">Loading…</p>
     </div>
   </div>
@@ -85,7 +85,7 @@ const NotFound = () => {
   useEffect(() => { document.title = 'Page not found · COCO36'; }, []);
   return (
     <div className="min-h-[70vh] pt-28 px-6 flex flex-col items-center justify-center text-center">
-      <p className="eyebrow text-brand-primary mb-3">Error 404</p>
+      <p className="eyebrow text-brand-leaf mb-3">Error 404</p>
       <h1 className="text-4xl md:text-5xl mb-5">Page not found.</h1>
       <p className="text-brand-muted mb-8 max-w-md">This page moved or never existed. Let's get you back to the good stuff.</p>
       <a href="/" className="btn-primary !px-8 !py-4">Back to the shop</a>
@@ -97,7 +97,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen selection:bg-brand-primary selection:text-brand-paper">
+      <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper">
         <Navigation />
         <CartDrawer />
         <CookieBanner />
@@ -150,7 +150,7 @@ export default function App() {
         </main>
 
         {/* FOOTER */}
-        <footer className="bg-brand-purple text-white px-6 md:px-12 lg:px-20 pt-16 pb-10 mt-8">
+        <footer className="bg-brand-forest text-white px-6 md:px-12 lg:px-20 pt-16 pb-10 mt-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
               {/* Brand col */}
@@ -158,8 +158,8 @@ export default function App() {
                 <div className="flex items-center gap-3 mb-5">
                   <img src="/coco36-floral.png" alt="" className="size-11" />
                   <div className="leading-none">
-                    <div className="font-serif text-2xl font-semibold">
-                      COCO<span className="text-brand-yellow italic">36</span>
+                    <div className="font-display text-2xl font-semibold">
+                      COCO<span className="text-brand-gold italic">36</span>
                     </div>
                     <div className="text-[8px] uppercase tracking-[0.3em] opacity-60 mt-1 font-medium">From crop to craft</div>
                   </div>
@@ -168,37 +168,37 @@ export default function App() {
                   Origin ingredients, crafted for the kitchens of tomorrow. Direct from heritage farms and estates at origin.
                 </p>
                 <div className="flex gap-2">
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-primary text-white flex items-center justify-center transition-colors text-xs font-bold">IG</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-primary text-white flex items-center justify-center transition-colors text-xs font-bold">TT</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-primary text-white flex items-center justify-center transition-colors text-xs font-bold">YT</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-primary text-white flex items-center justify-center transition-colors text-xs font-bold">in</a>
+                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">IG</a>
+                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">TT</a>
+                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">YT</a>
+                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">in</a>
                 </div>
               </div>
 
               {/* Nav columns */}
               <div>
-                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-sea mb-5">Shop</h4>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Shop</h4>
                 <ul className="space-y-3 text-sm text-white/70">
-                  <li><a href="/shop" className="hover:text-brand-sea transition-colors">All Ingredients</a></li>
-                  <li><a href="/shop?category=Cocoa%20%26%20Chocolate" className="hover:text-brand-sea transition-colors">Cocoa & Chocolate</a></li>
-                  <li><a href="/shop?category=Flours%20%26%20Grains" className="hover:text-brand-sea transition-colors">Flours & Grains</a></li>
-                  <li><a href="/shop?category=Mixes%20%26%20Kits" className="hover:text-brand-sea transition-colors">Mixes & Kits</a></li>
+                  <li><a href="/shop" className="hover:text-brand-leaf-bright transition-colors">All Ingredients</a></li>
+                  <li><a href="/shop?category=Cocoa%20%26%20Chocolate" className="hover:text-brand-leaf-bright transition-colors">Cocoa & Chocolate</a></li>
+                  <li><a href="/shop?category=Flours%20%26%20Grains" className="hover:text-brand-leaf-bright transition-colors">Flours & Grains</a></li>
+                  <li><a href="/shop?category=Mixes%20%26%20Kits" className="hover:text-brand-leaf-bright transition-colors">Mixes & Kits</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-sea mb-5">Brand</h4>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Brand</h4>
                 <ul className="space-y-3 text-sm text-white/70">
-                  <li><a href="/36-steps" className="hover:text-brand-sea transition-colors">36 Steps</a></li>
-                  <li><a href="/impact" className="hover:text-brand-sea transition-colors">Impact</a></li>
-                  <li><a href="/recipes" className="hover:text-brand-sea transition-colors">Recipe AI</a></li>
+                  <li><a href="/36-steps" className="hover:text-brand-leaf-bright transition-colors">36 Steps</a></li>
+                  <li><a href="/impact" className="hover:text-brand-leaf-bright transition-colors">Impact</a></li>
+                  <li><a href="/recipes" className="hover:text-brand-leaf-bright transition-colors">Recipe AI</a></li>
                 </ul>
               </div>
               <div>
-                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-sea mb-5">Business</h4>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Business</h4>
                 <ul className="space-y-3 text-sm text-white/70">
-                  <li><a href="/partnerships" className="hover:text-brand-sea transition-colors">Partnerships</a></li>
-                  <li><a href="/trade" className="hover:text-brand-sea transition-colors">Trade &amp; Wholesale</a></li>
-                  <li><a href="/auth" className="hover:text-brand-sea transition-colors">Partner Portal</a></li>
+                  <li><a href="/partnerships" className="hover:text-brand-leaf-bright transition-colors">Partnerships</a></li>
+                  <li><a href="/trade" className="hover:text-brand-leaf-bright transition-colors">Trade &amp; Wholesale</a></li>
+                  <li><a href="/auth" className="hover:text-brand-leaf-bright transition-colors">Partner Portal</a></li>
                 </ul>
               </div>
             </div>
@@ -206,10 +206,10 @@ export default function App() {
             <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
               <div>© 2026 COCO36 Foods Pvt Ltd</div>
               <div className="flex gap-6 font-medium">
-                <a href="/privacy" className="hover:text-brand-sea transition-colors">Privacy</a>
-                <a href="/terms" className="hover:text-brand-sea transition-colors">Terms</a>
-                <a href="/terms#shipping" className="hover:text-brand-sea transition-colors">Shipping</a>
-                <a href="mailto:pendyalarohan27@gmail.com" className="hover:text-brand-sea transition-colors">Contact</a>
+                <a href="/privacy" className="hover:text-brand-leaf-bright transition-colors">Privacy</a>
+                <a href="/terms" className="hover:text-brand-leaf-bright transition-colors">Terms</a>
+                <a href="/terms#shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping</a>
+                <a href="mailto:pendyalarohan27@gmail.com" className="hover:text-brand-leaf-bright transition-colors">Contact</a>
               </div>
             </div>
           </div>

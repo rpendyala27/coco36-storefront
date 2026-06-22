@@ -47,7 +47,7 @@ export const ProfileDropdown = () => {
         aria-expanded={open}
         aria-label="Account menu"
       >
-        <div className="size-8 rounded-full bg-brand-yellow text-brand-purple text-sm font-bold flex items-center justify-center">
+        <div className="size-8 rounded-full bg-brand-gold text-brand-ink text-sm font-bold flex items-center justify-center">
           {initial}
         </div>
         <ChevronDown size={14} className="text-white/70 hidden md:block" />

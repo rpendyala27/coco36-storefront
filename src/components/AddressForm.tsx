@@ -81,7 +81,7 @@ export function AddressForm({
 
       {showDefaultToggle && (
         <label className="flex items-center gap-2 text-sm text-brand-ink cursor-pointer select-none">
-          <input type="checkbox" checked={f.is_default} onChange={(e) => set('is_default', e.target.checked)} className="accent-brand-primary size-4" />
+          <input type="checkbox" checked={f.is_default} onChange={(e) => set('is_default', e.target.checked)} className="accent-brand-leaf size-4" />
           Set as my default address
         </label>
       )}
@@ -113,7 +113,7 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, a
         required={required}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full bg-transparent border-b border-brand-line py-2.5 focus:outline-none focus:border-brand-primary text-base placeholder:text-brand-muted/50 placeholder:not-italic"
+        className="w-full bg-transparent border-b border-brand-line py-2.5 focus:outline-none focus:border-brand-leaf text-base placeholder:text-brand-muted/50 placeholder:not-italic"
       />
     </div>
   );
