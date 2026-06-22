@@ -56,8 +56,16 @@ export function useCategories(): { tree: CategoryTree; loading: boolean } {
     }
     void load();
 
+    // Unique topic per effect run. supabase.channel() RETURNS the existing
+    // channel for a reused topic, and removeChannel() is async — so under
+    // React 19 StrictMode's double-invoked effect (or two components mounting
+    // this hook at once) the cleanup hasn't finished when the effect re-runs,
+    // and channel('public:categories-tree') would hand back the *already
+    // subscribed* channel. Chaining .on() onto a subscribed channel throws
+    // ("cannot add postgres_changes callbacks ... after subscribe()"). A fresh
+    // topic each run guarantees a brand-new channel, so .on() is always pre-subscribe.
     const channel = supabase
-      .channel('public:categories-tree')
+      .channel(`public:categories-tree:${crypto.randomUUID()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => void load())
       .subscribe();
 
