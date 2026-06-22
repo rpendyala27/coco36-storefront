@@ -129,7 +129,7 @@ export const Account = () => {
         {/* ── Header ───────────────────────────────────────────────────── */}
         <header className="border-b border-brand-ink/10 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-2">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-2">
               Your Account
             </p>
             <h1 className="text-4xl md:text-5xl">
@@ -160,7 +160,7 @@ export const Account = () => {
             ) : orders.length === 0 ? (
               <div className="p-10 text-center">
                 <p className="text-sm text-brand-muted mb-4">You haven't placed an order yet.</p>
-                <Link to="/shop" className="text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline">
+                <Link to="/shop" className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline">
                   Browse the Shop →
                 </Link>
               </div>
@@ -182,13 +182,13 @@ export const Account = () => {
                       </div>
                       <div className="flex items-center gap-6">
                         <StatusBadge status={o.status} />
-                        <span className="font-bold text-brand-indigo">{formatMoney(o.total_paise)}</span>
+                        <span className="font-bold text-brand-ink">{formatMoney(o.total_paise)}</span>
                         {/* Invoice icon — only when order is invoiceable (packed and beyond) */}
                         {['packed', 'shipped', 'delivered'].includes(o.status) ? (
                           <Link
                             to={`/account/orders/${o.id}/invoice`}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-brand-muted hover:text-brand-primary transition-colors"
+                            className="text-brand-muted hover:text-brand-leaf transition-colors"
                             aria-label="View invoice"
                             title="View invoice"
                           >
@@ -197,7 +197,7 @@ export const Account = () => {
                         ) : (
                           <span className="w-4" /> /* spacer to align rows */
                         )}
-                        <ChevronRight size={16} className="text-brand-muted group-hover:text-brand-primary transition-colors" />
+                        <ChevronRight size={16} className="text-brand-muted group-hover:text-brand-leaf transition-colors" />
                       </div>
                     </Link>
                   </li>
@@ -252,7 +252,7 @@ export const Account = () => {
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}
                             {a.is_default && (
-                              <span className="text-[9px] uppercase tracking-widest font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">Default</span>
+                              <span className="text-[9px] uppercase tracking-widest font-bold text-brand-leaf bg-brand-leaf/10 px-1.5 py-0.5 rounded">Default</span>
                             )}
                             {a.gstin && (
                               <span className="text-[9px] uppercase tracking-widest font-bold text-brand-muted bg-brand-band px-1.5 py-0.5 rounded">GST</span>
@@ -264,7 +264,7 @@ export const Account = () => {
                         </div>
                         <div className="flex items-center gap-4 text-[11px] mt-auto pt-2 border-t border-brand-line/60">
                           {!a.is_default && (
-                            <button onClick={() => handleSetDefault(a)} className="inline-flex items-center gap-1 text-brand-muted hover:text-brand-primary transition-colors">
+                            <button onClick={() => handleSetDefault(a)} className="inline-flex items-center gap-1 text-brand-muted hover:text-brand-leaf transition-colors">
                               <Star size={12} /> Set default
                             </button>
                           )}
@@ -281,7 +281,7 @@ export const Account = () => {
                 )}
                 <button
                   onClick={() => { setEditing(null); setAdding(true); }}
-                  className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-primary hover:underline"
+                  className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
                 >
                   <Plus size={14} /> Add address
                 </button>
@@ -299,7 +299,7 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
   return (
     <div className="flex items-end justify-between mb-4">
       <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink">
-        <span className="text-brand-primary">{icon}</span> {title}
+        <span className="text-brand-leaf">{icon}</span> {title}
       </h2>
       {subtitle && <span className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{subtitle}</span>}
     </div>

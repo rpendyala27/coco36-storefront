@@ -102,7 +102,7 @@ export const Trade = () => {
       <section className="relative pt-36 pb-24 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-brand-primary font-bold mb-6">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
               Trade &amp; Wholesale
             </p>
             <h1 className="text-5xl md:text-7xl lg:text-8xl mb-8 leading-[0.95]">
@@ -137,7 +137,7 @@ export const Trade = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10">
         <div className="max-w-7xl mx-auto">
           <header className="mb-16 max-w-3xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Why buy trade</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Why buy trade</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for production kitchens.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
               The same ingredients you see in the shop, supplied at the scale and documentation your operation needs.
@@ -154,7 +154,7 @@ export const Trade = () => {
                 transition={{ delay: i * 0.1, duration: 0.6 }}
                 className="bg-brand-paper p-8 md:p-12 group hover:bg-brand-surface/30 transition-colors"
               >
-                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-primary group-hover:bg-brand-primary group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
+                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-leaf group-hover:bg-brand-leaf group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
                   <v.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl mb-3">{v.title}</h3>
@@ -169,7 +169,7 @@ export const Trade = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10 bg-brand-surface">
         <div className="max-w-7xl mx-auto">
           <header className="mb-14 max-w-2xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">How it works</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">How it works</p>
             <h2 className="text-4xl md:text-6xl">Three ways to start.</h2>
           </header>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -186,7 +186,7 @@ export const Trade = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
-                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-primary mb-4">{s.n}</p>
+                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{s.n}</p>
                 <h3 className="text-2xl mb-3">{s.t}</h3>
                 <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{s.d}</p>
               </motion.div>
@@ -204,7 +204,7 @@ export const Trade = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-20"
             >
-              <div className="w-20 h-20 rounded-full bg-brand-primary text-brand-paper flex items-center justify-center mx-auto mb-8">
+              <div className="w-20 h-20 rounded-full bg-brand-leaf text-brand-paper flex items-center justify-center mx-auto mb-8">
                 <Check size={36} strokeWidth={1.5} />
               </div>
               <h2 className="text-5xl mb-6">Enquiry received.</h2>
@@ -215,7 +215,7 @@ export const Trade = () => {
           ) : (
             <>
               <header className="text-center mb-14">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Trade enquiry</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Trade enquiry</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you need.</h2>
                 <p className="text-lg text-brand-paper/70 font-serif italic">
                   The more detail you share, the faster we can quote.
@@ -240,7 +240,7 @@ export const Trade = () => {
                     value={form.requestType}
                     onChange={set('requestType')}
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg appearance-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg appearance-none"
                   >
                     <option value="" className="bg-brand-ink">Select…</option>
                     {REQUEST_TYPES.map((t) => (
@@ -257,19 +257,19 @@ export const Trade = () => {
                     rows={5}
                     placeholder="Tell us about your operation, order cadence, target pricing, anything else relevant…"
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30 resize-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg placeholder:text-brand-paper/30 resize-none"
                   />
                 </div>
 
                 {error && (
-                  <p className="text-sm text-white bg-brand-primary/30 px-4 py-3 text-center rounded">
+                  <p className="text-sm text-white bg-brand-leaf/30 px-4 py-3 text-center rounded">
                     {error}
                   </p>
                 )}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-4 rounded-full bg-white text-brand-deep font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-white text-brand-forest font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Sending…' : <>Send trade enquiry <Send size={14} /></>}
                 </button>
@@ -282,7 +282,7 @@ export const Trade = () => {
       {/* CTA */}
       <section className="px-6 md:px-12 lg:px-20 py-20 text-center">
         <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-4">Looking to co-develop a product?</p>
-        <Link to="/partnerships" className="text-2xl font-serif italic text-brand-primary hover:underline">
+        <Link to="/partnerships" className="text-2xl font-serif italic text-brand-leaf hover:underline">
           Explore Partnerships &amp; innovation →
         </Link>
       </section>
@@ -308,7 +308,7 @@ const Field = ({
       onChange={onChange}
       placeholder={placeholder}
       required={required}
-      className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30"
+      className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg placeholder:text-brand-paper/30"
     />
   </div>
 );

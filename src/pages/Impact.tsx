@@ -46,7 +46,7 @@ export const Impact = () => {
       {/* HERO */}
       <section className="relative pt-36 pb-24 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10 overflow-hidden">
         <div className="max-w-6xl mx-auto">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-brand-primary font-bold mb-6">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
             Our commitments
           </p>
           <h1 className="text-5xl md:text-7xl lg:text-9xl mb-10 leading-[0.95] max-w-5xl">
@@ -74,7 +74,7 @@ export const Impact = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10">
         <div className="max-w-7xl mx-auto">
           <header className="mb-16 max-w-3xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">What we hold ourselves to</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">What we hold ourselves to</p>
             <h2 className="text-4xl md:text-6xl mb-6">Four commitments.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
               Every commercial decision is weighed against these, and we will audit and publish against them as we scale.
@@ -91,7 +91,7 @@ export const Impact = () => {
                 transition={{ delay: i * 0.1, duration: 0.6 }}
                 className="bg-brand-paper p-8 md:p-12 group hover:bg-brand-surface/30 transition-colors"
               >
-                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-primary group-hover:bg-brand-primary group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
+                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-leaf group-hover:bg-brand-leaf group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
                   <c.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl md:text-3xl mb-4">{c.title}</h3>
@@ -108,7 +108,7 @@ export const Impact = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10 bg-brand-surface">
         <div className="max-w-7xl mx-auto">
           <header className="mb-14 max-w-2xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">How we work with origin</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">How we work with origin</p>
             <h2 className="text-4xl md:text-6xl">From farm to your kitchen.</h2>
           </header>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +121,7 @@ export const Impact = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
-                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-primary mb-4">{p.n}</p>
+                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{p.n}</p>
                 <h3 className="text-2xl mb-3">{p.t}</h3>
                 <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{p.d}</p>
               </motion.div>
@@ -137,7 +137,7 @@ export const Impact = () => {
           <Link to="/36-steps" className="btn-primary !px-8 !py-4">
             <Network size={15} /> Follow the 36-step trace
           </Link>
-          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-brand-deep border border-brand-line rounded-full px-7 py-4 hover:border-brand-deep transition-colors">
+          <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-brand-forest border border-brand-line rounded-full px-7 py-4 hover:border-brand-forest transition-colors">
             Shop ingredients <ArrowRight size={14} />
           </Link>
         </div>

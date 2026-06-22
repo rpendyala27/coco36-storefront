@@ -129,7 +129,7 @@ export const AccountOrderDetail = () => {
             {/* ── Header ─────────────────────────────────────────────────── */}
             <header className="border-b border-brand-ink/10 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-2">
               <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-2">
+                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-2">
                   Order {order.order_number}
                 </p>
                 <h1 className="text-3xl md:text-4xl">
@@ -148,7 +148,7 @@ export const AccountOrderDetail = () => {
             {(order.status === 'shipped' || order.status === 'delivered') && order.shipment?.awb && (
               <section className="bg-brand-surface border border-brand-ink/10 p-6">
                 <div className="flex items-start gap-4">
-                  <Truck size={20} strokeWidth={1.5} className="text-brand-primary mt-1" />
+                  <Truck size={20} strokeWidth={1.5} className="text-brand-leaf mt-1" />
                   <div className="flex-1">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-brand-ink mb-1">
                       {order.shipment.courier ?? 'Courier'} · AWB {order.shipment.awb}
@@ -158,7 +158,7 @@ export const AccountOrderDetail = () => {
                     </p>
                     <Link
                       to={`/track/${order.shipment.awb}`}
-                      className="text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline"
+                      className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
                     >
                       Track shipment →
                     </Link>
@@ -174,12 +174,12 @@ export const AccountOrderDetail = () => {
                 className="block bg-brand-ink text-white p-6 hover:bg-brand-ink/90 transition-colors group"
               >
                 <div className="flex items-start gap-4">
-                  <FileText size={20} strokeWidth={1.5} className="text-brand-yellow mt-1" />
+                  <FileText size={20} strokeWidth={1.5} className="text-brand-gold mt-1" />
                   <div className="flex-1">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-white/60 mb-1">Tax Invoice</p>
                     <p className="text-sm font-bold flex items-center justify-between">
                       View &amp; download invoice
-                      <span className="text-brand-yellow group-hover:translate-x-1 transition-transform">→</span>
+                      <span className="text-brand-gold group-hover:translate-x-1 transition-transform">→</span>
                     </p>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ export const AccountOrderDetail = () => {
             {/* ── Items ───────────────────────────────────────────────────── */}
             <section>
               <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink mb-4">
-                <Package size={14} className="text-brand-primary" /> Items
+                <Package size={14} className="text-brand-leaf" /> Items
               </h2>
               <div className="bg-white border border-brand-ink/10 divide-y divide-brand-ink/5">
                 {order.items.map((it, i) => (
@@ -200,7 +200,7 @@ export const AccountOrderDetail = () => {
                         {it.variant?.product?.brand} · {it.variant?.size_label} · qty {it.qty}
                       </p>
                     </div>
-                    <span className="font-bold text-brand-indigo whitespace-nowrap">
+                    <span className="font-bold text-brand-ink whitespace-nowrap">
                       {formatMoney(it.unit_price_paise * it.qty)}
                     </span>
                   </div>
@@ -214,7 +214,7 @@ export const AccountOrderDetail = () => {
               <Row label="Shipping" value={order.shipping_paise === 0 ? 'Free' : formatMoney(order.shipping_paise)} />
               <div className="border-t border-brand-ink/10 pt-3 flex justify-between items-baseline">
                 <span className="text-[11px] uppercase tracking-widest font-bold">Total</span>
-                <span className="text-2xl font-bold text-brand-indigo">{formatMoney(order.total_paise)}</span>
+                <span className="text-2xl font-bold text-brand-ink">{formatMoney(order.total_paise)}</span>
               </div>
             </section>
 
@@ -222,7 +222,7 @@ export const AccountOrderDetail = () => {
             {order.shipping && (
               <section>
                 <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink mb-4">
-                  <MapPin size={14} className="text-brand-primary" /> Delivering to
+                  <MapPin size={14} className="text-brand-leaf" /> Delivering to
                 </h2>
                 <div className="bg-white border border-brand-ink/10 p-6">
                   <p className="font-bold text-brand-ink mb-1">{order.shipping.name}</p>
@@ -238,7 +238,7 @@ export const AccountOrderDetail = () => {
             {/* ── Payment ────────────────────────────────────────────────── */}
             <section>
               <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink mb-4">
-                <CreditCard size={14} className="text-brand-primary" /> Payment
+                <CreditCard size={14} className="text-brand-leaf" /> Payment
               </h2>
               <div className="bg-white border border-brand-ink/10 p-6">
                 <p className="text-sm text-brand-ink">
@@ -251,7 +251,7 @@ export const AccountOrderDetail = () => {
             {order.status === 'delivered' && (
               <section>
                 <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink mb-4">
-                  <RotateCcw size={14} className="text-brand-primary" /> Return this order
+                  <RotateCcw size={14} className="text-brand-leaf" /> Return this order
                 </h2>
                 <div className="bg-white border border-brand-ink/10 p-6">
                   {returnSubmitted ? (
@@ -282,7 +282,7 @@ export const AccountOrderDetail = () => {
                         <select
                           value={returnReason}
                           onChange={(e) => setReturnReason(e.target.value)}
-                          className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+                          className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
                         >
                           <option value="damaged">Damaged in transit</option>
                           <option value="wrong_item">Wrong item received</option>
@@ -300,7 +300,7 @@ export const AccountOrderDetail = () => {
                           onChange={(e) => setReturnNote(e.target.value)}
                           rows={3}
                           placeholder="Tell us a bit more so we can help…"
-                          className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-primary"
+                          className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
                         />
                       </div>
                       {returnError && (
@@ -310,7 +310,7 @@ export const AccountOrderDetail = () => {
                         <button
                           onClick={submitReturn}
                           disabled={returnSubmitting}
-                          className="px-5 py-3 bg-brand-primary text-white text-[10px] uppercase tracking-widest font-bold hover:bg-brand-primary/90 transition-colors disabled:opacity-50"
+                          className="px-5 py-3 bg-brand-leaf text-white text-[10px] uppercase tracking-widest font-bold hover:bg-brand-leaf/90 transition-colors disabled:opacity-50"
                         >
                           {returnSubmitting ? 'Submitting…' : 'Submit Request'}
                         </button>

@@ -12,7 +12,7 @@ export const ThirtySixSteps = () => {
       {/* HERO */}
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10">
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-brand-primary font-bold mb-6">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
             COCO<span className="text-brand-ink">36</span> · The Method
           </p>
           <h1 className="text-5xl md:text-7xl lg:text-8xl mb-10 leading-[0.95]">
@@ -26,15 +26,15 @@ export const ThirtySixSteps = () => {
           {/* Framework strip — structural facts, not metrics */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 pt-10 border-t border-brand-ink/10">
             <div>
-              <div className="text-4xl font-serif italic text-brand-primary mb-1">06</div>
+              <div className="text-4xl font-serif italic text-brand-leaf mb-1">06</div>
               <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Phases</p>
             </div>
             <div>
-              <div className="text-4xl font-serif italic text-brand-primary mb-1">36</div>
+              <div className="text-4xl font-serif italic text-brand-leaf mb-1">36</div>
               <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Checkpoints</p>
             </div>
             <div>
-              <div className="text-4xl font-serif italic text-brand-primary mb-1">All 6</div>
+              <div className="text-4xl font-serif italic text-brand-leaf mb-1">All 6</div>
               <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Categories</p>
             </div>
           </div>
@@ -96,7 +96,7 @@ export const ThirtySixSteps = () => {
                   <div className="shrink-0">
                     <div
                       className={`w-20 h-20 rotate-45 border-2 transition-all duration-500 flex items-center justify-center ${
-                        isOpen ? 'bg-brand-primary border-brand-primary' : 'bg-brand-paper border-brand-ink'
+                        isOpen ? 'bg-brand-leaf border-brand-leaf' : 'bg-brand-paper border-brand-ink'
                       }`}
                     >
                       <span className={`-rotate-45 font-serif italic text-2xl ${isOpen ? 'text-brand-paper' : 'text-brand-ink'}`}>
@@ -106,7 +106,7 @@ export const ThirtySixSteps = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-3">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-3">
                       Phase {idx + 1} · {phase.subtitle}
                     </p>
                     <h2 className="text-3xl md:text-5xl mb-3">{phase.title}</h2>
@@ -118,7 +118,7 @@ export const ThirtySixSteps = () => {
                   <ChevronDown
                     size={28}
                     strokeWidth={1.5}
-                    className={`shrink-0 transition-transform duration-500 ${isOpen ? 'rotate-180 text-brand-primary' : 'text-brand-ink/40'}`}
+                    className={`shrink-0 transition-transform duration-500 ${isOpen ? 'rotate-180 text-brand-leaf' : 'text-brand-ink/40'}`}
                   />
                 </button>
 
@@ -156,7 +156,7 @@ export const ThirtySixSteps = () => {
                                 key={step.number}
                                 className="flex gap-5 pb-5 border-b border-brand-ink/10 last:border-b-0 last:pb-0"
                               >
-                                <span className="font-serif italic text-3xl text-brand-primary tabular-nums shrink-0 leading-none w-12">
+                                <span className="font-serif italic text-3xl text-brand-leaf tabular-nums shrink-0 leading-none w-12">
                                   {String(step.number).padStart(2, '0')}
                                 </span>
                                 <div>
@@ -180,7 +180,7 @@ export const ThirtySixSteps = () => {
       {/* CTA */}
       <section className="px-6 md:px-12 lg:px-20 py-24 border-t border-brand-ink/10 bg-brand-surface">
         <div className="max-w-4xl mx-auto text-center">
-          <Sparkles size={28} strokeWidth={1.5} className="mx-auto text-brand-primary mb-6" />
+          <Sparkles size={28} strokeWidth={1.5} className="mx-auto text-brand-leaf mb-6" />
           <h2 className="text-4xl md:text-5xl mb-6">One standard, every lot.</h2>
           <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic mb-10 max-w-2xl mx-auto">
             From the grower who raised it to the kitchen where you finish it, this is the framework every COCO36 ingredient is held to, whichever category it belongs to.

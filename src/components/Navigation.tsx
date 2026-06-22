@@ -27,14 +27,14 @@ export const Navigation: React.FC = () => {
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors duration-200 pb-1 ${
-      isActive ? 'text-brand-primary border-b-2 border-brand-primary' : 'text-brand-deep/80 hover:text-brand-primary'
+      isActive ? 'text-brand-leaf border-b-2 border-brand-leaf' : 'text-brand-forest/80 hover:text-brand-leaf'
     }`;
 
   return (
     <>
       <header className="fixed top-0 left-0 w-full z-40">
         {/* Topbar */}
-        <div className="h-[30px] bg-brand-deep text-white/85 flex items-center">
+        <div className="h-[30px] bg-brand-forest text-white/85 flex items-center">
           <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 font-serif font-bold text-[10px] md:text-[11px] uppercase tracking-[0.08em]">
             <span className="truncate">FSSAI Licensed · Sourced direct from origin estates</span>
             <span className="hidden md:block whitespace-nowrap text-white/65">
@@ -50,10 +50,10 @@ export const Navigation: React.FC = () => {
             <NavLink to="/" className="flex items-center gap-2.5 shrink-0" aria-label="COCO36 — From crop to craft">
               <img src="/coco36-floral.png" alt="" className="h-10 w-auto" />
               <span className="flex flex-col items-start leading-none">
-                <span className="font-serif text-[22px] font-semibold tracking-tight text-brand-deep">
-                  COCO<span className="text-brand-yellow italic">36</span>
+                <span className="font-serif text-[22px] font-semibold tracking-tight text-brand-forest">
+                  COCO<span className="text-brand-gold italic">36</span>
                 </span>
-                <span className="text-[8px] uppercase tracking-[0.26em] text-brand-primary font-medium mt-1 hidden sm:block">From crop to craft</span>
+                <span className="text-[8px] uppercase tracking-[0.26em] text-brand-leaf font-medium mt-1 hidden sm:block">From crop to craft</span>
               </span>
             </NavLink>
 
@@ -66,19 +66,19 @@ export const Navigation: React.FC = () => {
 
             {/* Right utility */}
             <div className="flex items-center gap-2 md:gap-4 justify-end">
-              <button onClick={() => setSearchOpen(true)} className="p-2 text-brand-deep hover:text-brand-primary transition-colors" aria-label="Search">
+              <button onClick={() => setSearchOpen(true)} className="p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label="Search">
                 <Search size={18} strokeWidth={1.75} />
               </button>
-              <NavLink to="/quick-order" className="hidden lg:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Quick order</NavLink>
-              <NavLink to="/trade" className="hidden md:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Trade</NavLink>
+              <NavLink to="/quick-order" className="hidden lg:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Quick order</NavLink>
+              <NavLink to="/trade" className="hidden md:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Trade</NavLink>
               {user ? (
                 <ProfileDropdown />
               ) : (
-                <NavLink to="/auth" className="hidden md:inline text-sm font-medium text-brand-deep hover:text-brand-primary transition-colors">Account</NavLink>
+                <NavLink to="/auth" className="hidden md:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Account</NavLink>
               )}
 
               {/* Cart */}
-              <button onClick={openCart} className="relative p-2 text-brand-deep hover:text-brand-primary transition-colors" aria-label={`Open cart (${itemCount} items)`}>
+              <button onClick={openCart} className="relative p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label={`Open cart (${itemCount} items)`}>
                 <ShoppingBag size={18} strokeWidth={1.75} />
                 <AnimatePresence>
                   {itemCount > 0 && (
@@ -88,7 +88,7 @@ export const Navigation: React.FC = () => {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-yellow text-brand-deep text-[10px] font-bold flex items-center justify-center px-1"
+                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-gold text-brand-forest text-[10px] font-bold flex items-center justify-center px-1"
                     >
                       {itemCount > 99 ? '99+' : itemCount}
                     </motion.span>
@@ -96,7 +96,7 @@ export const Navigation: React.FC = () => {
                 </AnimatePresence>
               </button>
 
-              <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-brand-deep" aria-label="Menu">
+              <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-brand-forest" aria-label="Menu">
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
@@ -111,7 +111,7 @@ export const Navigation: React.FC = () => {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="fixed inset-0 bg-brand-deep/40 z-30 lg:hidden"
+              className="fixed inset-0 bg-brand-forest/40 z-30 lg:hidden"
             />
             <motion.div
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
@@ -122,7 +122,7 @@ export const Navigation: React.FC = () => {
                 onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
                 className="w-full flex items-center gap-3 bg-brand-surface text-brand-muted rounded-full px-4 py-3 mb-8 border border-brand-line"
               >
-                <Search size={16} className="text-brand-primary" />
+                <Search size={16} className="text-brand-leaf" />
                 <span className="text-sm">Search…</span>
               </button>
               <ul className="space-y-1">
@@ -132,7 +132,7 @@ export const Navigation: React.FC = () => {
                       to={link.to}
                       onClick={() => setMobileOpen(false)}
                       className={({ isActive }) =>
-                        `block py-3 px-4 rounded-lg text-base font-medium transition-colors ${isActive ? 'bg-brand-surface text-brand-primary' : 'text-brand-deep hover:bg-brand-surface'}`
+                        `block py-3 px-4 rounded-lg text-base font-medium transition-colors ${isActive ? 'bg-brand-surface text-brand-leaf' : 'text-brand-forest hover:bg-brand-surface'}`
                       }
                     >
                       {link.label}
@@ -155,7 +155,7 @@ export const Navigation: React.FC = () => {
         {searchOpen && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-brand-deep/85 backdrop-blur-md z-50 flex items-start justify-center pt-32 px-6"
+            className="fixed inset-0 bg-brand-forest/85 backdrop-blur-md z-50 flex items-start justify-center pt-32 px-6"
             onClick={() => setSearchOpen(false)}
           >
             <motion.div

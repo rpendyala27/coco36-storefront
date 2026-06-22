@@ -129,7 +129,7 @@ export const AccountInvoice = () => {
         <p className="text-sm text-red-700 bg-red-50 border border-red-200 px-4 py-3 mb-6">
           {error ?? 'Could not load invoice.'}
         </p>
-        <Link to="/account" className="text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline">
+        <Link to="/account" className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline">
           ← Back to Account
         </Link>
       </div>
@@ -151,7 +151,7 @@ export const AccountInvoice = () => {
           </p>
           <Link
             to={`/account/orders/${order.id}`}
-            className="text-[10px] uppercase tracking-widest font-bold text-brand-primary hover:underline"
+            className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
           >
             Back to Order →
           </Link>
@@ -177,7 +177,7 @@ export const AccountInvoice = () => {
           </span>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white text-[11px] uppercase tracking-widest font-bold hover:bg-brand-primary/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-brand-leaf text-white text-[11px] uppercase tracking-widest font-bold hover:bg-brand-leaf/90 transition-colors"
           >
             <Printer size={13} /> Print / Save PDF
           </button>

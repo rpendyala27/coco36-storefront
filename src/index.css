@@ -5,57 +5,45 @@
   /* ─── Type — Panera-reference reskin ─────────────────────────
      Archivo (bold grotesque display) · DM Sans (body/UI) · JetBrains Mono (codes).
      NOTE: --font-serif is intentionally mapped to Archivo (a sans) so every
-     existing `font-serif` / heading usage flips from the old Fraunces serif to
-     the bold grotesque with zero per-component churn. */
+     existing `font-serif` / heading usage renders the bold grotesque. */
   --font-sans:  "DM Sans", "Helvetica Neue", Arial, sans-serif;
   --font-serif: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
-  /* ─── Forest green + lime — primary brand scale ──────────────
-     Token NAMES kept from the old palette so existing components inherit the
-     new skin; values remapped to the Panera reference (forest green chrome,
-     lime-chartreuse pop). See design/STOREFRONT_REDESIGN.md. */
-  --color-brand-primary:        #4e7d24;  /* leaf green — links, active, focus */
-  --color-brand-primary-bright: #5c9329;  /* hover */
-  --color-brand-coral:          #5c9329;  /* repurposed → success / "added" green */
+  /* ─── Brand palette — semantic names (Panera reference) ───────
+     Three greens + a sparing gold on a black/white base. */
 
-  /* Gold/amber — SPARING premium accent only (NEW badge, cart count, key/hero
-     CTA, logo "36"). Warm metallic that harmonizes with cocoa/spice — NOT a
-     fast-casual lime. The brand's single pop colour, used wisely. */
-  --color-brand-yellow:         #c08a2e;
-  --color-brand-amber:          #a6741f;  /* deep gold — borders / hover */
-  --color-brand-lemon:          #ead9b8;  /* pale gold tint */
+  /* Leaf green — links, active, primary CTA */
+  --color-brand-leaf:        #4e7d24;
+  --color-brand-leaf-bright: #5c9329;  /* hover / success / "added" */
 
-  /* Forest green — dark surfaces (topbar, footer, dark bands) */
-  --color-brand-purple:         #27401b;
-  --color-brand-berry:          #172a10;  /* deepest */
-  --color-brand-indigo:         #1a1a1a;  /* headings → near-black (greens used as accents) */
+  /* Gold — SPARING premium accent (NEW badge, cart count, hero CTA, logo "36") */
+  --color-brand-gold:        #c08a2e;
+  --color-brand-gold-deep:   #a6741f;  /* borders / hover */
+  --color-brand-gold-pale:   #ead9b8;  /* faint gold tint */
 
-  /* Neutrals — BLACK + WHITE base; the 3 greens stay accents.
-     Text is near-black / neutral grey (NOT green-tinted) so green reads as
-     deliberate. Surface near-white-neutral; band keeps one faint green wash. */
-  --color-brand-paper:          #ffffff;  /* page bg (white) */
-  --color-brand-surface:        #f6f7f3;  /* cards / near-white neutral */
-  --color-brand-band:           #ecf1da;  /* faint green wash — bands / hover */
-  --color-brand-ink:            #1a1a1a;  /* near-black body text */
-  --color-brand-muted:          #6b6b6b;  /* neutral grey secondary text */
+  /* Forest green — dark chrome (topbar, footer, dark bands) */
+  --color-brand-forest:      #27401b;
+  --color-brand-forest-deep: #172a10;
 
-  /* Convenience aliases */
-  --color-brand-teal:           #4e7d24;  /* leaf */
-  --color-brand-sea:            #5c9329;  /* success green */
-  --color-brand-deep:           #27401b;  /* forest */
-  --color-brand-line:           rgba(0, 0, 0, 0.10);  /* neutral hairline */
+  /* Neutrals — black + white base; greens/gold stay accents */
+  --color-brand-paper:       #ffffff;  /* page bg (white) */
+  --color-brand-surface:     #f6f7f3;  /* cards / near-white neutral */
+  --color-brand-band:        #ecf1da;  /* faint green wash — bands / hover */
+  --color-brand-ink:         #1a1a1a;  /* near-black text + headings */
+  --color-brand-muted:       #6b6b6b;  /* neutral grey secondary text */
+  --color-brand-line:        rgba(0, 0, 0, 0.10);  /* neutral hairline */
 }
 
 @layer base {
   body {
-    @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-yellow selection:text-brand-deep;
+    @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-gold selection:text-brand-forest;
     background-color: #ffffff;
   }
 
   /* Bold grotesque display headings (Archivo) — the Panera punch */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-extrabold tracking-tight text-brand-indigo;
+    @apply font-serif font-extrabold tracking-tight text-brand-ink;
   }
 }
 
@@ -65,23 +53,22 @@
     @apply font-serif italic font-semibold;
   }
 
-  /* Eyebrow / mono label */
+  /* Eyebrow — bold uppercase label */
   .eyebrow {
     @apply font-serif font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
   }
 
-  /* Brand card — flat, faint lime-cream surface, hairline border.
-     (Name kept from the peacock pass; components reference it.) */
+  /* Brand card — flat, hairline border, soft rounded.
+     (Class name kept; rename to `.card` is a separate cleanup.) */
   .card-peacock {
     @apply bg-white border border-brand-line rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)];
   }
 
-  /* Primary transactional CTA — SOLID leaf green + white text (Add to bag,
-     Checkout, Place order). Max affordance, fully rounded. Green is the
-     workhorse action colour; gold stays sparing. */
+  /* Primary transactional CTA — solid leaf green + white text (Add to bag,
+     Checkout, Place order). Max affordance, fully rounded. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 font-bold rounded-full px-6 py-3 transition-colors duration-200;
-    background-color: var(--color-brand-primary);
+    background-color: var(--color-brand-leaf);
     color: #ffffff;
   }
   .btn-primary:hover { background-color: #3f6a1d; }
@@ -91,19 +78,19 @@
   .btn-gradient {
     @apply inline-flex items-center justify-center gap-2 font-bold rounded-full px-6 py-3 transition-all duration-200;
     background-image: linear-gradient(135deg, #cda23f 0%, #b07d24 100%);
-    color: #27401b;
+    color: var(--color-brand-forest);
   }
   .btn-gradient:hover { filter: brightness(1.04); }
 
   /* Dark secondary CTA — forest fill, white text (e.g. dark bands) */
   .btn-forest {
     @apply inline-flex items-center justify-center gap-2 text-white font-bold rounded-full px-6 py-3 transition-colors duration-200;
-    background-color: #27401b;
+    background-color: var(--color-brand-forest);
   }
-  .btn-forest:hover { background-color: #172a10; }
+  .btn-forest:hover { background-color: var(--color-brand-forest-deep); }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 bg-white text-brand-deep font-semibold rounded-full px-6 py-3 border border-brand-deep hover:bg-brand-band transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 bg-white text-brand-forest font-semibold rounded-full px-6 py-3 border border-brand-forest hover:bg-brand-band transition-all duration-200;
   }
 
   /* Pill badge */
@@ -138,7 +125,7 @@
    focus:outline-none for mouse; this restores it for keyboard users). */
 a:focus-visible, button:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid var(--color-brand-primary);
+  outline: 2px solid var(--color-brand-leaf);
   outline-offset: 2px;
   border-radius: 3px;
 }

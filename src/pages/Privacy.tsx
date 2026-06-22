@@ -15,7 +15,7 @@ export const Privacy = () => {
         <p>
           COCO36 is operated by COCO36 Foods Pvt Ltd. We sell origin-traceable
           ingredients direct to home kitchens and craft makers from{' '}
-          <a href="https://coco36.com" className="text-brand-primary hover:underline">coco36.com</a>.
+          <a href="https://coco36.com" className="text-brand-leaf hover:underline">coco36.com</a>.
         </p>
       </Section>
 
@@ -59,7 +59,7 @@ export const Privacy = () => {
           You can request access, correction, or deletion of your personal
           data, and you can withdraw consent for marketing at any time. Write
           to{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">
             pendyalarohan27@gmail.com
           </a>{' '}
           and we will respond within 30 days.
@@ -79,7 +79,7 @@ export const Privacy = () => {
         <p>
           For any question, complaint, or request about your personal data,
           contact our Grievance Officer at{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-primary hover:underline">pendyalarohan27@gmail.com</a>.
+          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">pendyalarohan27@gmail.com</a>.
           We acknowledge within 48 hours and aim to resolve within 30 days.
         </p>
       </Section>

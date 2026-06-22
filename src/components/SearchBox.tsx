@@ -80,9 +80,9 @@ export function SearchBox({
     <div ref={wrapRef} className="relative w-full">
       <form
         onSubmit={(e) => { e.preventDefault(); goToResults(q); }}
-        className="flex items-center gap-2 bg-white border border-brand-line rounded-full pl-5 pr-2 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] focus-within:border-brand-primary transition-colors"
+        className="flex items-center gap-2 bg-white border border-brand-line rounded-full pl-5 pr-2 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] focus-within:border-brand-leaf transition-colors"
       >
-        <Search size={18} className="text-brand-primary shrink-0" />
+        <Search size={18} className="text-brand-leaf shrink-0" />
         <input
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
@@ -90,10 +90,10 @@ export function SearchBox({
           autoFocus={autoFocus}
           placeholder="Search ingredients, origins, certifications…"
           aria-label="Search the catalogue"
-          className="flex-1 bg-transparent text-[15px] placeholder:text-brand-muted/70 focus:outline-none text-brand-deep min-w-0"
+          className="flex-1 bg-transparent text-[15px] placeholder:text-brand-muted/70 focus:outline-none text-brand-forest min-w-0"
         />
         {q && (
-          <button type="button" onClick={() => { setQ(''); setOpen(false); }} className="text-brand-muted hover:text-brand-deep p-1.5 shrink-0" aria-label="Clear search">
+          <button type="button" onClick={() => { setQ(''); setOpen(false); }} className="text-brand-muted hover:text-brand-forest p-1.5 shrink-0" aria-label="Clear search">
             <X size={16} />
           </button>
         )}
@@ -113,7 +113,7 @@ export function SearchBox({
                   >
                     <img src={p.image} alt="" className="size-9 rounded object-cover bg-brand-surface shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm text-brand-deep truncate">{p.name}</span>
+                      <span className="block text-sm text-brand-forest truncate">{p.name}</span>
                       <span className="block text-[11px] text-brand-muted truncate">{p.origin || p.brand}</span>
                     </span>
                   </button>
@@ -124,7 +124,7 @@ export function SearchBox({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => goToResults(q)}
-                  className="w-full text-left px-4 py-2.5 text-[12px] font-medium text-brand-primary border-t border-brand-line hover:bg-brand-surface transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-[12px] font-medium text-brand-leaf border-t border-brand-line hover:bg-brand-surface transition-colors"
                 >
                   See all results for “{q.trim()}” →
                 </button>

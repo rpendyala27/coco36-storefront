@@ -42,7 +42,7 @@ export const CookieBanner = () => {
       >
         {/* On mobile this is a slim single-row bar; on md+ it expands to a card. */}
         <div className="flex items-center md:items-start gap-3 max-w-7xl mx-auto">
-          <div className="hidden md:flex size-8 rounded-full bg-brand-yellow/20 text-brand-purple items-center justify-center shrink-0">
+          <div className="hidden md:flex size-8 rounded-full bg-brand-gold/20 text-brand-forest items-center justify-center shrink-0">
             <Cookie size={16} />
           </div>
           <div className="flex-1 min-w-0">
@@ -52,14 +52,14 @@ export const CookieBanner = () => {
                 We use cookies to remember your cart, login, and pincode. No
                 third-party advertising trackers.{' '}
               </span>
-              <NavLink to="/privacy" className="text-brand-primary hover:underline whitespace-nowrap">
+              <NavLink to="/privacy" className="text-brand-leaf hover:underline whitespace-nowrap">
                 Read more
               </NavLink>.
             </p>
             <div className="hidden md:flex items-center gap-2 mt-4">
               <button
                 onClick={() => decide('accepted')}
-                className="bg-brand-primary hover:bg-brand-primary-bright text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-colors"
+                className="bg-brand-leaf hover:bg-brand-leaf-bright text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-colors"
               >
                 Accept
               </button>
@@ -74,7 +74,7 @@ export const CookieBanner = () => {
           {/* Mobile-only inline actions */}
           <button
             onClick={() => decide('accepted')}
-            className="md:hidden bg-brand-primary text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg shrink-0"
+            className="md:hidden bg-brand-leaf text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg shrink-0"
           >
             Accept
           </button>

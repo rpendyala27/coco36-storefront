@@ -89,7 +89,7 @@ export const Partnerships = () => {
       <section className="relative pt-36 pb-24 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10 overflow-hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-7">
-            <p className="text-[10px] uppercase tracking-[0.4em] text-brand-primary font-bold mb-6">
+            <p className="text-[10px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
               Partnerships & Innovation
             </p>
             <h1 className="text-5xl md:text-7xl lg:text-8xl mb-8 leading-[0.95]">
@@ -127,7 +127,7 @@ export const Partnerships = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10">
         <div className="max-w-7xl mx-auto">
           <header className="mb-16 max-w-3xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">What We Offer</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">What We Offer</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for brands.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
               Four pillars of co-creation, backed by hands-on R&D and application support.
@@ -144,7 +144,7 @@ export const Partnerships = () => {
                 transition={{ delay: i * 0.1, duration: 0.6 }}
                 className="bg-brand-paper p-8 md:p-12 group hover:bg-brand-surface/30 transition-colors"
               >
-                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-primary group-hover:bg-brand-primary group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
+                <div className="w-12 h-12 border border-brand-ink/20 group-hover:border-brand-leaf group-hover:bg-brand-leaf group-hover:text-brand-paper transition-all duration-500 flex items-center justify-center mb-6">
                   <o.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl mb-3">{o.title}</h3>
@@ -159,7 +159,7 @@ export const Partnerships = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10 bg-brand-surface">
         <div className="max-w-7xl mx-auto">
           <header className="mb-14 text-center max-w-2xl mx-auto">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Industries We Serve</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Industries We Serve</p>
             <h2 className="text-4xl md:text-6xl">Where we work.</h2>
           </header>
 
@@ -173,7 +173,7 @@ export const Partnerships = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10 hover:border-brand-ink/30 transition-all"
               >
-                <ind.icon size={28} strokeWidth={1.5} className="text-brand-primary mb-6" />
+                <ind.icon size={28} strokeWidth={1.5} className="text-brand-leaf mb-6" />
                 <h3 className="text-xl mb-3 leading-tight">{ind.title}</h3>
                 <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{ind.stat}</p>
               </motion.div>
@@ -186,7 +186,7 @@ export const Partnerships = () => {
       <section className="px-6 md:px-12 lg:px-20 py-24 border-b border-brand-ink/10">
         <div className="max-w-7xl mx-auto">
           <header className="mb-16 max-w-3xl">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Our Process</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Our Process</p>
             <h2 className="text-4xl md:text-6xl mb-6">Brief → Scale in five.</h2>
             <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
               A repeatable, transparent path, typically 3-6 months from first conversation to commercial launch.
@@ -206,9 +206,9 @@ export const Partnerships = () => {
                   className={`relative flex flex-col md:flex-row gap-6 items-start ${i % 2 === 1 ? 'md:flex-row-reverse md:text-right' : ''}`}
                 >
                   {/* Diamond node */}
-                  <div className="absolute left-[34px] md:left-1/2 w-4 h-4 rotate-45 bg-brand-primary -translate-x-1/2 top-3" />
+                  <div className="absolute left-[34px] md:left-1/2 w-4 h-4 rotate-45 bg-brand-leaf -translate-x-1/2 top-3" />
                   <div className="md:w-1/2 pl-20 md:pl-0 md:px-12">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-2">Step {step.num}</p>
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-2">Step {step.num}</p>
                     <h3 className="text-3xl mb-3">{step.title}</h3>
                     <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic max-w-md">
                       {step.desc}
@@ -231,7 +231,7 @@ export const Partnerships = () => {
               animate={{ opacity: 1, y: 0 }}
               className="text-center py-20"
             >
-              <div className="w-20 h-20 rounded-full bg-brand-primary text-brand-paper flex items-center justify-center mx-auto mb-8">
+              <div className="w-20 h-20 rounded-full bg-brand-leaf text-brand-paper flex items-center justify-center mx-auto mb-8">
                 <Check size={36} strokeWidth={1.5} />
               </div>
               <h2 className="text-5xl mb-6">Brief received.</h2>
@@ -242,7 +242,7 @@ export const Partnerships = () => {
           ) : (
             <>
               <header className="text-center mb-14">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">Discuss a Project</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Discuss a Project</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you're building.</h2>
                 <p className="text-lg text-brand-paper/70 font-serif italic">
                   Volume, application, timing, the more context, the faster we can match you to the right specialist.
@@ -265,7 +265,7 @@ export const Partnerships = () => {
                         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                         placeholder={placeholder}
                         required
-                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30"
+                        className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg placeholder:text-brand-paper/30"
                       />
                     </div>
                   ))}
@@ -277,7 +277,7 @@ export const Partnerships = () => {
                     value={form.application}
                     onChange={(e) => setForm({ ...form, application: e.target.value })}
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg appearance-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg appearance-none"
                   >
                     <option value="" className="bg-brand-ink">Select…</option>
                     <option className="bg-brand-ink">Confectionery / Chocolate</option>
@@ -296,19 +296,19 @@ export const Partnerships = () => {
                     rows={5}
                     placeholder="Tell us what you're building, target launch date, sensory profile, anything else relevant…"
                     required
-                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-paper/30 resize-none"
+                    className="w-full bg-transparent border-b border-brand-paper/20 py-3 focus:outline-none focus:border-brand-leaf text-lg placeholder:text-brand-paper/30 resize-none"
                   />
                 </div>
 
                 {error && (
-                  <p className="text-sm text-brand-primary bg-brand-primary/10 px-4 py-3 text-center">
+                  <p className="text-sm text-brand-leaf bg-brand-leaf/10 px-4 py-3 text-center">
                     {error}
                   </p>
                 )}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-4 rounded-full bg-white text-brand-deep font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
+                  className="w-full py-4 rounded-full bg-white text-brand-forest font-semibold flex items-center justify-center gap-2 hover:bg-brand-band transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Sending…' : <>Submit brief <Send size={14} /></>}
                 </button>
@@ -323,7 +323,7 @@ export const Partnerships = () => {
         <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-4">Already in the network?</p>
         <Link
           to="/auth"
-          className="text-2xl font-serif italic text-brand-primary hover:underline"
+          className="text-2xl font-serif italic text-brand-leaf hover:underline"
         >
           Login to your partner portal →
         </Link>

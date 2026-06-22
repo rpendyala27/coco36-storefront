@@ -104,7 +104,7 @@ export const PincodePopup = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-brand-indigo/70 backdrop-blur-sm z-50 flex items-center justify-center px-4"
+          className="fixed inset-0 bg-brand-ink/70 backdrop-blur-sm z-50 flex items-center justify-center px-4"
           onClick={skip}
         >
           <motion.div
@@ -123,7 +123,7 @@ export const PincodePopup = () => {
               <X size={16} />
             </button>
 
-            <div className="size-12 rounded-xl bg-brand-yellow/20 text-brand-purple flex items-center justify-center mb-4">
+            <div className="size-12 rounded-xl bg-brand-gold/20 text-brand-forest flex items-center justify-center mb-4">
               <MapPin size={22} />
             </div>
 
@@ -142,24 +142,24 @@ export const PincodePopup = () => {
                   value={pincode}
                   onChange={(e) => { setPincode(e.target.value.replace(/\D/g, '')); setError(null); }}
                   placeholder="6-digit pincode"
-                  className="flex-1 border border-brand-surface focus:border-brand-primary rounded-xl px-4 py-3 text-base font-medium tracking-wider focus:outline-none transition-colors text-brand-ink"
+                  className="flex-1 border border-brand-surface focus:border-brand-leaf rounded-xl px-4 py-3 text-base font-medium tracking-wider focus:outline-none transition-colors text-brand-ink"
                   aria-label="Pincode"
                 />
                 <button
                   type="submit"
-                  className="bg-brand-primary hover:bg-brand-primary-bright text-white font-bold px-5 rounded-xl transition-colors"
+                  className="bg-brand-leaf hover:bg-brand-leaf-bright text-white font-bold px-5 rounded-xl transition-colors"
                 >
                   Save
                 </button>
               </div>
 
-              {error && <p className="text-xs text-brand-primary">{error}</p>}
+              {error && <p className="text-xs text-brand-leaf">{error}</p>}
 
               <button
                 type="button"
                 onClick={useLocation}
                 disabled={locating}
-                className="w-full flex items-center justify-center gap-2 border border-brand-surface hover:border-brand-primary text-brand-ink hover:text-brand-primary text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 border border-brand-surface hover:border-brand-leaf text-brand-ink hover:text-brand-leaf text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-60"
               >
                 {locating
                   ? <><Loader2 size={14} className="animate-spin" /> Locating…</>

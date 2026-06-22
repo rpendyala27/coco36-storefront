@@ -290,11 +290,11 @@ export const Checkout = () => {
           initial={{ scale: 0, rotate: -90 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-20 h-20 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center mb-10"
+          className="w-20 h-20 rounded-full bg-brand-leaf/10 text-brand-leaf flex items-center justify-center mb-10"
         >
           <Check size={36} strokeWidth={1.5} />
         </motion.div>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-brand-primary font-bold mb-4">
+        <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">
           Order {confirmedOrder.orderNumber}
         </p>
         <h1 className="text-5xl mb-6">Order Confirmed.</h1>
@@ -331,19 +331,19 @@ export const Checkout = () => {
         </Link>
 
         <header className="mb-8 border-b border-brand-line pb-8">
-          <span className="eyebrow text-brand-primary mb-3 block">Secure Checkout</span>
+          <span className="eyebrow text-brand-leaf mb-3 block">Secure Checkout</span>
           <h1 className="text-5xl md:text-6xl">Place your order.</h1>
           {/* Endowed progress — the cart step is already done, so this feels almost finished */}
           <div className="flex items-center gap-3 mt-6 max-w-md">
             {['Cart', 'Details', 'Payment'].map((s, i) => (
               <React.Fragment key={s}>
                 <div className="flex items-center gap-2">
-                  <span className={`size-6 rounded-full flex items-center justify-center text-[11px] font-bold ${i === 0 ? 'bg-brand-primary text-white' : i === 1 ? 'bg-brand-deep text-white' : 'bg-brand-band text-brand-muted'}`}>
+                  <span className={`size-6 rounded-full flex items-center justify-center text-[11px] font-bold ${i === 0 ? 'bg-brand-leaf text-white' : i === 1 ? 'bg-brand-forest text-white' : 'bg-brand-band text-brand-muted'}`}>
                     {i === 0 ? <Check size={12} strokeWidth={3} /> : i + 1}
                   </span>
-                  <span className={`text-[12px] font-medium ${i < 2 ? 'text-brand-deep' : 'text-brand-muted'}`}>{s}</span>
+                  <span className={`text-[12px] font-medium ${i < 2 ? 'text-brand-forest' : 'text-brand-muted'}`}>{s}</span>
                 </div>
-                {i < 2 && <div className={`flex-1 h-px ${i === 0 ? 'bg-brand-deep' : 'bg-brand-line'}`} />}
+                {i < 2 && <div className={`flex-1 h-px ${i === 0 ? 'bg-brand-forest' : 'bg-brand-line'}`} />}
               </React.Fragment>
             ))}
           </div>
@@ -358,11 +358,11 @@ export const Checkout = () => {
             {/* Contact */}
             <section>
               <h2 className="text-2xl mb-2 flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-sans not-italic">1</span>
+                <span className="w-7 h-7 rounded-full bg-brand-forest text-white text-xs flex items-center justify-center font-sans not-italic">1</span>
                 Contact
               </h2>
               <p className="text-sm text-brand-muted mb-5 ml-10">
-                Signed in as <span className="font-medium text-brand-deep">{form.email}</span>.
+                Signed in as <span className="font-medium text-brand-forest">{form.email}</span>.
               </p>
               <div className="grid grid-cols-1 gap-5 mt-4">
                 <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="name" />
@@ -374,7 +374,7 @@ export const Checkout = () => {
             {/* Shipping */}
             <section>
               <h2 className="text-2xl mb-6 flex items-center gap-3">
-                <span className="w-7 h-7 rounded-full bg-brand-deep text-white text-xs flex items-center justify-center font-sans not-italic">2</span>
+                <span className="w-7 h-7 rounded-full bg-brand-forest text-white text-xs flex items-center justify-center font-sans not-italic">2</span>
                 <Truck size={18} strokeWidth={1.5} className="text-brand-muted" />
                 Shipping Address
               </h2>
@@ -417,7 +417,7 @@ export const Checkout = () => {
                         setBillId(addresses.find((a) => a.is_default)?.id ?? selectedShipId);
                       }
                     }}
-                    className="accent-brand-primary size-4"
+                    className="accent-brand-leaf size-4"
                   />
                   Same as shipping address
                 </label>
@@ -516,7 +516,7 @@ export const Checkout = () => {
                   <span className="text-brand-muted">Shipping</span>
                   <span className="font-semibold">
                     {totals.shipping_paise === 0
-                      ? <span className="text-brand-primary text-[10px] uppercase tracking-widest font-bold">Free</span>
+                      ? <span className="text-brand-leaf text-[10px] uppercase tracking-widest font-bold">Free</span>
                       : formatMoney(totals.shipping_paise)}
                   </span>
                 </div>
@@ -528,13 +528,13 @@ export const Checkout = () => {
                 )}
                 <div className="flex justify-between pt-3 border-t border-brand-line items-baseline">
                   <span className="text-[11px] uppercase tracking-widest font-bold">Total · incl. taxes</span>
-                  <span className="font-serif font-bold text-3xl text-brand-deep">{formatMoney(totals.total_paise)}</span>
+                  <span className="font-serif font-bold text-3xl text-brand-forest">{formatMoney(totals.total_paise)}</span>
                 </div>
               </div>
 
               {freeShippingRemaining(totals.subtotal_paise, cfg) > 0 && (
                 <p className="text-[12px] text-brand-muted text-center bg-brand-paper py-3 border border-brand-line rounded">
-                  Add <span className="text-brand-deep font-bold">{formatMoney(freeShippingRemaining(totals.subtotal_paise, cfg))}</span> more for free shipping
+                  Add <span className="text-brand-forest font-bold">{formatMoney(freeShippingRemaining(totals.subtotal_paise, cfg))}</span> more for free shipping
                 </p>
               )}
 
@@ -569,7 +569,7 @@ export const Checkout = () => {
 
               <p className="text-[11px] text-brand-muted text-center opacity-70">
                 By placing this order you agree to our{' '}
-                <Link to="/terms" className="underline hover:text-brand-deep">terms</Link>.
+                <Link to="/terms" className="underline hover:text-brand-forest">terms</Link>.
               </p>
             </div>
           </aside>
@@ -588,14 +588,14 @@ const AddressPickCard: React.FC<{ a: BookAddress; selected: boolean; onSelect: (
     <button
       type="button"
       onClick={onSelect}
-      className={`text-left border p-3.5 rounded-xl transition-colors ${selected ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
+      className={`text-left border p-3.5 rounded-xl transition-colors ${selected ? 'border-brand-leaf bg-brand-leaf/5' : 'border-brand-line hover:border-brand-forest'}`}
     >
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}
-        {a.is_default && <span className="text-[9px] uppercase tracking-widest font-bold text-brand-primary bg-brand-primary/10 px-1.5 py-0.5 rounded">Default</span>}
+        {a.is_default && <span className="text-[9px] uppercase tracking-widest font-bold text-brand-leaf bg-brand-leaf/10 px-1.5 py-0.5 rounded">Default</span>}
         {showGstin && a.gstin && <span className="text-[9px] uppercase tracking-widest font-bold text-brand-muted bg-brand-band px-1.5 py-0.5 rounded">GST</span>}
       </div>
-      <p className="text-sm text-brand-deep leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
+      <p className="text-sm text-brand-forest leading-snug">{a.line1}{a.line2 ? `, ${a.line2}` : ''}</p>
       <p className="text-xs text-brand-muted mt-0.5">{a.city}, {a.state} {a.pincode}</p>
       {showGstin && a.gstin && <p className="text-[11px] text-brand-muted mt-1 font-mono">GSTIN: {a.gstin}</p>}
     </button>
@@ -607,7 +607,7 @@ function AddNewCard({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-left border border-dashed border-brand-line p-3.5 rounded-xl text-sm font-medium text-brand-muted hover:border-brand-deep hover:text-brand-deep transition-colors inline-flex items-center gap-2"
+      className="text-left border border-dashed border-brand-line p-3.5 rounded-xl text-sm font-medium text-brand-muted hover:border-brand-forest hover:text-brand-forest transition-colors inline-flex items-center gap-2"
     >
       <Plus size={14} /> Add a new address
     </button>
@@ -636,7 +636,7 @@ function Field({ label, value, onChange, type = 'text', required, placeholder, a
         placeholder={placeholder}
         autoComplete={autoComplete}
         readOnly={readOnly}
-        className={`w-full bg-transparent border-b border-brand-line py-3 focus:outline-none focus:border-brand-primary text-lg placeholder:text-brand-muted/50 placeholder:not-italic ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
+        className={`w-full bg-transparent border-b border-brand-line py-3 focus:outline-none focus:border-brand-leaf text-lg placeholder:text-brand-muted/50 placeholder:not-italic ${readOnly ? 'opacity-60 cursor-not-allowed' : ''}`}
       />
     </div>
   );
@@ -656,18 +656,18 @@ function PaymentOption({ selected, onSelect, title, hint, icon }: PaymentOptionP
       onClick={onSelect}
       className={`w-full flex items-center gap-4 px-5 py-4 border-2 rounded-xl transition-all text-left ${
         selected
-          ? 'border-brand-primary bg-brand-primary/5'
+          ? 'border-brand-leaf bg-brand-leaf/5'
           : 'border-brand-ink/15 hover:border-brand-ink/40'
       }`}
     >
-      <div className={`w-10 h-10 flex items-center justify-center ${selected ? 'text-brand-primary' : 'text-brand-muted'}`}>
+      <div className={`w-10 h-10 flex items-center justify-center ${selected ? 'text-brand-leaf' : 'text-brand-muted'}`}>
         {icon}
       </div>
       <div className="flex-1">
         <p className="text-sm font-bold">{title}</p>
         <p className="text-[10px] uppercase tracking-widest text-brand-muted">{hint}</p>
       </div>
-      <div className={`w-4 h-4 rounded-full border-2 ${selected ? 'border-brand-primary bg-brand-primary' : 'border-brand-ink/30'}`} />
+      <div className={`w-4 h-4 rounded-full border-2 ${selected ? 'border-brand-leaf bg-brand-leaf' : 'border-brand-ink/30'}`} />
     </button>
   );
 }

@@ -23,11 +23,11 @@ export const RecipeConsultant = () => {
     <div className="bg-brand-paper min-h-screen">
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20">
         <div className="max-w-3xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-primary/10 text-brand-primary font-serif font-bold text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-leaf/10 text-brand-leaf font-serif font-bold text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
             <Sparkles size={13} strokeWidth={1.8} /> Coming soon
           </span>
 
-          <p className="eyebrow text-brand-primary mb-4">COCO AI · Recipe consultant</p>
+          <p className="eyebrow text-brand-leaf mb-4">COCO AI · Recipe consultant</p>
           <h1 className="text-5xl md:text-7xl mb-8 leading-[0.95]">
             Recipes & pairings,<br />
             <span className="italic">powered by COCO AI.</span>
@@ -47,7 +47,7 @@ export const RecipeConsultant = () => {
               transition={{ delay: i * 0.08, duration: 0.5 }}
               className="bg-brand-paper p-8"
             >
-              <div className="w-11 h-11 border border-brand-ink/20 flex items-center justify-center mb-5 text-brand-primary">
+              <div className="w-11 h-11 border border-brand-ink/20 flex items-center justify-center mb-5 text-brand-leaf">
                 <c.icon size={18} strokeWidth={1.5} />
               </div>
               <h3 className="text-xl mb-2">{c.title}</h3>
