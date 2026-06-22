@@ -68,7 +68,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
         )}
         <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start">
           {badgeItems.map((b) => (
-            <span key={b.label} className={`font-serif font-bold text-[10px] uppercase tracking-[0.08em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-forest' : 'bg-white/90 text-brand-forest'}`}>
+            <span key={b.label} className={`font-serif font-bold text-[10px] uppercase tracking-[0.08em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-ink' : 'bg-white/90 text-brand-forest'}`}>
               {b.label}
             </span>
           ))}

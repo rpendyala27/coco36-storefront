@@ -88,7 +88,7 @@ export const Navigation: React.FC = () => {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-gold text-brand-forest text-[10px] font-bold flex items-center justify-center px-1"
+                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-gold text-brand-ink text-[10px] font-bold flex items-center justify-center px-1"
                     >
                       {itemCount > 99 ? '99+' : itemCount}
                     </motion.span>
