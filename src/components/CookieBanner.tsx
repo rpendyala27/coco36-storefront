@@ -35,7 +35,7 @@ export const CookieBanner = () => {
         transition={{ duration: 0.25 }}
         className="fixed z-50 inset-x-0 bottom-0 md:inset-x-auto md:left-auto md:right-6 md:bottom-6 md:max-w-md
                    bg-white border-t border-black/10 md:border-0 md:ring-1 md:ring-black/5
-                   md:rounded-2xl shadow-[0_-2px_12px_rgba(10,40,33,0.10)] md:shadow-2xl
+                   md:rounded-2xl shadow-[0_-2px_12px_rgba(0,0,0,0.10)] md:shadow-2xl
                    px-4 py-2.5 md:p-5"
         role="dialog"
         aria-label="Cookie preferences"

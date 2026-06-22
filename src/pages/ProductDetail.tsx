@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import type * as React from 'react';
 import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
@@ -85,7 +86,7 @@ export const ProductDetail = () => {
     <div className="bg-brand-paper pt-20 min-h-screen">
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-6">
-        <nav className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand-muted flex items-center gap-2">
+        <nav className="font-serif font-bold text-[11px] uppercase tracking-[0.08em] text-brand-muted flex items-center gap-2">
           <Link to="/shop" className="text-brand-primary hover:underline">Shop</Link>
           <span className="opacity-40">/</span>
           <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-brand-primary">{product.category}</Link>
@@ -101,7 +102,7 @@ export const ProductDetail = () => {
           <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-deep">
             {gallery[activeImage]
               ? <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              : <div className="w-full h-full flex items-center justify-center font-mono text-xs uppercase tracking-wide text-white/60">No image</div>}
+              : <div className="w-full h-full flex items-center justify-center font-serif font-bold text-xs uppercase tracking-wide text-white/60">No image</div>}
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">
@@ -109,7 +110,7 @@ export const ProductDetail = () => {
                 <button
                   key={i}
                   onClick={() => setActiveImage(i)}
-                  className={`size-20 rounded-lg overflow-hidden border-2 transition-colors ${i === activeImage ? 'border-brand-primary' : 'border-brand-line'}`}
+                  className={`size-20 rounded-xl overflow-hidden border-2 transition-colors ${i === activeImage ? 'border-brand-primary' : 'border-brand-line'}`}
                 >
                   <img src={src} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -128,7 +129,7 @@ export const ProductDetail = () => {
           {markTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-5">
               {markTags.map((t) => (
-                <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[10px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                   {t.kind === 'dietary' ? <Leaf size={11} strokeWidth={2} /> : <Check size={11} strokeWidth={3} />} {t.label}
                 </span>
               ))}
@@ -137,7 +138,7 @@ export const ProductDetail = () => {
 
           {/* Price */}
           <div className="flex items-baseline gap-2 mt-6 pb-6 border-b border-brand-line">
-            <span className="font-serif text-4xl text-brand-deep">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
+            <span className="font-serif font-bold text-4xl text-brand-deep">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
             {selectedSize && <span className="text-sm text-brand-muted">/ {selectedSize.label}</span>}
             {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-deep text-white ml-2">Out of stock</span>}
           </div>
@@ -150,7 +151,7 @@ export const ProductDetail = () => {
           {/* Size selector */}
           {product.sizes.length > 1 && (
             <div className="mt-7">
-              <div className="font-mono text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3">Size</div>
+              <div className="font-serif font-bold text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3">Size</div>
               <div className="flex flex-wrap gap-2.5">
                 {product.sizes.map((s) => {
                   const sel = selectedSizeId === s.id;
@@ -159,7 +160,7 @@ export const ProductDetail = () => {
                       key={s.id}
                       onClick={() => setSelectedSizeId(s.id)}
                       disabled={!s.inStock}
-                      className={`flex flex-col items-start px-4 py-2.5 rounded-lg border transition-all ${
+                      className={`flex flex-col items-start px-4 py-2.5 rounded-xl border transition-all ${
                         sel ? 'border-brand-primary bg-brand-surface ring-2 ring-brand-primary/15' : 'border-brand-line hover:border-brand-deep'
                       } ${!s.inStock ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
                     >
@@ -216,7 +217,7 @@ export const ProductDetail = () => {
               {certTags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {certTags.map((t) => (
-                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[11px] uppercase tracking-[0.06em] text-brand-primary bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                       <Check size={11} strokeWidth={3} /> {t.label}
                     </span>
                   ))}
@@ -230,7 +231,7 @@ export const ProductDetail = () => {
               <Acc title="Dietary" open={open.dietary} onToggle={() => toggle('dietary')}>
                 <div className="flex flex-wrap gap-2">
                   {dietaryTags.map((t) => (
-                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-deep bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[11px] uppercase tracking-[0.06em] text-brand-deep bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                       <Leaf size={11} strokeWidth={2} /> {t.label}
                     </span>
                   ))}
@@ -285,10 +286,10 @@ export const ProductDetail = () => {
 
       {/* Sticky add-to-bag — meets the buyer at peak intent on scroll */}
       {showSticky && selectedSize && (
-        <div className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(10,40,33,0.08)]">
+        <div className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
             <div className="hidden sm:block min-w-0 flex-1">
-              <p className="font-serif text-lg text-brand-deep truncate">{product.name}</p>
+              <p className="font-serif font-bold text-lg text-brand-deep truncate">{product.name}</p>
               <p className="text-xs text-brand-muted">{selectedSize.label}</p>
             </div>
             <span className="font-sans font-bold text-xl text-brand-deep tabular-nums">{formatMoney(totalPricePaise)}</span>
@@ -304,7 +305,7 @@ export const ProductDetail = () => {
 const Acc: React.FC<{ title: string; open: boolean; onToggle: () => void; children: React.ReactNode }> = ({ title, open, onToggle, children }) => (
   <div className="border-t border-brand-line last:border-b">
     <button onClick={onToggle} className="w-full flex items-center justify-between py-5 text-left">
-      <span className="font-serif text-xl text-brand-deep">{title}</span>
+      <span className="font-serif font-bold text-xl text-brand-deep">{title}</span>
       <ChevronDown size={20} className={`text-brand-primary transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div className="pb-6 text-[15px] leading-relaxed text-brand-muted max-w-[68ch]">{children}</div>}

@@ -23,7 +23,7 @@ export const RecipeConsultant = () => {
     <div className="bg-brand-paper min-h-screen">
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20">
         <div className="max-w-3xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-primary/10 text-brand-primary font-mono text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-primary/10 text-brand-primary font-serif font-bold text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
             <Sparkles size={13} strokeWidth={1.8} /> Coming soon
           </span>
 
