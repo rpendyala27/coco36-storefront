@@ -86,7 +86,7 @@ export const ProductDetail = () => {
     <div className="bg-brand-paper pt-20 min-h-screen">
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-6">
-        <nav className="font-serif font-bold text-[11px] uppercase tracking-[0.08em] text-brand-muted flex items-center gap-2">
+        <nav className="eyebrow flex items-center gap-2">
           <Link to="/shop" className="text-brand-leaf hover:underline">Shop</Link>
           <span className="opacity-40">/</span>
           <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-brand-leaf">{product.category}</Link>
@@ -151,7 +151,7 @@ export const ProductDetail = () => {
           {/* Size selector */}
           {product.sizes.length > 1 && (
             <div className="mt-7">
-              <div className="font-serif font-bold text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3">Size</div>
+              <div className="eyebrow mb-3">Size</div>
               <div className="flex flex-wrap gap-2.5">
                 {product.sizes.map((s) => {
                   const sel = selectedSizeId === s.id;

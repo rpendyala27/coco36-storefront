@@ -323,7 +323,7 @@ export const Shop = () => {
       {/* ── Shop by use — single light use_case quick-row (landing only) ── */}
       {!categoryId && !search.trim() && applications.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 flex items-center gap-2 flex-wrap">
-          <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted mr-1">Shop by use</span>
+          <span className="eyebrow mr-1">Shop by use</span>
           {applications.map(({ slug, label, Icon }) => {
             const active = tagSlugs.has(slug);
             return (
@@ -426,7 +426,7 @@ export const Shop = () => {
                 {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
               </div>
               <div className="flex items-center gap-4 flex-shrink-0">
-                <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
+                <span className="eyebrow whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
                 <div className="relative">
                   <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-brand-line rounded-full text-[13px] font-medium hover:border-brand-forest transition-all">
                     Sort · {SORT_LABELS[sortKey]} <ChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
@@ -510,7 +510,7 @@ const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
 
 const FacetGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="pb-6 border-b border-brand-line">
-    <h4 className="font-serif font-bold text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
+    <h4 className="eyebrow mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
     <div className="space-y-1.5">{children}</div>
   </div>
 );
