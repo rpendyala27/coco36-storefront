@@ -45,11 +45,6 @@
   --color-brand-sea:            #5c9329;  /* success green */
   --color-brand-deep:           #27401b;  /* forest */
   --color-brand-line:           rgba(0, 0, 0, 0.10);  /* neutral hairline */
-
-  /* Convenience accent tokens */
-  --color-brand-gold:           #c08a2e;
-  --color-brand-gold-deep:      #a6741f;
-  --color-brand-forest:         #27401b;
 }
 
 @layer base {
@@ -86,7 +81,7 @@
      workhorse action colour; gold stays sparing. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 font-bold rounded-full px-6 py-3 transition-colors duration-200;
-    background-color: #4e7d24;
+    background-color: var(--color-brand-primary);
     color: #ffffff;
   }
   .btn-primary:hover { background-color: #3f6a1d; }
@@ -143,7 +138,7 @@
    focus:outline-none for mouse; this restores it for keyboard users). */
 a:focus-visible, button:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid #4e7d24;
+  outline: 2px solid var(--color-brand-primary);
   outline-offset: 2px;
   border-radius: 3px;
 }
