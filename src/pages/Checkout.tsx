@@ -298,7 +298,7 @@ export const Checkout = () => {
           Order {confirmedOrder.orderNumber}
         </p>
         <h1 className="text-5xl mb-6">Order Confirmed.</h1>
-        <p className="text-lg text-brand-muted font-serif italic mb-2 leading-relaxed">
+        <p className="text-lg text-brand-muted font-display italic mb-2 leading-relaxed">
           Thank you for your order — total {formatMoney(confirmedOrder.total_paise)}.
         </p>
         <p className="text-sm text-brand-muted mb-12">
@@ -497,7 +497,7 @@ export const Checkout = () => {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-serif italic text-base leading-tight">{item.name}</p>
+                      <p className="font-display italic text-base leading-tight">{item.name}</p>
                       <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{item.sizeLabel}</p>
                     </div>
                     <span className="font-bold text-base shrink-0 text-brand-ink">
@@ -528,7 +528,7 @@ export const Checkout = () => {
                 )}
                 <div className="flex justify-between pt-3 border-t border-brand-line items-baseline">
                   <span className="text-[11px] uppercase tracking-widest font-bold">Total · incl. taxes</span>
-                  <span className="font-serif font-bold text-3xl text-brand-forest">{formatMoney(totals.total_paise)}</span>
+                  <span className="font-display font-bold text-3xl text-brand-forest">{formatMoney(totals.total_paise)}</span>
                 </div>
               </div>
 

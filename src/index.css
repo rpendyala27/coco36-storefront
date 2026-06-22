@@ -4,10 +4,10 @@
 @theme {
   /* ─── Type — Panera-reference reskin ─────────────────────────
      Archivo (bold grotesque display) · DM Sans (body/UI) · JetBrains Mono (codes).
-     NOTE: --font-serif is intentionally mapped to Archivo (a sans) so every
-     existing `font-serif` / heading usage renders the bold grotesque. */
+     NOTE: --font-display is intentionally mapped to Archivo (a sans) so every
+     existing `font-display` / heading usage renders the bold grotesque. */
   --font-sans:  "DM Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
   /* ─── Brand palette — semantic names (Panera reference) ───────
@@ -43,19 +43,19 @@
 
   /* Bold grotesque display headings (Archivo) — the Panera punch */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-extrabold tracking-tight text-brand-ink;
+    @apply font-display font-extrabold tracking-tight text-brand-ink;
   }
 }
 
 @layer components {
   /* Editorial display accent (Archivo italic) */
   .display-italic {
-    @apply font-serif italic font-semibold;
+    @apply font-display italic font-semibold;
   }
 
   /* Eyebrow — bold uppercase label */
   .eyebrow {
-    @apply font-serif font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
+    @apply font-display font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
   }
 
   /* Brand card — flat, hairline border, soft rounded. */

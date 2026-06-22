@@ -96,7 +96,7 @@ export const Partnerships = () => {
               Innovations<br />
               <span className="italic">for food makers.</span>
             </h1>
-            <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-serif italic max-w-2xl mb-10">
+            <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-display italic max-w-2xl mb-10">
               From concept to production, we partner with brands to co-create scalable ingredient solutions, from custom cocoa blends to ready-to-use mixes.
             </p>
             <a
@@ -129,7 +129,7 @@ export const Partnerships = () => {
           <header className="mb-16 max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">What We Offer</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for brands.</h2>
-            <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
+            <p className="text-lg text-brand-ink/65 leading-relaxed font-display italic">
               Four pillars of co-creation, backed by hands-on R&D and application support.
             </p>
           </header>
@@ -148,7 +148,7 @@ export const Partnerships = () => {
                   <o.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl mb-3">{o.title}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{o.description}</p>
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{o.description}</p>
               </motion.article>
             ))}
           </div>
@@ -188,7 +188,7 @@ export const Partnerships = () => {
           <header className="mb-16 max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Our Process</p>
             <h2 className="text-4xl md:text-6xl mb-6">Brief → Scale in five.</h2>
-            <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
+            <p className="text-lg text-brand-ink/65 leading-relaxed font-display italic">
               A repeatable, transparent path, typically 3-6 months from first conversation to commercial launch.
             </p>
           </header>
@@ -210,7 +210,7 @@ export const Partnerships = () => {
                   <div className="md:w-1/2 pl-20 md:pl-0 md:px-12">
                     <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-2">Step {step.num}</p>
                     <h3 className="text-3xl mb-3">{step.title}</h3>
-                    <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic max-w-md">
+                    <p className="text-base text-brand-ink/65 leading-relaxed font-display italic max-w-md">
                       {step.desc}
                     </p>
                   </div>
@@ -235,7 +235,7 @@ export const Partnerships = () => {
                 <Check size={36} strokeWidth={1.5} />
               </div>
               <h2 className="text-5xl mb-6">Brief received.</h2>
-              <p className="text-lg text-brand-paper/70 leading-relaxed font-serif italic max-w-md mx-auto">
+              <p className="text-lg text-brand-paper/70 leading-relaxed font-display italic max-w-md mx-auto">
                 Our partnerships team will respond within 48 hours with next steps and a discovery call invite.
               </p>
             </motion.div>
@@ -244,7 +244,7 @@ export const Partnerships = () => {
               <header className="text-center mb-14">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Discuss a Project</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you're building.</h2>
-                <p className="text-lg text-brand-paper/70 font-serif italic">
+                <p className="text-lg text-brand-paper/70 font-display italic">
                   Volume, application, timing, the more context, the faster we can match you to the right specialist.
                 </p>
               </header>
@@ -323,7 +323,7 @@ export const Partnerships = () => {
         <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-4">Already in the network?</p>
         <Link
           to="/auth"
-          className="text-2xl font-serif italic text-brand-leaf hover:underline"
+          className="text-2xl font-display italic text-brand-leaf hover:underline"
         >
           Login to your partner portal →
         </Link>

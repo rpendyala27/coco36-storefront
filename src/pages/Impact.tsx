@@ -53,7 +53,7 @@ export const Impact = () => {
             Impact from<br />
             <span className="italic">the ground up.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-brand-ink/70 leading-relaxed font-serif italic max-w-3xl">
+          <p className="text-xl md:text-2xl text-brand-ink/70 leading-relaxed font-display italic max-w-3xl">
             We're building COCO36 to measure success in soil health, fair farmer income and full traceability. Not just kilos shipped.
           </p>
         </div>
@@ -62,7 +62,7 @@ export const Impact = () => {
       {/* HONEST NOTE */}
       <section className="px-6 md:px-12 lg:px-20 py-16 border-b border-brand-ink/10 bg-brand-ink text-brand-paper">
         <div className="max-w-4xl mx-auto">
-          <p className="text-2xl md:text-3xl font-serif italic leading-relaxed">
+          <p className="text-2xl md:text-3xl font-display italic leading-relaxed">
             We're early. Rather than publish numbers we can't yet stand behind, we're sharing the
             standards we hold ourselves to from day one, and we'll report the measured results as
             the harvests come in.
@@ -76,7 +76,7 @@ export const Impact = () => {
           <header className="mb-16 max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">What we hold ourselves to</p>
             <h2 className="text-4xl md:text-6xl mb-6">Four commitments.</h2>
-            <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
+            <p className="text-lg text-brand-ink/65 leading-relaxed font-display italic">
               Every commercial decision is weighed against these, and we will audit and publish against them as we scale.
             </p>
           </header>
@@ -95,7 +95,7 @@ export const Impact = () => {
                   <c.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl md:text-3xl mb-4">{c.title}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">
                   {c.description}
                 </p>
               </motion.article>
@@ -121,9 +121,9 @@ export const Impact = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
-                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{p.n}</p>
+                <p className="font-display font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{p.n}</p>
                 <h3 className="text-2xl mb-3">{p.t}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{p.d}</p>
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{p.d}</p>
               </motion.div>
             ))}
           </div>

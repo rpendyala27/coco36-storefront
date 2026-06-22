@@ -124,7 +124,7 @@ export const AuthPage = () => {
           /* ── Set a new password (lands here from the reset email link) ───── */
           <>
             <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
-            <h1 className="font-serif text-4xl text-center text-brand-forest mb-1">Set a new password</h1>
+            <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Set a new password</h1>
             <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for your account.</p>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-1.5">
@@ -144,7 +144,7 @@ export const AuthPage = () => {
         ) : (
         <>
         <p className="eyebrow text-brand-leaf text-center mb-2">{isLogin ? 'Welcome back' : 'Join COCO36'}</p>
-        <h1 className="font-serif text-4xl text-center text-brand-forest mb-1">
+        <h1 className="font-display text-4xl text-center text-brand-forest mb-1">
           {isLogin ? 'Sign in' : 'Create account'}
         </h1>
         <p className="text-center text-brand-muted text-sm mb-8">

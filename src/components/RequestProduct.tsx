@@ -74,7 +74,7 @@ export function RequestProduct({
   return (
     <div className={compact ? 'px-4 py-4' : 'py-12 px-6 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface'}>
       {!compact && (
-        <p className="font-serif italic text-2xl text-brand-leaf mb-1">No match for “{query}”.</p>
+        <p className="font-display italic text-2xl text-brand-leaf mb-1">No match for “{query}”.</p>
       )}
       <p className={`text-brand-muted ${compact ? 'text-[12px] mb-3' : 'text-sm mb-5'}`}>
         {compact ? `Can't find “${query}”?` : "Looking for something specific?"} Request it and our sourcing team will follow up.

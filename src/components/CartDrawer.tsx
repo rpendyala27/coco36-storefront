@@ -47,7 +47,7 @@ export const CartDrawer: React.FC = () => {
                   <ShoppingBag size={18} strokeWidth={2} />
                 </div>
                 <div>
-                  <h2 className="font-serif text-xl text-brand-forest">Your cart</h2>
+                  <h2 className="font-display text-xl text-brand-forest">Your cart</h2>
                   <p className="text-xs text-brand-muted">
                     {itemCount} {itemCount === 1 ? 'item' : 'items'}
                   </p>
@@ -188,7 +188,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-baseline pt-2 border-t border-brand-line">
                       <span className="text-sm font-medium text-brand-forest">Total <span className="text-brand-muted font-normal">· incl. taxes</span></span>
-                      <span className="font-serif font-bold text-2xl text-brand-forest">{formatMoney(subtotal + shipping)}</span>
+                      <span className="font-display font-bold text-2xl text-brand-forest">{formatMoney(subtotal + shipping)}</span>
                     </div>
                   </div>
 

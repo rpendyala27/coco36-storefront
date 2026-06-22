@@ -109,7 +109,7 @@ export const Trade = () => {
               Buy at volume,<br />
               <span className="italic">direct from origin.</span>
             </h1>
-            <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-serif italic max-w-2xl mb-10">
+            <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-display italic max-w-2xl mb-10">
               Bulk pricing, full documentation and consistent lots for kitchens, cafés, bakeries and brands. One account, transparent terms.
             </p>
             <a href="#enquire" className="btn-primary !px-8 !py-4">
@@ -139,7 +139,7 @@ export const Trade = () => {
           <header className="mb-16 max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Why buy trade</p>
             <h2 className="text-4xl md:text-6xl mb-6">Built for production kitchens.</h2>
-            <p className="text-lg text-brand-ink/65 leading-relaxed font-serif italic">
+            <p className="text-lg text-brand-ink/65 leading-relaxed font-display italic">
               The same ingredients you see in the shop, supplied at the scale and documentation your operation needs.
             </p>
           </header>
@@ -158,7 +158,7 @@ export const Trade = () => {
                   <v.icon size={20} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-2xl mb-3">{v.title}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{v.description}</p>
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{v.description}</p>
               </motion.article>
             ))}
           </div>
@@ -186,9 +186,9 @@ export const Trade = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
-                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{s.n}</p>
+                <p className="font-display font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{s.n}</p>
                 <h3 className="text-2xl mb-3">{s.t}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{s.d}</p>
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{s.d}</p>
               </motion.div>
             ))}
           </div>
@@ -208,7 +208,7 @@ export const Trade = () => {
                 <Check size={36} strokeWidth={1.5} />
               </div>
               <h2 className="text-5xl mb-6">Enquiry received.</h2>
-              <p className="text-lg text-brand-paper/70 leading-relaxed font-serif italic max-w-md mx-auto">
+              <p className="text-lg text-brand-paper/70 leading-relaxed font-display italic max-w-md mx-auto">
                 Our trade desk will respond within 48 hours with pricing, documentation or next steps.
               </p>
             </motion.div>
@@ -217,7 +217,7 @@ export const Trade = () => {
               <header className="text-center mb-14">
                 <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">Trade enquiry</p>
                 <h2 className="text-4xl md:text-5xl mb-4">Tell us what you need.</h2>
-                <p className="text-lg text-brand-paper/70 font-serif italic">
+                <p className="text-lg text-brand-paper/70 font-display italic">
                   The more detail you share, the faster we can quote.
                 </p>
               </header>
@@ -282,7 +282,7 @@ export const Trade = () => {
       {/* CTA */}
       <section className="px-6 md:px-12 lg:px-20 py-20 text-center">
         <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-4">Looking to co-develop a product?</p>
-        <Link to="/partnerships" className="text-2xl font-serif italic text-brand-leaf hover:underline">
+        <Link to="/partnerships" className="text-2xl font-display italic text-brand-leaf hover:underline">
           Explore Partnerships &amp; innovation →
         </Link>
       </section>

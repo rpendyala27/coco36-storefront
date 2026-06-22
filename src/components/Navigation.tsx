@@ -35,7 +35,7 @@ export const Navigation: React.FC = () => {
       <header className="fixed top-0 left-0 w-full z-40">
         {/* Topbar */}
         <div className="h-[30px] bg-brand-forest text-white/85 flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 font-serif font-bold text-[10px] md:text-[11px] uppercase tracking-[0.08em]">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 font-display font-bold text-[10px] md:text-[11px] uppercase tracking-[0.08em]">
             <span className="truncate">FSSAI Licensed · Sourced direct from origin estates</span>
             <span className="hidden md:block whitespace-nowrap text-white/65">
               Free shipping over {freeShippingLabel(cfg)} &nbsp;·&nbsp; Bulk &amp; trade enquiries &nbsp;·&nbsp; ₹ INR
@@ -50,7 +50,7 @@ export const Navigation: React.FC = () => {
             <NavLink to="/" className="flex items-center gap-2.5 shrink-0" aria-label="COCO36 — From crop to craft">
               <img src="/coco36-floral.png" alt="" className="h-10 w-auto" />
               <span className="flex flex-col items-start leading-none">
-                <span className="font-serif text-[22px] font-semibold tracking-tight text-brand-forest">
+                <span className="font-display text-[22px] font-semibold tracking-tight text-brand-forest">
                   COCO<span className="text-brand-gold italic">36</span>
                 </span>
                 <span className="text-[8px] uppercase tracking-[0.26em] text-brand-leaf font-medium mt-1 hidden sm:block">From crop to craft</span>

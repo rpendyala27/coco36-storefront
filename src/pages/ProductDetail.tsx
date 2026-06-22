@@ -102,7 +102,7 @@ export const ProductDetail = () => {
           <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-forest">
             {gallery[activeImage]
               ? <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              : <div className="w-full h-full flex items-center justify-center font-serif font-bold text-xs uppercase tracking-wide text-white/60">No image</div>}
+              : <div className="w-full h-full flex items-center justify-center font-display font-bold text-xs uppercase tracking-wide text-white/60">No image</div>}
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">
@@ -122,14 +122,14 @@ export const ProductDetail = () => {
         {/* Buy panel */}
         <div>
           <p className="eyebrow text-brand-leaf mb-3">{product.category} · {countryOf(product.origin)}</p>
-          <h1 className="font-serif text-4xl md:text-5xl leading-[1.02] text-brand-forest">{product.name}</h1>
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{product.name}</h1>
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
 
           {/* Cert + dietary marks */}
           {markTags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-5">
               {markTags.map((t) => (
-                <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[10px] uppercase tracking-[0.06em] text-brand-leaf bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                <span key={t.slug} className="inline-flex items-center gap-1.5 font-display font-bold text-[10px] uppercase tracking-[0.06em] text-brand-leaf bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                   {t.kind === 'dietary' ? <Leaf size={11} strokeWidth={2} /> : <Check size={11} strokeWidth={3} />} {t.label}
                 </span>
               ))}
@@ -138,7 +138,7 @@ export const ProductDetail = () => {
 
           {/* Price */}
           <div className="flex items-baseline gap-2 mt-6 pb-6 border-b border-brand-line">
-            <span className="font-serif font-bold text-4xl text-brand-forest">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
+            <span className="font-display font-bold text-4xl text-brand-forest">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
             {selectedSize && <span className="text-sm text-brand-muted">/ {selectedSize.label}</span>}
             {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-forest text-white ml-2">Out of stock</span>}
           </div>
@@ -217,7 +217,7 @@ export const ProductDetail = () => {
               {certTags.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {certTags.map((t) => (
-                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[11px] uppercase tracking-[0.06em] text-brand-leaf bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-display font-bold text-[11px] uppercase tracking-[0.06em] text-brand-leaf bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                       <Check size={11} strokeWidth={3} /> {t.label}
                     </span>
                   ))}
@@ -231,7 +231,7 @@ export const ProductDetail = () => {
               <Acc title="Dietary" open={open.dietary} onToggle={() => toggle('dietary')}>
                 <div className="flex flex-wrap gap-2">
                   {dietaryTags.map((t) => (
-                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-serif font-bold text-[11px] uppercase tracking-[0.06em] text-brand-forest bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
+                    <span key={t.slug} className="inline-flex items-center gap-1.5 font-display font-bold text-[11px] uppercase tracking-[0.06em] text-brand-forest bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
                       <Leaf size={11} strokeWidth={2} /> {t.label}
                     </span>
                   ))}
@@ -261,11 +261,11 @@ export const ProductDetail = () => {
       <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-12">
         <div className="border-t border-brand-line pt-10">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h2 className="font-serif text-3xl text-brand-forest">Reviews</h2>
+            <h2 className="font-display text-3xl text-brand-forest">Reviews</h2>
             <button className="btn-ghost !py-2.5 text-sm"><Star size={15} /> Write a review</button>
           </div>
           <div className="mt-6 rounded-xl border border-dashed border-brand-line bg-brand-surface px-6 py-12 text-center">
-            <p className="font-serif italic text-xl text-brand-leaf mb-1">No reviews yet</p>
+            <p className="font-display italic text-xl text-brand-leaf mb-1">No reviews yet</p>
             <p className="text-sm text-brand-muted">Be the first maker to review this lot.</p>
           </div>
         </div>
@@ -275,7 +275,7 @@ export const ProductDetail = () => {
       {related.length > 0 && (
         <section className="bg-brand-surface border-t border-brand-line mt-16">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-16">
-            <h2 className="font-serif text-3xl text-brand-forest">Pairs well with</h2>
+            <h2 className="font-display text-3xl text-brand-forest">Pairs well with</h2>
             <p className="text-sm text-brand-muted mt-1 mb-8">More from {product.category}.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {related.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
@@ -289,7 +289,7 @@ export const ProductDetail = () => {
         <div className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
             <div className="hidden sm:block min-w-0 flex-1">
-              <p className="font-serif font-bold text-lg text-brand-forest truncate">{product.name}</p>
+              <p className="font-display font-bold text-lg text-brand-forest truncate">{product.name}</p>
               <p className="text-xs text-brand-muted">{selectedSize.label}</p>
             </div>
             <span className="font-sans font-bold text-xl text-brand-forest tabular-nums">{formatMoney(totalPricePaise)}</span>
@@ -305,7 +305,7 @@ export const ProductDetail = () => {
 const Acc: React.FC<{ title: string; open: boolean; onToggle: () => void; children: React.ReactNode }> = ({ title, open, onToggle, children }) => (
   <div className="border-t border-brand-line last:border-b">
     <button onClick={onToggle} className="w-full flex items-center justify-between py-5 text-left">
-      <span className="font-serif font-bold text-xl text-brand-forest">{title}</span>
+      <span className="font-display font-bold text-xl text-brand-forest">{title}</span>
       <ChevronDown size={20} className={`text-brand-leaf transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div className="pb-6 text-[15px] leading-relaxed text-brand-muted max-w-[68ch]">{children}</div>}

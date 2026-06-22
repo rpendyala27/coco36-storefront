@@ -57,7 +57,7 @@ export const QuickOrder = () => {
       <section className="bg-brand-surface border-b border-brand-line">
         <div className="max-w-4xl mx-auto px-6 md:px-12 py-12">
           <p className="eyebrow text-brand-leaf mb-3">For trade buyers</p>
-          <h1 className="font-serif text-4xl md:text-6xl text-brand-forest">Quick order</h1>
+          <h1 className="font-display text-4xl md:text-6xl text-brand-forest">Quick order</h1>
           <p className="mt-4 text-brand-muted max-w-xl">
             Know your SKUs? Skip the browse, enter codes and quantities, or upload a CSV, and add it all to your bag in one go.
           </p>
@@ -67,7 +67,7 @@ export const QuickOrder = () => {
       <section className="max-w-4xl mx-auto px-6 md:px-12 py-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 items-start min-w-0">
         <div>
           <div className="space-y-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted px-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-display font-bold text-[11px] uppercase tracking-wide text-brand-muted px-1">
               <span>SKU</span><span>Qty</span><span />
             </div>
             {rows.map((r, i) => (
@@ -90,7 +90,7 @@ export const QuickOrder = () => {
         <aside>
           {results.length > 0 && (
             <div className="rounded-xl border border-brand-line bg-white p-4 space-y-2.5 lg:sticky lg:top-28">
-              <h3 className="font-serif text-lg text-brand-forest mb-1">Result</h3>
+              <h3 className="font-display text-lg text-brand-forest mb-1">Result</h3>
               {results.map((r, i) => (
                 <div key={i} className="flex items-start gap-2 text-sm">
                   {r.status === 'added'

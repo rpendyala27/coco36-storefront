@@ -23,7 +23,7 @@ export const RecipeConsultant = () => {
     <div className="bg-brand-paper min-h-screen">
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20">
         <div className="max-w-3xl mx-auto text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-leaf/10 text-brand-leaf font-serif font-bold text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-leaf/10 text-brand-leaf font-display font-bold text-[11px] uppercase tracking-[0.12em] px-4 py-1.5 mb-8">
             <Sparkles size={13} strokeWidth={1.8} /> Coming soon
           </span>
 
@@ -32,7 +32,7 @@ export const RecipeConsultant = () => {
             Recipes & pairings,<br />
             <span className="italic">powered by COCO AI.</span>
           </h1>
-          <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-serif italic">
+          <p className="text-lg md:text-xl text-brand-ink/70 leading-relaxed font-display italic">
             An AI recipe consultant to help you cook and bake with our ingredients. We're building it now, and it'll land here soon.
           </p>
         </div>
@@ -51,7 +51,7 @@ export const RecipeConsultant = () => {
                 <c.icon size={18} strokeWidth={1.5} />
               </div>
               <h3 className="text-xl mb-2">{c.title}</h3>
-              <p className="text-sm text-brand-ink/65 leading-relaxed font-serif italic">{c.desc}</p>
+              <p className="text-sm text-brand-ink/65 leading-relaxed font-display italic">{c.desc}</p>
             </motion.div>
           ))}
         </div>

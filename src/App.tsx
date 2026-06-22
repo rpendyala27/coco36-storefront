@@ -158,7 +158,7 @@ export default function App() {
                 <div className="flex items-center gap-3 mb-5">
                   <img src="/coco36-floral.png" alt="" className="size-11" />
                   <div className="leading-none">
-                    <div className="font-serif text-2xl font-semibold">
+                    <div className="font-display text-2xl font-semibold">
                       COCO<span className="text-brand-gold italic">36</span>
                     </div>
                     <div className="text-[8px] uppercase tracking-[0.3em] opacity-60 mt-1 font-medium">From crop to craft</div>

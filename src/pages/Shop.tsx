@@ -351,7 +351,7 @@ export const Shop = () => {
           <aside className={`lg:col-span-3 ${filtersOpen ? 'fixed inset-0 z-50 bg-brand-paper overflow-y-auto px-5 pt-5 pb-28 lg:static lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0' : 'hidden lg:block'}`}>
             <div className="lg:sticky lg:top-40 space-y-7">
               <div className="flex justify-between items-center pb-2 border-b border-brand-forest">
-                <h3 className="font-serif italic text-lg text-brand-forest">Filters</h3>
+                <h3 className="font-display italic text-lg text-brand-forest">Filters</h3>
                 <div className="flex items-center gap-4">
                   {activeCount > 0 && (
                     <button onClick={clearAll} className="text-[13px] font-medium text-brand-leaf border-b border-brand-leaf/40">Clear all</button>
@@ -410,7 +410,7 @@ export const Shop = () => {
           <div className="lg:col-span-9">
             {activeCategory && (
               <div className="mb-6">
-                <h1 className="font-serif text-2xl md:text-3xl text-brand-forest">{activeCategory.name}</h1>
+                <h1 className="font-display text-2xl md:text-3xl text-brand-forest">{activeCategory.name}</h1>
                 {activeCategory.description && (
                   <p className="text-sm text-brand-muted mt-1.5 max-w-2xl leading-relaxed">{activeCategory.description}</p>
                 )}
@@ -458,7 +458,7 @@ export const Shop = () => {
                 <RequestProduct query={search.trim()} onClear={clearAll} />
               ) : (
                 <div className="py-28 text-center border border-dashed border-brand-line rounded-xl bg-brand-surface">
-                  <p className="font-serif italic text-2xl text-brand-leaf mb-2">Nothing matches yet</p>
+                  <p className="font-display italic text-2xl text-brand-leaf mb-2">Nothing matches yet</p>
                   <p className="text-brand-muted text-sm mb-6">Try loosening a filter or two.</p>
                   <button onClick={clearAll} className="btn-primary text-sm">Clear all filters</button>
                 </div>
@@ -480,7 +480,7 @@ export const Shop = () => {
             { title: `Free shipping over ${freeShippingLabel(cfg)}`, desc: `Across India, with a ${cfg.returnWindowDays}-day quality guarantee on every order.` },
           ].map((it) => (
             <div key={it.title}>
-              <h4 className="font-serif text-xl mb-3 text-brand-forest">{it.title}</h4>
+              <h4 className="font-display text-xl mb-3 text-brand-forest">{it.title}</h4>
               <p className="text-sm text-brand-muted leading-relaxed">{it.desc}</p>
             </div>
           ))}
