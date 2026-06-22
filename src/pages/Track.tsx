@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Package, Truck, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';

@@ -583,7 +583,7 @@ export const Checkout = () => {
 // Small presentational helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AddressPickCard({ a, selected, onSelect, showGstin }: { a: BookAddress; selected: boolean; onSelect: () => void; showGstin?: boolean }) {
+const AddressPickCard: React.FC<{ a: BookAddress; selected: boolean; onSelect: () => void; showGstin?: boolean }> = ({ a, selected, onSelect, showGstin }) => {
   return (
     <button
       type="button"

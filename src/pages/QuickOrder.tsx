@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type * as React from 'react';
 import { Link } from 'react-router-dom';
 import { Upload, Plus, Trash2, Check, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';

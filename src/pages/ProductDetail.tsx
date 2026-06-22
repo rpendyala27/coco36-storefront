@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import type * as React from 'react';
 import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
