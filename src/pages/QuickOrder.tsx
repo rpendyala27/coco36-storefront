@@ -66,7 +66,7 @@ export const QuickOrder = () => {
       <section className="max-w-4xl mx-auto px-6 md:px-12 py-10 grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-10 items-start min-w-0">
         <div>
           <div className="space-y-2">
-            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-mono text-[11px] uppercase tracking-wide text-brand-muted px-1">
+            <div className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted px-1">
               <span>SKU</span><span>Qty</span><span />
             </div>
             {rows.map((r, i) => (

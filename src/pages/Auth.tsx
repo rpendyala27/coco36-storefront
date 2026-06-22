@@ -116,7 +116,7 @@ export const AuthPage = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-md w-full bg-white p-8 sm:p-10 border border-brand-line rounded-2xl shadow-[0_8px_24px_rgba(10,40,33,0.08)]"
+        className="max-w-md w-full bg-white p-8 sm:p-10 border border-brand-line rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
       >
         <img src="/coco36-floral.png" alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
 

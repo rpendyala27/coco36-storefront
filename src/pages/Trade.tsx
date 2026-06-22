@@ -186,7 +186,7 @@ export const Trade = () => {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
-                <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-brand-primary mb-4">{s.n}</p>
+                <p className="font-serif font-bold text-[11px] uppercase tracking-[0.2em] text-brand-primary mb-4">{s.n}</p>
                 <h3 className="text-2xl mb-3">{s.t}</h3>
                 <p className="text-base text-brand-ink/65 leading-relaxed font-serif italic">{s.d}</p>
               </motion.div>

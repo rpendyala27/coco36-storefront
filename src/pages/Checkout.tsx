@@ -241,7 +241,7 @@ export const Checkout = () => {
         order_id: razorpayOrderId,
         prefill:  { name: form.name, email: form.email, contact: form.phone },
         notes:    { orderId, orderNumber },
-        theme:    { color: '#15715f' },
+        theme:    { color: '#4e7d24' },
         handler:  () => {
           // Razorpay JS handler fires on successful authorisation.
           // The webhook on the server is the real source of truth — but for
@@ -389,7 +389,7 @@ export const Checkout = () => {
               )}
 
               {(addingShip || addresses.length === 0) && (
-                <div className="border border-brand-line rounded-lg p-5 bg-brand-surface">
+                <div className="border border-brand-line rounded-xl p-5 bg-brand-surface">
                   <h3 className="text-sm font-bold mb-4">{addresses.length === 0 ? 'Add a shipping address' : 'New address'}</h3>
                   <AddressForm
                     defaultName={defaultName}
@@ -433,7 +433,7 @@ export const Checkout = () => {
                       </div>
                     )}
                     {(addingBill || addresses.length === 0) && (
-                      <div className="border border-brand-line rounded-lg p-5 bg-brand-surface">
+                      <div className="border border-brand-line rounded-xl p-5 bg-brand-surface">
                         <h3 className="text-sm font-bold mb-4">New billing address</h3>
                         <AddressForm
                           defaultName={defaultName}
@@ -484,7 +484,7 @@ export const Checkout = () => {
 
           {/* Order summary */}
           <aside className="lg:col-span-5">
-            <div className="lg:sticky lg:top-28 border border-brand-ink/10 bg-brand-surface p-8 space-y-6">
+            <div className="lg:sticky lg:top-28 border border-brand-ink/10 bg-brand-surface p-8 space-y-6 rounded-2xl">
               <h2 className="text-2xl border-b border-brand-ink/10 pb-4">Order Summary</h2>
 
               <ul className="space-y-4 max-h-80 overflow-y-auto">
@@ -528,7 +528,7 @@ export const Checkout = () => {
                 )}
                 <div className="flex justify-between pt-3 border-t border-brand-line items-baseline">
                   <span className="text-[11px] uppercase tracking-widest font-bold">Total · incl. taxes</span>
-                  <span className="font-serif text-3xl text-brand-deep">{formatMoney(totals.total_paise)}</span>
+                  <span className="font-serif font-bold text-3xl text-brand-deep">{formatMoney(totals.total_paise)}</span>
                 </div>
               </div>
 
@@ -588,7 +588,7 @@ function AddressPickCard({ a, selected, onSelect, showGstin }: { a: BookAddress;
     <button
       type="button"
       onClick={onSelect}
-      className={`text-left border p-3.5 rounded-lg transition-colors ${selected ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
+      className={`text-left border p-3.5 rounded-xl transition-colors ${selected ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-line hover:border-brand-deep'}`}
     >
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}
@@ -607,7 +607,7 @@ function AddNewCard({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-left border border-dashed border-brand-line p-3.5 rounded-lg text-sm font-medium text-brand-muted hover:border-brand-deep hover:text-brand-deep transition-colors inline-flex items-center gap-2"
+      className="text-left border border-dashed border-brand-line p-3.5 rounded-xl text-sm font-medium text-brand-muted hover:border-brand-deep hover:text-brand-deep transition-colors inline-flex items-center gap-2"
     >
       <Plus size={14} /> Add a new address
     </button>
@@ -654,7 +654,7 @@ function PaymentOption({ selected, onSelect, title, hint, icon }: PaymentOptionP
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full flex items-center gap-4 px-5 py-4 border-2 transition-all text-left ${
+      className={`w-full flex items-center gap-4 px-5 py-4 border-2 rounded-xl transition-all text-left ${
         selected
           ? 'border-brand-primary bg-brand-primary/5'
           : 'border-brand-ink/15 hover:border-brand-ink/40'

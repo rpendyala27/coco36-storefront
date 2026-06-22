@@ -188,7 +188,7 @@ export const CartDrawer: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-baseline pt-2 border-t border-brand-line">
                       <span className="text-sm font-medium text-brand-deep">Total <span className="text-brand-muted font-normal">· incl. taxes</span></span>
-                      <span className="font-serif text-2xl text-brand-deep">{formatMoney(subtotal + shipping)}</span>
+                      <span className="font-serif font-bold text-2xl text-brand-deep">{formatMoney(subtotal + shipping)}</span>
                     </div>
                   </div>
 
