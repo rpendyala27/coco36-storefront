@@ -93,8 +93,13 @@ export const productService = {
 
     // Realtime channel — refetches on any product/variant/image OR taxonomy
     // change (categories / tags / product_tags) so admin edits reflect live.
+    // Unique topic per subscription. supabase.channel() returns the existing
+    // channel for a reused topic and removeChannel() is async, so a re-run
+    // (React 19 StrictMode double-invoke, or multiple subscribers) could get
+    // back an already-subscribed channel and throw when .on() is chained onto
+    // it. A fresh topic each time guarantees a new channel, .on() stays pre-subscribe.
     const channel = supabase
-      .channel('public:products')
+      .channel(`public:products:${crypto.randomUUID()}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },         () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' },  () => refetch())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'product_images' },     () => refetch())
