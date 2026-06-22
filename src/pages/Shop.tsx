@@ -49,8 +49,8 @@ const TRUST_MARKS: { label: string; Icon: typeof Cookie }[] = [
   { label: 'India Organic',       Icon: Sprout },
 ];
 
-// Earthy/peacock dot tones cycled across the live-sourcing ticker.
-const TICKER_DOTS = ['#15715f', '#2a9d86', '#c08a2e', '#5cb6a3', '#0a4f5c', '#92cfc2'];
+// Forest/leaf/lime dot tones cycled across the live-sourcing ticker.
+const TICKER_DOTS = ['#27401b', '#4e7d24', '#c08a2e', '#5c9329', '#a6741f', '#172a10'];
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -323,7 +323,7 @@ export const Shop = () => {
       {/* ── Shop by use — single light use_case quick-row (landing only) ── */}
       {!categoryId && !search.trim() && applications.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-brand-muted mr-1">Shop by use</span>
+          <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted mr-1">Shop by use</span>
           {applications.map(({ slug, label, Icon }) => {
             const active = tagSlugs.has(slug);
             return (
@@ -379,7 +379,7 @@ export const Shop = () => {
               ))}
 
               <FacetGroup title="Max price">
-                <input type="range" min={200} max={priceCeil} step={100} value={priceVal} onChange={(e) => setMaxRupees(Number(e.target.value))} className="w-full accent-[#15715f]" />
+                <input type="range" min={200} max={priceCeil} step={100} value={priceVal} onChange={(e) => setMaxRupees(Number(e.target.value))} className="w-full accent-[#4e7d24]" />
                 <div className="flex justify-between font-mono text-[11px] text-brand-muted mt-1">
                   <span>₹200</span>
                   <span className="text-brand-deep">₹{priceVal.toLocaleString('en-IN')}+</span>
@@ -426,13 +426,13 @@ export const Shop = () => {
                 {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
               </div>
               <div className="flex items-center gap-4 flex-shrink-0">
-                <span className="font-mono text-[11px] uppercase tracking-wide text-brand-muted whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
+                <span className="font-serif font-bold text-[11px] uppercase tracking-wide text-brand-muted whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
                 <div className="relative">
                   <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-brand-line rounded-full text-[13px] font-medium hover:border-brand-deep transition-all">
                     Sort · {SORT_LABELS[sortKey]} <ChevronDown size={13} className={sortOpen ? 'rotate-180' : ''} />
                   </button>
                   {sortOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-brand-line rounded-lg shadow-[0_8px_24px_rgba(10,40,33,0.13)] z-30 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-brand-line rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.13)] z-30 overflow-hidden">
                       {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
                         <button key={k} onClick={() => { setSortKey(k); setSortOpen(false); }} className={`w-full text-left px-4 py-2.5 text-[13px] hover:bg-brand-surface transition-colors ${sortKey === k ? 'text-brand-primary font-semibold' : 'text-brand-deep'}`}>
                           {SORT_LABELS[k]}
@@ -510,7 +510,7 @@ const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.Rea
 
 const FacetGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="pb-6 border-b border-brand-line">
-    <h4 className="font-mono text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
+    <h4 className="font-serif font-bold text-[11px] uppercase tracking-[0.12em] text-brand-muted mb-3.5" dangerouslySetInnerHTML={{ __html: title }} />
     <div className="space-y-1.5">{children}</div>
   </div>
 );

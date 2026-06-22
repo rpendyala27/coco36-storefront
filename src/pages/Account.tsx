@@ -215,7 +215,7 @@ export const Account = () => {
           />
           <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 space-y-5">
             {adding ? (
-              <div className="border border-brand-line rounded-lg p-5 bg-brand-paper/40">
+              <div className="border border-brand-line rounded-xl p-5 bg-brand-paper/40">
                 <h3 className="text-sm font-bold mb-4">New address</h3>
                 <AddressForm
                   defaultName={profile?.name ?? ''}
@@ -226,7 +226,7 @@ export const Account = () => {
                 />
               </div>
             ) : editing ? (
-              <div className="border border-brand-line rounded-lg p-5 bg-brand-paper/40">
+              <div className="border border-brand-line rounded-xl p-5 bg-brand-paper/40">
                 <h3 className="text-sm font-bold mb-4">Edit address</h3>
                 <AddressForm
                   initial={editing}
@@ -246,7 +246,7 @@ export const Account = () => {
                 ) : (
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {addresses.map((a) => (
-                      <li key={a.id} className="border border-brand-line rounded-lg p-4 flex flex-col gap-3">
+                      <li key={a.id} className="border border-brand-line rounded-xl p-4 flex flex-col gap-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             {a.label && <span className="text-[11px] font-bold text-brand-ink">{a.label}</span>}

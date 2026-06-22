@@ -68,7 +68,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
         )}
         <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start">
           {badgeItems.map((b) => (
-            <span key={b.label} className={`font-mono text-[10px] uppercase tracking-[0.1em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-yellow text-white' : 'bg-white/90 text-brand-deep'}`}>
+            <span key={b.label} className={`font-serif font-bold text-[10px] uppercase tracking-[0.08em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-yellow text-brand-deep' : 'bg-white/90 text-brand-deep'}`}>
               {b.label}
             </span>
           ))}
@@ -82,14 +82,14 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       <div className="p-3.5 md:p-5 flex flex-col flex-1 relative">
         <span className="eyebrow leading-tight mb-2">{product.origin || product.brand}</span>
 
-        <Link to={`/shop/${product.id}`} className="font-serif text-[18px] md:text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-deep hover:text-brand-primary transition-colors">
+        <Link to={`/shop/${product.id}`} className="font-serif font-bold text-[18px] md:text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-deep hover:text-brand-primary transition-colors">
           {product.name}
         </Link>
 
         {certTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-3">
             {certTags.map((t) => (
-              <span key={t.slug} className="font-mono text-[10px] uppercase tracking-[0.06em] text-brand-muted bg-brand-surface border border-brand-line px-2 py-1 rounded">
+              <span key={t.slug} className="font-serif font-bold text-[10px] uppercase tracking-[0.06em] text-brand-muted bg-brand-surface border border-brand-line px-2 py-1 rounded">
                 {t.label}
               </span>
             ))}
@@ -112,8 +112,8 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
 
         {/* Quick-add size popover — adds without a PDP detour */}
         {pickerOpen && hasOptions && (
-          <div className="absolute left-4 right-4 bottom-16 z-20 bg-white border border-brand-line rounded-lg shadow-[0_8px_24px_rgba(10,40,33,0.18)] p-2">
-            <div className="font-mono text-[10px] uppercase tracking-wide text-brand-muted px-2 py-1.5">Pick a size</div>
+          <div className="absolute left-4 right-4 bottom-16 z-20 bg-white border border-brand-line rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] p-2">
+            <div className="font-serif font-bold text-[10px] uppercase tracking-wide text-brand-muted px-2 py-1.5">Pick a size</div>
             {inStockSizes.map((s) => (
               <button key={s.id} onClick={(e) => add(s, e)} className="w-full flex justify-between items-center px-2 py-2 rounded hover:bg-brand-surface text-left">
                 <span className="text-sm text-brand-deep">{s.label}</span>

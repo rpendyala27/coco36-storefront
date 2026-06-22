@@ -1,86 +1,111 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..700,0..100&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* ─── Type — peacock redesign ───────────────────────────────
-     Fraunces (display serif) · DM Sans (body/UI) · JetBrains Mono (codes) */
+  /* ─── Type — Panera-reference reskin ─────────────────────────
+     Archivo (bold grotesque display) · DM Sans (body/UI) · JetBrains Mono (codes).
+     NOTE: --font-serif is intentionally mapped to Archivo (a sans) so every
+     existing `font-serif` / heading usage flips from the old Fraunces serif to
+     the bold grotesque with zero per-component churn. */
   --font-sans:  "DM Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-serif: "Fraunces", "Times New Roman", Georgia, serif;
+  --font-serif: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
-  /* ─── Peacock teal — primary brand scale ────────────────────
-     Token NAMES kept from the old palette so existing components inherit
-     the new skin; values remapped to peacock (see design/STOREFRONT_REDESIGN.md). */
-  --color-brand-primary:        #15715f;  /* teal — CTAs, links, active */
-  --color-brand-primary-bright: #1c8a73;  /* hover */
-  --color-brand-coral:          #2a9d86;  /* repurposed → sea-green */
+  /* ─── Forest green + lime — primary brand scale ──────────────
+     Token NAMES kept from the old palette so existing components inherit the
+     new skin; values remapped to the Panera reference (forest green chrome,
+     lime-chartreuse pop). See design/STOREFRONT_REDESIGN.md. */
+  --color-brand-primary:        #4e7d24;  /* leaf green — links, active, focus */
+  --color-brand-primary-bright: #5c9329;  /* hover */
+  --color-brand-coral:          #5c9329;  /* repurposed → success / "added" green */
 
-  /* Peacock gold — SPARING accent only (NEW badge, cart count) */
+  /* Gold/amber — SPARING premium accent only (NEW badge, cart count, key/hero
+     CTA, logo "36"). Warm metallic that harmonizes with cocoa/spice — NOT a
+     fast-casual lime. The brand's single pop colour, used wisely. */
   --color-brand-yellow:         #c08a2e;
-  --color-brand-amber:          #c08a2e;
-  --color-brand-lemon:          #e0c084;
+  --color-brand-amber:          #a6741f;  /* deep gold — borders / hover */
+  --color-brand-lemon:          #ead9b8;  /* pale gold tint */
 
-  /* Deep teal — dark surfaces (topbar, footer, dark bands) */
-  --color-brand-purple:         #0a3c33;
-  --color-brand-berry:          #04231d;
-  --color-brand-indigo:         #0a3c33;  /* headings / deep text */
+  /* Forest green — dark surfaces (topbar, footer, dark bands) */
+  --color-brand-purple:         #27401b;
+  --color-brand-berry:          #172a10;  /* deepest */
+  --color-brand-indigo:         #1a1a1a;  /* headings → near-black (greens used as accents) */
 
-  /* Neutrals — white canvas, faint-teal surfaces, ink-teal text */
+  /* Neutrals — BLACK + WHITE base; the 3 greens stay accents.
+     Text is near-black / neutral grey (NOT green-tinted) so green reads as
+     deliberate. Surface near-white-neutral; band keeps one faint green wash. */
   --color-brand-paper:          #ffffff;  /* page bg (white) */
-  --color-brand-surface:        #f3faf7;  /* cards / faint teal tint */
-  --color-brand-band:           #e7f3ef;  /* muted band / hover */
-  --color-brand-ink:            #102420;  /* near-black teal body */
-  --color-brand-muted:          #5e7370;  /* secondary text */
+  --color-brand-surface:        #f6f7f3;  /* cards / near-white neutral */
+  --color-brand-band:           #ecf1da;  /* faint green wash — bands / hover */
+  --color-brand-ink:            #1a1a1a;  /* near-black body text */
+  --color-brand-muted:          #6b6b6b;  /* neutral grey secondary text */
 
-  /* Convenience aliases for new peacock components */
-  --color-brand-teal:           #15715f;
-  --color-brand-sea:            #2a9d86;
-  --color-brand-deep:           #0a3c33;
-  --color-brand-line:           rgba(16, 36, 32, 0.14);
+  /* Convenience aliases */
+  --color-brand-teal:           #4e7d24;  /* leaf */
+  --color-brand-sea:            #5c9329;  /* success green */
+  --color-brand-deep:           #27401b;  /* forest */
+  --color-brand-line:           rgba(0, 0, 0, 0.10);  /* neutral hairline */
+
+  /* Convenience accent tokens */
+  --color-brand-gold:           #c08a2e;
+  --color-brand-gold-deep:      #a6741f;
+  --color-brand-forest:         #27401b;
 }
 
 @layer base {
   body {
-    @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-primary selection:text-white;
+    @apply font-sans bg-brand-paper text-brand-ink antialiased selection:bg-brand-yellow selection:text-brand-deep;
     background-color: #ffffff;
   }
 
+  /* Bold grotesque display headings (Archivo) — the Panera punch */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif font-normal tracking-tight text-brand-indigo;
-    font-variation-settings: "opsz" 144, "SOFT" 30;
+    @apply font-serif font-extrabold tracking-tight text-brand-indigo;
   }
 }
 
 @layer components {
-  /* Editorial italic display (Fraunces italic) */
+  /* Editorial display accent (Archivo italic) */
   .display-italic {
-    @apply font-serif italic font-normal;
+    @apply font-serif italic font-semibold;
   }
 
   /* Eyebrow / mono label */
   .eyebrow {
-    @apply font-mono text-[11px] uppercase tracking-[0.14em] text-brand-muted;
+    @apply font-serif font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
   }
 
-  /* Peacock card — flat, faint-teal surface, hairline border */
+  /* Brand card — flat, faint lime-cream surface, hairline border.
+     (Name kept from the peacock pass; components reference it.) */
   .card-peacock {
-    @apply bg-white border border-brand-line rounded-lg overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(10,40,33,0.13)];
+    @apply bg-white border border-brand-line rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)];
   }
 
-  /* Primary transactional CTA — SOLID deep teal for max affordance + contrast
-     (Add to bag, Place order, Checkout). High-contrast = converts. */
+  /* Primary transactional CTA — SOLID leaf green + white text (Add to bag,
+     Checkout, Place order). Max affordance, fully rounded. Green is the
+     workhorse action colour; gold stays sparing. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 text-white font-semibold rounded-full px-6 py-3 transition-colors duration-200;
-    background-color: #0c6e6b;
+    @apply inline-flex items-center justify-center gap-2 font-bold rounded-full px-6 py-3 transition-colors duration-200;
+    background-color: #4e7d24;
+    color: #ffffff;
   }
-  .btn-primary:hover { background-color: #0a3c33; }
+  .btn-primary:hover { background-color: #3f6a1d; }
 
-  /* Hero / brand-moment CTA — the peacock teal→sea-green gradient (iridescence) */
+  /* Hero / brand-moment CTA — the SPARING gold (subtle metallic sheen) for the
+     ONE key call-to-action per view; forest text reads like gold foil. */
   .btn-gradient {
-    @apply inline-flex items-center justify-center gap-2 text-white font-semibold rounded-full px-6 py-3 transition-all duration-200;
-    background-image: linear-gradient(135deg, #0c6e6b 0%, #2a9d86 100%);
+    @apply inline-flex items-center justify-center gap-2 font-bold rounded-full px-6 py-3 transition-all duration-200;
+    background-image: linear-gradient(135deg, #cda23f 0%, #b07d24 100%);
+    color: #27401b;
   }
-  .btn-gradient:hover { filter: brightness(1.05); }
+  .btn-gradient:hover { filter: brightness(1.04); }
+
+  /* Dark secondary CTA — forest fill, white text (e.g. dark bands) */
+  .btn-forest {
+    @apply inline-flex items-center justify-center gap-2 text-white font-bold rounded-full px-6 py-3 transition-colors duration-200;
+    background-color: #27401b;
+  }
+  .btn-forest:hover { background-color: #172a10; }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 bg-white text-brand-deep font-semibold rounded-full px-6 py-3 border border-brand-deep hover:bg-brand-band transition-all duration-200;
@@ -108,7 +133,7 @@
   100% { background-position: 800px 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #eef4f3 0%, #f7fbfa 50%, #eef4f3 100%);
+  background: linear-gradient(90deg, #ededed 0%, #f7f7f7 50%, #ededed 100%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
 }
@@ -118,7 +143,7 @@
    focus:outline-none for mouse; this restores it for keyboard users). */
 a:focus-visible, button:focus-visible, input:focus-visible,
 select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid #15715f;
+  outline: 2px solid #4e7d24;
   outline-offset: 2px;
   border-radius: 3px;
 }
