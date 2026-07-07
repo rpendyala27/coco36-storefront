@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { HandCoins, Leaf, Sprout } from 'lucide-react';
+import { FrogFace } from './CertStamp';
 
 /**
  * Stamp-style trust band — the same five approved sourcing/cert claims the
@@ -15,15 +16,15 @@ type Stamp = {
   letters?: string;
   /** … or a centred icon … */
   Icon?: typeof Leaf;
-  /** … or a seal: curved text top/bottom + small centre icon + inner ring. */
-  seal?: { top: string; bottom: string; Icon: typeof Leaf };
+  /** … or a seal: curved text top/bottom + small centre glyph + inner ring. */
+  seal?: { top: string; bottom: string; Icon?: typeof Leaf; frog?: boolean };
 };
 
 const STAMPS: Stamp[] = [
   { label: 'CoA on every lot',    letters: 'CoA' },
   { label: '36-step traceable',   letters: '36' },
   { label: 'Fairtrade',           Icon: HandCoins },
-  { label: 'Rainforest Alliance', seal: { top: 'RAINFOREST', bottom: 'ALLIANCE', Icon: Leaf } },
+  { label: 'Rainforest Alliance', seal: { top: 'RAINFOREST', bottom: 'ALLIANCE', frog: true } },
   { label: 'India Organic',       seal: { top: 'INDIA', bottom: 'ORGANIC', Icon: Sprout } },
 ];
 
@@ -68,6 +69,11 @@ const StampMark = ({ stamp }: { stamp: Stamp }) => {
           </text>
         )}
       </svg>
+      {seal?.frog && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <svg viewBox="0 0 48 48" className="size-[38%]" fill="none"><FrogFace /></svg>
+        </span>
+      )}
       {CenterIcon && (
         <span className="absolute inset-0 flex items-center justify-center">
           <CenterIcon size={seal ? 14 : 24} strokeWidth={1.75} />

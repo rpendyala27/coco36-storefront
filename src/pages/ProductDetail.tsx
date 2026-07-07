@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, F
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
+import { CertStamp } from '../components/CertStamp';
 import { formatMoney } from '../lib/currency';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
@@ -99,10 +100,11 @@ export const ProductDetail = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
         {/* Gallery */}
         <div className="lg:sticky lg:top-28">
-          <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-forest">
+          <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-surface">
             {gallery[activeImage]
               ? <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              : <div className="w-full h-full flex items-center justify-center font-display font-bold text-xs uppercase tracking-wide text-white/60">No image</div>}
+              // Light "awaiting photo" placeholder — matches the ProductCard treatment.
+              : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">
@@ -125,12 +127,13 @@ export const ProductDetail = () => {
           <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{product.name}</h1>
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
 
-          {/* Cert + dietary marks */}
+          {/* Cert + dietary marks — stamp icons, same iconography as cards + trust band */}
           {markTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-5">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 mt-5 text-brand-forest">
               {markTags.map((t) => (
-                <span key={t.slug} className="inline-flex items-center gap-1.5 font-display font-bold text-[10px] uppercase tracking-[0.06em] text-brand-leaf bg-brand-surface border border-brand-line px-2.5 py-1.5 rounded">
-                  {t.kind === 'dietary' ? <Leaf size={11} strokeWidth={2} /> : <Check size={11} strokeWidth={3} />} {t.label}
+                <span key={t.slug} className="inline-flex items-center gap-2">
+                  <CertStamp slug={t.slug} label={t.label} size={28} title={false} />
+                  <span className="font-display font-bold text-[10px] uppercase tracking-[0.08em] text-brand-forest/80">{t.label}</span>
                 </span>
               ))}
             </div>
