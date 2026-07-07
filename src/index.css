@@ -100,34 +100,42 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Chocolate-scraper reveal — a smear is DRAWN in behind the hero keyword,
-   left to right, with a slanted leading edge (the blade angle) while the
-   scraper glyph travels across in sync. One-time entrance; reduced-motion
-   users see the finished state, no scraper. */
-@keyframes co-choc-swipe {
-  from { clip-path: polygon(-2% -12%, 5% -12%, -1% 112%, -2% 112%); }
-  to   { clip-path: polygon(-2% -12%, 114% -12%, 106% 112%, -2% 112%); }
+/* Chocolate tempering paint — the headline starts leaf green and is painted
+   couverture brown in three serpentine passes (L→R, R→L, L→R), the S-motion of
+   a chocolatier spreading on marble. Three brown text copies are each clipped
+   to a horizontal third and revealed in their sweep direction; the blade rides
+   the same serpentine on ONE shared linear 1.8s timeline (delay 350ms), so
+   paint and blade stay in lockstep. Sweep windows within the master timeline:
+   0–25%, 28–53% (reversed), 56–81% — band delays below are 350ms + those
+   offsets. One-time entrance; reduced-motion = finished brown, no scraper. */
+@keyframes co-paint-a { from { clip-path: inset(0 100% 66% 0); }  to { clip-path: inset(0 0 66% 0); } }
+@keyframes co-paint-b { from { clip-path: inset(33% 0 33% 100%); } to { clip-path: inset(33% 0 33% 0); } }
+@keyframes co-paint-c { from { clip-path: inset(66% 100% 0 0); }  to { clip-path: inset(66% 0 0 0); } }
+.choc-paint-1 { clip-path: inset(0 0 66% 0);   animation: co-paint-a 450ms linear 350ms backwards; }
+.choc-paint-2 { clip-path: inset(33% 0 33% 0); animation: co-paint-b 450ms linear 854ms backwards; }
+.choc-paint-3 { clip-path: inset(66% 0 0 0);   animation: co-paint-c 450ms linear 1358ms backwards; }
+
+/* The blade: sweep right along the top third, drop + flip for the backhand
+   pass right→left, drop + flip back, sweep right along the bottom third. */
+@keyframes co-scraper-s {
+  0%   { left: -5%;  top: 17%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
+  3%   { opacity: 1; }
+  25%  { left: 103%; top: 17%; transform: translate(-50%, -50%) rotate(14deg); }
+  28%  { left: 103%; top: 50%; transform: translate(-50%, -50%) rotate(-14deg) scale(-1, 1); }
+  53%  { left: -3%;  top: 50%; transform: translate(-50%, -50%) rotate(-14deg) scale(-1, 1); }
+  56%  { left: -3%;  top: 83%; transform: translate(-50%, -50%) rotate(14deg); }
+  81%  { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 1; }
+  86%  { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
+  100% { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
 }
-.choc-swipe {
-  clip-path: polygon(-2% -12%, 114% -12%, 106% 112%, -2% 112%);
-  animation: co-choc-swipe 900ms cubic-bezier(0.23, 1, 0.32, 1) 400ms backwards;
-}
-/* Scraper glyph rides the smear's leading edge, left → right, in sync. */
-@keyframes co-scraper {
-  0%   { left: -8%;  opacity: 0; }
-  12%  { opacity: 1; }
-  86%  { opacity: 1; }
-  100% { left: 108%; opacity: 0; }
-}
-.choc-scraper {
+.choc-scraper-s {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -52%) rotate(13deg);
-  animation: co-scraper 900ms cubic-bezier(0.23, 1, 0.32, 1) 400ms both;
+  z-index: 10;
+  animation: co-scraper-s 1800ms linear 350ms both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .choc-swipe { animation: none; }
-  .choc-scraper { display: none; }
+  .choc-paint-1, .choc-paint-2, .choc-paint-3 { animation: none; }
+  .choc-scraper-s { display: none; }
 }
 
 /* Marquee — live sourcing ticker */
