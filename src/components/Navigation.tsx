@@ -45,17 +45,19 @@ export const Navigation: React.FC = () => {
         {/* Topbar */}
         <div className="h-[30px] bg-brand-forest text-white flex items-center">
           <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-6 font-display font-semibold text-[10px] md:text-[10.5px] uppercase tracking-[0.11em] leading-none">
-            {/* Left — trust + positioning; extra clauses reveal only when there's room */}
+            {/* Left (hero) — positioning leads at the extreme left, on every breakpoint */}
             <span className="truncate text-white/90">
-              FSSAI Licensed
-              <span className="hidden lg:inline text-white/50"> · The pure-ingredient marketplace · built for </span>
-              <span className="hidden lg:inline-block min-w-[6.5em] text-brand-lime normal-case tracking-[0.01em] font-bold">{AUDIENCES[audienceIdx]}</span>
+              The pure-ingredient marketplace
+              <span className="hidden lg:inline text-white/50"> · built for </span>
+              <span className="hidden lg:inline-block min-w-[7em] text-brand-lime font-bold">{AUDIENCES[audienceIdx]}</span>
             </span>
-            {/* Right — value props (md+) */}
+            {/* Right — trust + value props (md+) */}
             <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
-              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span>FSSAI Licensed</span>
               <span className="text-white/25">·</span>
-              <span>Bulk &amp; trade</span>
+              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span className="hidden lg:inline text-white/25">·</span>
+              <span className="hidden lg:inline">Bulk &amp; trade</span>
               <span className="text-white/25">·</span>
               <span>₹ INR</span>
             </span>
