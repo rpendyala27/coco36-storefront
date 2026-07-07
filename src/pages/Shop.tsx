@@ -282,40 +282,48 @@ export const Shop = () => {
       {/* ── Hero — 1A headline+search · 1B journey reel · 1C product rows ──
           (eyebrow + rotating audience line promoted to the global topbar) */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 min-w-0">
           {/* 1A */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl leading-[1.06]">
               Find your secret{' '}
               <em className="display-italic choc-swipe inline-block bg-[#5b3a21] text-white px-3 md:px-4 pb-1 rounded-[10px]">ingredient</em>
             </h1>
-            <div className="mt-6 max-w-xl mx-auto">
+            <div className="mt-6 mb-8 md:mb-10 max-w-xl mx-auto">
               <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
             </div>
           </motion.div>
+        </div>
 
-          {/* 1B — journey reel: one ambient clip per phase, linking into /36-steps */}
-          <motion.div {...heroEnter(0.08)} className="mt-8 md:mt-10">
-            <div className="flex md:grid md:grid-cols-6 gap-2.5 md:gap-3 overflow-x-auto md:overflow-visible no-scrollbar max-w-5xl mx-auto">
-              {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
-                <Link
-                  key={p.id}
-                  to={`/36-steps#${p.id}`}
-                  aria-label={`Phase ${p.number} — ${p.title}`}
-                  className="group relative block shrink-0 w-24 md:w-auto aspect-[9/16] rounded-xl overflow-hidden bg-brand-forest"
-                >
-                  <AmbientVideo src={PHASE_VIDEOS[p.id]} className="absolute inset-0 w-full h-full object-cover opacity-85 transition-opacity duration-200 group-hover:opacity-100" />
-                  <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/80 via-transparent to-transparent" />
-                  <span className="absolute inset-x-0 bottom-0 p-2 md:p-2.5 text-left">
-                    <span className="block font-display font-bold text-[9px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
-                    <span className="block font-display font-bold text-[10px] uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </motion.div>
+        {/* 1B — full-bleed journey strip: six gapless vertical clips with the
+            tagline tracked across (EARTH-collage reference). Labels on hover. */}
+        <motion.div {...heroEnter(0.08)} className="relative w-full">
+          <div className="grid grid-cols-6 w-full h-[42vh] min-h-[300px] max-h-[520px]">
+            {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
+              <Link
+                key={p.id}
+                to={`/36-steps#${p.id}`}
+                aria-label={`Phase ${p.number} — ${p.title}`}
+                className="group relative block overflow-hidden bg-brand-forest"
+              >
+                <AmbientVideo src={PHASE_VIDEOS[p.id]} className="absolute inset-0 w-full h-full object-cover" />
+                <span className="absolute inset-0 bg-brand-forest-deep/20 transition-colors duration-200 group-hover:bg-brand-forest-deep/5" />
+                <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
+                  <span className="block font-display font-bold text-[9px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
+            <p className="font-display font-bold text-2xl sm:text-4xl lg:text-6xl text-white uppercase tracking-[0.3em] sm:tracking-[0.42em] pl-[0.3em] sm:pl-[0.42em] text-center leading-none whitespace-nowrap [text-shadow:0_2px_28px_rgba(4,35,29,0.65)]">
+              Crop to craft
+            </p>
+          </div>
+        </motion.div>
 
-          {/* 1C — designation rows (Netflix-style) */}
+        {/* 1C — designation rows (Netflix-style) */}
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pb-8 md:pb-10 min-w-0">
           <ProductRow title="Bestsellers" products={bestsellers} />
           <ProductRow title="New arrivals" products={newArrivals} />
         </div>
