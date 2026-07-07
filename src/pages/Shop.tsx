@@ -321,8 +321,12 @@ export const Shop = () => {
       {/* ── Hero — 1A headline · 1B journey strip with the search bar riding it ──
           (eyebrow + rotating audience line promoted to the global topbar) */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 pb-6 md:pb-8 min-w-0">
-          {/* 1A — headline; keyword painted by the chocolate scraper */}
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 pb-6 md:pb-8 min-w-0 overflow-x-clip">
+          {/* 1A — headline; keyword painted by the chocolate scraper.
+              overflow-x-clip contains the word-sized scraper track's off-word
+              translate (it extends right of the word for the % reference) so it
+              can't create page scroll; `clip` (not hidden) keeps overflow-y
+              visible, so the drips still hang below the word. */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl leading-[1.06]">
               <span className="text-brand-gold-deep">Find your secret</span>{' '}
