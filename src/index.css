@@ -144,8 +144,9 @@
   content: "";
   position: absolute;
   border-radius: inherit;
+  /* var() fallback: browsers without @property still render a static ring */
   background: conic-gradient(
-    from var(--co-glow-angle),
+    from var(--co-glow-angle, 0deg),
     #0d9488 0%, #14b8a6 15%, #2dd4bf 30%,
     #a3e635 48%, #5c9329 65%, #14b8a6 82%, #0d9488 100%
   );
@@ -156,15 +157,18 @@
   pointer-events: none;
   animation: co-glow-spin 4.5s linear infinite;
 }
-.co-glow::after {    /* crisp hairline outline ring at the pill edge */
+.co-glow::after {    /* crisp outline ring at the pill edge — whole pixels only:
+                        fractional padding + mask-composite can round the two
+                        mask boxes together at some zoom/DPI levels, making the
+                        ring vanish entirely */
   inset: 0;
-  padding: 1.5px;
+  padding: 2px;
 }
 .co-glow::before {   /* soft glow — a wider ring, blurred and dimmed */
-  inset: -2px;
-  padding: 3.5px;
-  filter: blur(6px);
-  opacity: 0.4;
+  inset: -3px;
+  padding: 5px;
+  filter: blur(8px);
+  opacity: 0.5;
 }
 @media (prefers-reduced-motion: reduce) {
   .co-glow::before, .co-glow::after { animation: none; }
