@@ -44,9 +44,24 @@ const ROUTE_TITLES: Record<string, string> = {
 const CANONICAL_ORIGIN = 'https://coco36.com';
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Honor a #hash anchor (e.g. /36-steps#quality from the homepage journey
+    // tiles). Routes are lazy-loaded, so poll briefly for the target to exist,
+    // then smooth-scroll to it; otherwise fall back to top.
+    if (hash) {
+      const id = hash.slice(1);
+      let tries = 0;
+      const tryScroll = () => {
+        const el = document.getElementById(id);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
+        if (tries++ < 25) setTimeout(tryScroll, 60);
+        else window.scrollTo(0, 0);
+      };
+      tryScroll();
+    } else {
+      window.scrollTo(0, 0);
+    }
     const base = ROUTE_TITLES[pathname];
     if (base) {
       document.title = `${base} · COCO36`;
@@ -66,7 +81,7 @@ function ScrollToTop() {
       document.head.appendChild(link);
     }
     link.href = CANONICAL_ORIGIN + canonicalPath;
-  }, [pathname]);
+  }, [pathname, hash]);
   return null;
 }
 

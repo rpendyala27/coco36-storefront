@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
@@ -207,8 +207,24 @@ export const Shop = () => {
     scrollToCatalog();
   };
 
-  const scrollToCatalog = () =>
-    requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+  // Redirect-to-catalog: flag the intent; the scroll runs in a layout effect
+  // AFTER the filtered grid re-renders, so the target position is stable (no
+  // mid-animation clamp) and clears the full sticky stack (header + browse bar).
+  const pendingCatalogScroll = useRef(false);
+  const scrollToCatalog = () => { pendingCatalogScroll.current = true; };
+
+  // Runs AFTER the filtered grid commits. Scrolling toward the catalog makes the
+  // browse strip collapse mid-scroll (tiles→pills), which shifts layout and drifts
+  // a single scroll target — so we scroll, then re-assert once the collapse + grid
+  // have settled. #catalog's scroll-margin-top clears the sticky stack.
+  useLayoutEffect(() => {
+    if (!pendingCatalogScroll.current) return;
+    pendingCatalogScroll.current = false;
+    const scroll = () => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scroll();
+    const t = setTimeout(scroll, 420);
+    return () => clearTimeout(t);
+  }, [categoryId, designation, search]);
 
   const clearAll = () => {
     setCategoryId(null); setDesignation(null); setOrigins(new Set()); setTagSlugs(new Set());
@@ -358,8 +374,8 @@ export const Shop = () => {
             {/* At rest → control PILLS stacked vertically (left) + category image tiles (right) */}
             {!stuck && (
             <div className="flex gap-3 md:gap-4 items-center">
-              {/* Shop all / Bestsellers / New arrivals — vertical pill stack */}
-              <div className="flex flex-col items-start justify-center gap-2 shrink-0">
+              {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
+              <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
                 <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
@@ -426,7 +442,7 @@ export const Shop = () => {
       )}
 
       {/* ── Catalog ── */}
-      <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
+      <section id="catalog" className="scroll-mt-36 px-4 md:px-12 lg:px-20 py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Filters */}
           <aside className={`lg:col-span-3 ${filtersOpen ? 'fixed inset-0 z-50 bg-brand-paper overflow-y-auto px-5 pt-5 pb-28 lg:static lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0' : 'hidden lg:block'}`}>
@@ -589,7 +605,7 @@ const NavPill: React.FC<{ active: boolean; gold?: boolean; onClick: () => void; 
   <button
     onClick={onClick}
     aria-pressed={active}
-    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
+    className={`flex-shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
       active
         ? (gold ? 'bg-brand-gold text-brand-ink border-brand-gold' : 'bg-brand-forest text-white border-brand-forest')
         : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
