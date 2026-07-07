@@ -49,7 +49,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-50px' }}
       transition={{ delay: Math.min(index * 0.04, 0.32), duration: 0.5 }}
-      className="card group flex flex-col h-full transition-transform duration-200 ease-out hover:-translate-y-0.5"
+      className="card group flex flex-col h-full"
     >
       {/* Image */}
       <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">

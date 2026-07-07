@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
   Cookie, CupSoda, IceCream, Soup,
@@ -8,6 +9,7 @@ import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
 import { RequestProduct } from '../components/RequestProduct';
 import { TrustBand } from '../components/TrustBand';
+import { formatMoney } from '../lib/currency';
 import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
@@ -211,6 +213,9 @@ export const Shop = () => {
     setSearchParams(params);
   };
 
+  const scrollToCatalog = () =>
+    requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+
   const clearAll = () => {
     setCategoryId(null); setOrigins(new Set()); setTagSlugs(new Set());
     setSearch(''); setMaxRupees(null); setSearchParams({});
@@ -221,8 +226,27 @@ export const Shop = () => {
     setCategoryId(null); setOrigins(new Set()); setTagSlugs(new Set());
     setSearch(q);
     setSearchParams(q ? { q } : {});
-    requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+    scrollToCatalog();
   };
+
+  // Featured hero product — bestseller-tagged with a photo, else first with a photo.
+  const featured = useMemo(() => {
+    const withImage = PRODUCTS.filter((p) => p.image);
+    return withImage.find((p) => (p.tags ?? []).some((t) => t.slug === 'bestseller')) ?? withImage[0] ?? null;
+  }, [PRODUCTS]);
+  const featuredFromPaise = featured?.sizes.length ? Math.min(...featured.sizes.map((s) => s.priceInPaise)) : 0;
+
+  // Image-led category tiles — landing state only, and only categories that
+  // actually have a photo (set via admin; interim photos seeded 2026-07-06).
+  const categoryTiles = useMemo(() => tree.roots.filter((c) => c.imageUrl), [tree.roots]);
+  const showTiles = categoryTiles.length > 0 && !categoryId && !search.trim();
+
+  const reduceMotion = useReducedMotion();
+  const heroEnter = (delay: number) => ({
+    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
+    animate: reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 },
+    transition: { duration: 0.28, delay, ease: [0.23, 1, 0.32, 1] as const },
+  });
 
   const breadcrumb   = categoryId ? tree.ancestorsOf(categoryId) : [];
   const drillChildren = categoryId ? tree.childrenOf(categoryId) : [];
@@ -231,22 +255,46 @@ export const Shop = () => {
 
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
-      {/* ── Hero ── */}
+      {/* ── Hero — copy left, featured bestseller photo right ── */}
       <section className="bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
-          <div className="min-w-0 max-w-3xl mx-auto text-center">
-            <p className="eyebrow text-brand-leaf mb-3 md:mb-4">The pure-ingredient marketplace</p>
-            <h1 className="text-4xl md:text-6xl leading-[0.98]">
-              Find your secret <em className="display-italic text-brand-leaf">ingredient</em>
-            </h1>
-            <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
-              Sourced direct from origin, built for{' '}
-              <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-forest font-medium">{ROTATING[wordIdx]}</span>
-            </p>
+          <div className={`grid gap-7 lg:gap-14 items-center ${featured ? 'lg:grid-cols-[1fr_400px]' : ''}`}>
+            <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto lg:mx-0 text-center lg:text-left">
+              <p className="eyebrow text-brand-leaf mb-3 md:mb-4">The pure-ingredient marketplace</p>
+              <h1 className="text-4xl md:text-6xl leading-[0.98]">
+                Find your secret <em className="display-italic text-brand-leaf">ingredient</em>
+              </h1>
+              <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
+                Sourced direct from origin, built for{' '}
+                <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-forest font-medium">{ROTATING[wordIdx]}</span>
+              </p>
 
-            <div className="mt-5 md:mt-6 max-w-xl mx-auto">
-              <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
-            </div>
+              <div className="mt-5 md:mt-6 max-w-xl mx-auto lg:mx-0">
+                <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
+              </div>
+            </motion.div>
+
+            {featured && (
+              <motion.div {...heroEnter(0.08)} className="min-w-0">
+                <Link
+                  to={`/shop/${featured.id}`}
+                  className="group/feat relative block rounded-2xl overflow-hidden border border-brand-line aspect-[16/9] lg:aspect-[5/4] bg-brand-band"
+                >
+                  <img
+                    key={featured.image}
+                    src={featured.image}
+                    alt={featured.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover/feat:scale-[1.03]"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/35 to-transparent pt-14 pb-4 px-5 block">
+                    <span className="font-display font-bold text-[10px] uppercase tracking-[0.14em] text-white/75 block">Bestseller</span>
+                    <span className="font-display font-bold text-lg text-white leading-tight mt-0.5 block">{featured.name}</span>
+                    <span className="text-[13px] text-white/85 mt-1 block">From {formatMoney(featuredFromPaise)} · Shop now →</span>
+                  </span>
+                </Link>
+              </motion.div>
+            )}
           </div>
         </div>
 
@@ -266,6 +314,32 @@ export const Shop = () => {
 
       {/* ── Trust stamps — same five approved claims, stamp-style band ── */}
       <TrustBand />
+
+      {/* ── Shop by category — image tiles (landing state; only categories with photos) ── */}
+      {showTiles && (
+        <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-2 md:mt-3 mb-1">
+          <div className="flex lg:grid lg:grid-cols-6 gap-3 overflow-x-auto lg:overflow-visible no-scrollbar pb-1">
+            {categoryTiles.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { selectCategory(c.id); scrollToCatalog(); }}
+                aria-label={`Shop ${c.name}`}
+                className="group relative shrink-0 w-36 lg:w-auto aspect-[4/3] rounded-xl overflow-hidden border border-brand-line text-left"
+              >
+                <img
+                  src={c.imageUrl!}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]"
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-8 pb-2 px-3">
+                  <span className="font-display font-bold text-[11px] uppercase tracking-[0.1em] text-white leading-tight">{c.name}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Category nav (L1 row + drill row) ── */}
       <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
