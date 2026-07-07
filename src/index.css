@@ -120,12 +120,13 @@
   .choc-paint { animation: none; }
 }
 
-/* Hero search — rotating glow border. A conic gradient (teal → greens) sweeps
-   360° around the pill. We animate the gradient's start ANGLE (registered via
-   @property so it can tween), not the element, so the wide rounded rect never
-   tilts. ::before is the crisp 2px ring peeking past the white pill; ::after is
-   a blurred copy for the soft glow. Both share one continuous spin (linear is
-   correct here — a steady rotating highlight, not hand-driven motion). */
+/* Hero search — rotating glow border. Padded-box method (no masks, so it
+   renders identically in Chrome / Safari / Firefox): .co-glow is a thin padded
+   pill whose background is a conic gradient (teal → greens); the white <form>
+   fills the middle, leaving the gradient showing only as a ring. Rotating the
+   gradient's ANGLE (registered @property so it can tween) spins the ring
+   without tilting the wide pill. ::before is a blurred copy for the glow.
+   var() fallback keeps a static ring on engines without @property. */
 @property --co-glow-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -134,44 +135,34 @@
 @keyframes co-glow-spin {
   to { --co-glow-angle: 360deg; }
 }
-.co-glow { position: relative; }
-/* Both layers paint the conic gradient into a ring only: the mask keeps the
-   padding band (border-box minus content-box) and cuts out the interior, so the
-   colour never fills the pill — just the outline. ::after is the crisp 2px
-   outline; ::before is a wider, blurred copy for the soft glow. */
-.co-glow::before,
-.co-glow::after {
-  content: "";
-  position: absolute;
-  border-radius: inherit;
-  /* var() fallback: browsers without @property still render a static ring */
+.co-glow {
+  position: relative;
+  border-radius: 9999px;
+  padding: 2.5px;              /* ring thickness */
   background: conic-gradient(
     from var(--co-glow-angle, 0deg),
-    #0d9488 0%, #14b8a6 15%, #2dd4bf 30%,
-    #a3e635 48%, #5c9329 65%, #14b8a6 82%, #0d9488 100%
+    #0d9488, #14b8a6, #2dd4bf, #5eead4, #a3e635, #5c9329, #14b8a6, #0d9488
   );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  pointer-events: none;
-  animation: co-glow-spin 4.5s linear infinite;
+  animation: co-glow-spin 4s linear infinite;
 }
-.co-glow::after {    /* crisp outline ring at the pill edge — whole pixels only:
-                        fractional padding + mask-composite can round the two
-                        mask boxes together at some zoom/DPI levels, making the
-                        ring vanish entirely */
-  inset: 0;
-  padding: 2px;
-}
-.co-glow::before {   /* soft glow — a wider ring, blurred and dimmed */
+.co-glow > form { border-radius: inherit; }   /* white pill fills the ring */
+.co-glow::before {              /* soft glow — a blurred rotating copy behind */
+  content: "";
+  position: absolute;
   inset: -3px;
-  padding: 5px;
-  filter: blur(8px);
-  opacity: 0.5;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--co-glow-angle, 0deg),
+    #0d9488, #14b8a6, #2dd4bf, #5eead4, #a3e635, #5c9329, #14b8a6, #0d9488
+  );
+  filter: blur(11px);
+  opacity: 0.6;
+  pointer-events: none;
+  animation: co-glow-spin 4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .co-glow::before, .co-glow::after { animation: none; }
+  .co-glow, .co-glow::before { animation: none; }
 }
 
 /* Marquee — live sourcing ticker */

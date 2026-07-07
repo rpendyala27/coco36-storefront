@@ -78,9 +78,16 @@ export function SearchBox({
 
   return (
     <div ref={wrapRef} className="relative w-full">
+      {/* hero: the .co-glow wrapper draws the rotating teal→green ring around
+          the pill; overlay: display:contents so layout is unchanged */}
+      <div className={variant === 'hero' ? 'co-glow' : 'contents'}>
       <form
         onSubmit={(e) => { e.preventDefault(); goToResults(q); }}
-        className="flex items-center gap-2 bg-white border border-brand-line rounded-full pl-5 pr-2 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] focus-within:border-brand-leaf transition-colors"
+        className={`flex items-center gap-2 bg-white rounded-full pl-5 pr-2 py-2 shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition-colors ${
+          variant === 'hero'
+            ? ''                                                          // ring lives on the wrapper
+            : 'border border-brand-line focus-within:border-brand-leaf'
+        }`}
       >
         <Search size={18} className="text-brand-leaf shrink-0" />
         <input
@@ -98,6 +105,7 @@ export function SearchBox({
           </button>
         )}
       </form>
+      </div>
 
       {showDropdown && (
         <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-brand-line rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.16)] z-50 overflow-hidden">
