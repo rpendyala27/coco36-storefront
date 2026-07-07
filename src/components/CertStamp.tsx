@@ -109,7 +109,7 @@ export const CertStamp: React.FC<CertStampProps> = ({ slug, label, size = 22, cl
       aria-label={label}
       title={title ? label : undefined}
     >
-      {/* Generic drawn mark (base layer / fallback) */}
+      {/* Generic drawn mark (base layer / fallback) — refined thin line-art. */}
       <svg viewBox="0 0 48 48" className="absolute inset-0 size-full" fill="none" aria-hidden="true">
         {'split' in def ? (
           <>
@@ -119,24 +119,24 @@ export const CertStamp: React.FC<CertStampProps> = ({ slug, label, size = 22, cl
                 {def.split[0]}
               </text>
             </mask>
-            <path d="M2.5 24 a21.5 21.5 0 0 1 43 0 Z" fill="currentColor" mask={`url(#${uid})`} />
-            <circle cx="24" cy="24" r="21.5" stroke="currentColor" strokeWidth="3" />
-            <line x1="4" y1="24" x2="44" y2="24" stroke="currentColor" strokeWidth="2" />
+            <path d="M3 24 a21 21 0 0 1 42 0 Z" fill="currentColor" mask={`url(#${uid})`} />
+            <circle cx="24" cy="24" r="21" stroke="currentColor" strokeWidth="2" />
+            <line x1="4.5" y1="24" x2="43.5" y2="24" stroke="currentColor" strokeWidth="1.75" />
             <text x="24" y="32.5" textAnchor="middle" dominantBaseline="central" className="font-display" fontWeight="700" fontSize={def.split[1].length > 3 ? 8 : 10} fill="currentColor">
               {def.split[1]}
             </text>
           </>
         ) : (
-          <circle cx="24" cy="24" r="21.5" stroke="currentColor" strokeWidth="3" />
+          <circle cx="24" cy="24" r="21.25" stroke="currentColor" strokeWidth="2" />
         )}
         {'letters' in def && (
-          <text x="24" y="25" textAnchor="middle" dominantBaseline="central" className="font-display" fontWeight="700" letterSpacing="0.5" fontSize={def.letters.length > 2 ? 12 : def.letters.length > 1 ? 15 : 19} fill="currentColor">
+          <text x="24" y="25" textAnchor="middle" dominantBaseline="central" className="font-display" fontWeight="700" letterSpacing={def.letters.length > 1 ? 0.5 : 0} fontSize={def.letters.length > 2 ? 11.5 : def.letters.length > 1 ? 17 : 21} fill="currentColor">
             {def.letters}
           </text>
         )}
         {'frog' in def && <FrogFace />}
       </svg>
-      {'icon' in def && <def.icon size={iconPx} strokeWidth={2} aria-hidden="true" />}
+      {'icon' in def && <def.icon size={iconPx} strokeWidth={1.75} aria-hidden="true" />}
 
       {/* Licensed official logo, when supplied — covers the generic mark. */}
       {logoSrc && !logoFailed && (
