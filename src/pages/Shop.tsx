@@ -603,9 +603,11 @@ export const Shop = () => {
             { title: 'Certified & traceable', desc: 'Certifications shown per product, set by our sourcing team.' },
             { title: `Free shipping over ${freeShippingLabel(cfg)}`, desc: `Across India, with a ${cfg.returnWindowDays}-day quality guarantee on every order.` },
           ].map((it) => (
-            <div key={it.title}>
-              <h4 className="font-display text-xl mb-3 text-brand-forest">{it.title}</h4>
-              <p className="text-sm text-brand-muted leading-relaxed">{it.desc}</p>
+            <div key={it.title} className="flex flex-col items-center">
+              {/* min-height reserves 2 lines so the body copy aligns across columns
+                  regardless of how the heading wraps */}
+              <h4 className="font-display text-xl text-brand-forest leading-snug min-h-[3.75rem] flex items-center text-center">{it.title}</h4>
+              <p className="text-sm text-brand-muted leading-relaxed mt-2.5 max-w-[30ch]">{it.desc}</p>
             </div>
           ))}
         </div>
@@ -626,7 +628,7 @@ const NavPill: React.FC<{ active: boolean; gold?: boolean; onClick: () => void; 
   <button
     onClick={onClick}
     aria-pressed={active}
-    className={`flex-shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
+    className={`flex-shrink-0 inline-flex items-center justify-start gap-2 px-3.5 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
       active
         ? (gold ? 'bg-brand-gold text-brand-ink border-brand-gold' : 'bg-brand-forest text-white border-brand-forest')
         : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
