@@ -189,7 +189,7 @@ export const ProductDetail = () => {
           {/* Ship note */}
           <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
             <Truck size={15} strokeWidth={1.75} className="text-brand-leaf" />
-            Ships in <span className="text-brand-forest font-medium">2 days</span> from Bengaluru · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
+            Ships in <span className="text-brand-forest font-medium">2 business days</span> · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
           </p>
 
           {/* Accordions */}
