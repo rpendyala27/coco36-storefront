@@ -105,8 +105,7 @@
    delightful reveal is the marketing/explanatory exception to the sub-300ms UI
    rule. Reduced motion: finished brown word, no sweep. */
 :root {
-  --ease-out-strong:    cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 @keyframes co-paint-sweep {
   0%   { clip-path: inset(0 100% 0 0); }
