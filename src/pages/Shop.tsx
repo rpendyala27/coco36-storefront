@@ -233,7 +233,10 @@ export const Shop = () => {
       .filter((d): d is { slug: string; label: string; image: string } => d !== null),
     [PRODUCTS]);
   const categoryTiles = useMemo(() => tree.roots.filter((c) => c.imageUrl), [tree.roots]);
-  const showTiles = (categoryTiles.length + designationTiles.length) > 0 && !categoryId && !designation && !search.trim();
+  // The tile strip is the category nav now (the old pill row is gone), so it
+  // stays visible whether or not something is selected.
+  const showTiles = (categoryTiles.length + designationTiles.length) > 0;
+  const nothingSelected = !categoryId && !designation;
 
   const reduceMotion = useReducedMotion();
   const heroEnter = (delay: number) => ({
@@ -308,58 +311,69 @@ export const Shop = () => {
       {/* ── Trust stamps — same five approved claims, stamp-style band ── */}
       <TrustBand />
 
-      {/* ── Browse tiles — designation tiles + category tiles, one even grid ── */}
+      {/* ── Browse tiles — compact sliding strip; the category nav (replaces the
+          old pill row). "All" resets; the active tile is outlined; clicking the
+          active tile deselects it (show-all). ── */}
       {showTiles && (
         <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-3 md:mt-4 mb-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {designationTiles.map((d) => (
-              <button
-                key={d.slug}
-                onClick={() => selectDesignation(d.slug)}
-                aria-label={`Shop ${d.label}`}
-                className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-brand-line text-left"
-              >
-                <img src={d.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
-                <span className="absolute inset-0 bg-brand-forest-deep/45 transition-colors duration-200 group-hover:bg-brand-forest-deep/30" />
-                <span className="absolute top-2.5 left-2.5 font-display font-bold text-[9px] uppercase tracking-[0.14em] text-brand-ink bg-brand-gold px-2 py-1 rounded-full">Featured</span>
-                <span className="absolute inset-x-0 bottom-0 pt-8 pb-2.5 px-3">
-                  <span className="font-display font-bold text-[13px] uppercase tracking-[0.08em] text-white leading-tight">{d.label}</span>
-                </span>
-              </button>
-            ))}
-            {categoryTiles.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => { selectCategory(c.id); scrollToCatalog(); }}
-                aria-label={`Shop ${c.name}`}
-                className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-brand-line text-left"
-              >
-                <img
-                  src={c.imageUrl!}
-                  alt=""
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]"
-                />
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-8 pb-2.5 px-3">
-                  <span className="font-display font-bold text-[13px] uppercase tracking-[0.08em] text-white leading-tight">{c.name}</span>
-                </span>
-              </button>
-            ))}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x pb-2">
+            {/* All / reset tile */}
+            <button
+              onClick={() => selectCategory(null)}
+              aria-label="Show all ingredients"
+              aria-pressed={nothingSelected}
+              className={`shrink-0 w-24 md:w-28 aspect-[4/3] rounded-xl overflow-hidden bg-brand-forest text-left snap-start flex flex-col justify-end p-3 transition-shadow ${nothingSelected ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+            >
+              <span className="font-display font-bold text-xl text-brand-gold-pale leading-none">All</span>
+              <span className="font-display font-bold text-[9px] uppercase tracking-[0.12em] text-white/80 mt-1">Ingredients</span>
+            </button>
+
+            {designationTiles.map((d) => {
+              const active = designation === d.slug;
+              return (
+                <button
+                  key={d.slug}
+                  onClick={() => (active ? setDesignation(null) : selectDesignation(d.slug))}
+                  aria-label={`Shop ${d.label}`}
+                  aria-pressed={active}
+                  className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                >
+                  <img src={d.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                  <span className="absolute inset-0 bg-brand-forest-deep/45 transition-colors duration-200 group-hover:bg-brand-forest-deep/30" />
+                  <span className="absolute top-2 left-2 font-display font-bold text-[8px] uppercase tracking-[0.14em] text-brand-ink bg-brand-gold px-1.5 py-0.5 rounded-full">Featured</span>
+                  <span className="absolute inset-x-0 bottom-0 pt-7 pb-2 px-2.5">
+                    <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{d.label}</span>
+                  </span>
+                </button>
+              );
+            })}
+
+            {categoryTiles.map((c) => {
+              const active = breadcrumb[0]?.id === c.id;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
+                  aria-label={`Shop ${c.name}`}
+                  aria-pressed={active}
+                  className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                >
+                  <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
+                    <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
 
-      {/* ── Category nav (L1 row + drill row) ── */}
-      <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2 md:py-3 flex gap-2 overflow-x-auto no-scrollbar">
-          <Pill active={!categoryId} onClick={() => selectCategory(null)}>All</Pill>
-          {tree.roots.map((c) => (
-            <Pill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => selectCategory(c.id)}>{c.name}</Pill>
-          ))}
-        </div>
-        {/* Drill row — breadcrumb of the active branch + children to go deeper */}
-        {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
-          <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pb-2 md:pb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
+      {/* ── Subcategory drill nav — sticky, only while inside a category branch
+          that has depth or children (the L1 pill row was removed). ── */}
+      {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
+        <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
+          <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2 md:py-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
             {breadcrumb.map((c, i) => (
               <React.Fragment key={c.id}>
                 {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
@@ -386,8 +400,8 @@ export const Shop = () => {
               </>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Catalog ── */}
       <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
@@ -471,6 +485,7 @@ export const Shop = () => {
                   <Filter size={12} /> Filters {activeCount > 0 && `(${activeCount})`}
                 </button>
                 {search && <Chip label={`"${search}"`} onRemove={() => setSearch('')} />}
+                {activeCategory && <Chip label={activeCategory.name} onRemove={() => selectCategory(null)} />}
                 {designationLabel && <Chip label={designationLabel} onRemove={() => setDesignation(null)} />}
                 {[...origins].map((o) => <Chip key={o} label={o} onRemove={() => toggleSet(origins, o, setOrigins)} />)}
                 {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
@@ -546,17 +561,6 @@ function slugKindLabel(products: { tags?: { slug: string; label: string }[] }[],
   for (const p of products) for (const t of p.tags ?? []) if (t.slug === slug) return t.label;
   return undefined;
 }
-
-const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`flex-shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[12px] md:text-[13px] font-medium transition-all border ${
-      active ? 'bg-brand-forest text-white border-brand-forest' : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
-    }`}
-  >
-    {children}
-  </button>
-);
 
 const FacetGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="pb-6 border-b border-brand-line">
