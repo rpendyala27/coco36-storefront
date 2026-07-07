@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
+  LayoutGrid, Flame, Sparkles,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
@@ -27,9 +28,9 @@ const SORT_LABELS: Record<SortKey, string> = {
 };
 
 // Designation entries surfaced as browse tiles alongside categories.
-const DESIGNATIONS: { slug: string; label: string }[] = [
-  { slug: 'bestseller',  label: 'Bestsellers' },
-  { slug: 'new-arrival', label: 'New arrivals' },
+const DESIGNATIONS: { slug: string; label: string; Icon: typeof Flame }[] = [
+  { slug: 'bestseller',  label: 'Bestsellers',  Icon: Flame },
+  { slug: 'new-arrival', label: 'New arrivals', Icon: Sparkles },
 ];
 
 // Tag filter groups, derived from tag.kind (no hardcoded slug lists). `designation`
@@ -230,7 +231,7 @@ export const Shop = () => {
         const rep = PRODUCTS.find((p) => p.image && (p.tags ?? []).some((t) => t.slug === d.slug));
         return rep ? { ...d, image: rep.image } : null;
       })
-      .filter((d): d is { slug: string; label: string; image: string } => d !== null),
+      .filter((d): d is { slug: string; label: string; Icon: typeof Flame; image: string } => d !== null),
     [PRODUCTS]);
   const categoryTiles = useMemo(() => tree.roots.filter((c) => c.imageUrl), [tree.roots]);
   // The tile strip is the category nav now (the old pill row is gone), so it
@@ -311,95 +312,109 @@ export const Shop = () => {
       {/* ── Trust stamps — same five approved claims, stamp-style band ── */}
       <TrustBand />
 
-      {/* ── Browse tiles — compact sliding strip; the category nav (replaces the
-          old pill row). "All" resets; the active tile is outlined; clicking the
-          active tile deselects it (show-all). ── */}
+      {/* ── Browse strip — the category nav. Frozen (sticky) under the header so
+          it's reachable without scrolling up. "All" resets; active tile gets a
+          ring; clicking the active tile deselects (show-all). The subcategory
+          drill nav rides inside the same sticky unit. ── */}
       {showTiles && (
-        <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-3 md:mt-4 mb-1">
-          <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x pb-2">
-            {/* All / reset tile */}
-            <button
-              onClick={() => selectCategory(null)}
-              aria-label="Show all ingredients"
-              aria-pressed={nothingSelected}
-              className={`shrink-0 w-24 md:w-28 aspect-[4/3] rounded-xl overflow-hidden bg-brand-forest text-left snap-start flex flex-col justify-end p-3 transition-shadow ${nothingSelected ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-            >
-              <span className="font-display font-bold text-xl text-brand-gold-pale leading-none">All</span>
-              <span className="font-display font-bold text-[9px] uppercase tracking-[0.12em] text-white/80 mt-1">Ingredients</span>
-            </button>
-
-            {designationTiles.map((d) => {
-              const active = designation === d.slug;
-              return (
-                <button
-                  key={d.slug}
-                  onClick={() => (active ? setDesignation(null) : selectDesignation(d.slug))}
-                  aria-label={`Shop ${d.label}`}
-                  aria-pressed={active}
-                  className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-                >
-                  <img src={d.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
-                  <span className="absolute inset-0 bg-brand-forest-deep/45 transition-colors duration-200 group-hover:bg-brand-forest-deep/30" />
-                  <span className="absolute top-2 left-2 font-display font-bold text-[8px] uppercase tracking-[0.14em] text-brand-ink bg-brand-gold px-1.5 py-0.5 rounded-full">Featured</span>
-                  <span className="absolute inset-x-0 bottom-0 pt-7 pb-2 px-2.5">
-                    <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{d.label}</span>
+        <div className="sticky top-20 z-30 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
+          <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2.5">
+            {/* p-1.5/-m-1.5: interior padding so the active ring-offset isn't clipped by overflow-x scroll */}
+            <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x p-1.5 -m-1.5">
+              {/* All / reset — gold-glow forest control tile */}
+              <button
+                onClick={() => selectCategory(null)}
+                aria-label="Show all ingredients"
+                aria-pressed={nothingSelected}
+                className={`group relative shrink-0 w-28 md:w-32 aspect-[4/3] rounded-xl overflow-hidden bg-brand-forest snap-start transition-shadow ${nothingSelected ? 'ring-2 ring-brand-gold ring-offset-2 ring-offset-brand-paper' : 'hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+              >
+                <span aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(192,138,46,0.30),transparent_62%)]" />
+                <LayoutGrid aria-hidden size={70} strokeWidth={1.25} className="absolute -right-4 -bottom-4 text-white/[0.07]" />
+                <span className="relative h-full flex flex-col justify-between p-3">
+                  <LayoutGrid size={14} strokeWidth={2.25} className="text-brand-gold-pale" />
+                  <span>
+                    <span className="block font-display font-bold text-2xl text-brand-gold-pale leading-[0.9]">All</span>
+                    <span className="block font-display font-bold text-[8px] uppercase tracking-[0.14em] text-white/75 mt-1">Ingredients</span>
                   </span>
-                </button>
-              );
-            })}
+                </span>
+              </button>
 
-            {categoryTiles.map((c) => {
-              const active = breadcrumb[0]?.id === c.id;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
-                  aria-label={`Shop ${c.name}`}
-                  aria-pressed={active}
-                  className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-                >
-                  <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
-                    <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ── Subcategory drill nav — sticky, only while inside a category branch
-          that has depth or children (the L1 pill row was removed). ── */}
-      {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
-        <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
-          <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2 md:py-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
-            {breadcrumb.map((c, i) => (
-              <React.Fragment key={c.id}>
-                {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
-                <button
-                  onClick={() => selectCategory(c.id)}
-                  className={`shrink-0 ${c.id === categoryId ? 'text-brand-forest font-semibold' : 'text-brand-muted hover:text-brand-forest'}`}
-                >
-                  {c.name}
-                </button>
-              </React.Fragment>
-            ))}
-            {drillChildren.length > 0 && (
-              <>
-                <span className="text-brand-line px-1 shrink-0">|</span>
-                {drillChildren.map((ch) => (
+              {designationTiles.map((d) => {
+                const active = designation === d.slug;
+                return (
                   <button
-                    key={ch.id}
-                    onClick={() => selectCategory(ch.id)}
-                    className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-forest hover:border-brand-forest transition-colors"
+                    key={d.slug}
+                    onClick={() => (active ? setDesignation(null) : selectDesignation(d.slug))}
+                    aria-label={`Shop ${d.label}`}
+                    aria-pressed={active}
+                    className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-gold ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
                   >
-                    {ch.name}
+                    <img src={d.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.05]" />
+                    {/* curated warm scrim: forest base + gold wash */}
+                    <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/10 to-transparent" />
+                    <span className="absolute inset-0 bg-[linear-gradient(to_top,rgba(192,138,46,0.34),transparent_55%)] mix-blend-soft-light" />
+                    <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-brand-gold text-brand-ink font-display font-bold text-[8px] uppercase tracking-[0.12em] px-1.5 py-1 rounded-full shadow-sm">
+                      <d.Icon size={9} strokeWidth={2.5} /> Featured
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 pt-7 pb-2 px-2.5">
+                      <span className="block h-0.5 w-6 bg-brand-gold rounded-full mb-1.5" />
+                      <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{d.label}</span>
+                    </span>
                   </button>
+                );
+              })}
+
+              {categoryTiles.map((c) => {
+                const active = breadcrumb[0]?.id === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
+                    aria-label={`Shop ${c.name}`}
+                    aria-pressed={active}
+                    className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                  >
+                    <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
+                      <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Subcategory drill nav — inside the frozen unit, shown only while
+                inside a category branch with depth or children. */}
+            {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
+              <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
+                {breadcrumb.map((c, i) => (
+                  <React.Fragment key={c.id}>
+                    {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
+                    <button
+                      onClick={() => selectCategory(c.id)}
+                      className={`shrink-0 ${c.id === categoryId ? 'text-brand-forest font-semibold' : 'text-brand-muted hover:text-brand-forest'}`}
+                    >
+                      {c.name}
+                    </button>
+                  </React.Fragment>
                 ))}
-              </>
+                {drillChildren.length > 0 && (
+                  <>
+                    <span className="text-brand-line px-1 shrink-0">|</span>
+                    {drillChildren.map((ch) => (
+                      <button
+                        key={ch.id}
+                        onClick={() => selectCategory(ch.id)}
+                        className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-forest hover:border-brand-forest transition-colors"
+                      >
+                        {ch.name}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
             )}
-          </div>
+          </section>
         </div>
       )}
 
