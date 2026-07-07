@@ -211,19 +211,18 @@ export const Shop = () => {
   // AFTER the filtered grid re-renders, so the target position is stable (no
   // mid-animation clamp) and clears the full sticky stack (header + browse bar).
   const pendingCatalogScroll = useRef(false);
+  // Redirect to the catalog. The strip is already collapsed to pills the moment
+  // a filter is set (stripStuck), so it stays stable through the scroll and
+  // won't flicker back to tiles.
   const scrollToCatalog = () => { pendingCatalogScroll.current = true; };
 
-  // Runs AFTER the filtered grid commits. Scrolling toward the catalog makes the
-  // browse strip collapse mid-scroll (tiles→pills), which shifts layout and drifts
-  // a single scroll target — so we scroll, then re-assert once the collapse + grid
-  // have settled. #catalog's scroll-margin-top clears the sticky stack.
+  // Scroll to the catalog AFTER the pills + filtered grid commit — a single,
+  // stable scroll (no correction needed now that the strip pre-collapses).
+  // #catalog's scroll-margin-top clears the sticky stack (header + pill bar).
   useLayoutEffect(() => {
     if (!pendingCatalogScroll.current) return;
     pendingCatalogScroll.current = false;
-    const scroll = () => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    scroll();
-    const t = setTimeout(scroll, 420);
-    return () => clearTimeout(t);
+    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [categoryId, designation, search]);
 
   const clearAll = () => {
@@ -264,12 +263,13 @@ export const Shop = () => {
   useEffect(() => {
     const el = stripSentinelRef.current;
     if (!el) return;
+    // Collapse to pills once the sentinel's top passes the 96px line (just below
+    // the header). 96 (not 80) so a redirect that lands the grid right under the
+    // pill bar still reads as stuck — no flicker back to tiles. A sentinel below
+    // the fold has top >> 96, so short viewports still open as tiles.
     const io = new IntersectionObserver(
-      // Stuck ONLY when the sentinel has scrolled ABOVE the header line
-      // (top < 80). A sentinel below the fold is also "not intersecting" but
-      // must read as NOT stuck (tiles), else short viewports open in pill mode.
-      ([e]) => setStuck(!e.isIntersecting && e.boundingClientRect.top < 80),
-      { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
+      ([e]) => setStuck(e.boundingClientRect.top < 96),
+      { rootMargin: '-96px 0px 0px 0px', threshold: 0 },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -281,6 +281,20 @@ export const Shop = () => {
     animate: reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 },
     transition: { duration: 0.28, delay, ease: [0.23, 1, 0.32, 1] as const },
   });
+
+  // The strip is collapsed (pills) whenever the user has scrolled past it OR a
+  // browse filter is active — so selecting a category keeps it condensed with
+  // the active pill, and it never flickers back to tiles while browsing.
+  const stripStuck = stuck || !!(categoryId || designation || search.trim());
+
+  // Keep the selected pill in view within the horizontal pill bar (block:nearest
+  // so it only pans the bar, never the page).
+  useEffect(() => {
+    if (!stripStuck) return;
+    document
+      .querySelector('section[aria-label="Shop by category"] button[aria-pressed="true"]')
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [stripStuck, categoryId, designation]);
 
   const breadcrumb   = categoryId ? tree.ancestorsOf(categoryId) : [];
   const drillChildren = categoryId ? tree.childrenOf(categoryId) : [];
@@ -358,7 +372,7 @@ export const Shop = () => {
         <div className="sticky top-20 z-30 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
           <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2.5">
             {/* Frozen → compact pill bar (condensed nav) */}
-            {stuck && (
+            {stripStuck && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
                 {designationTiles.map((d) => (
@@ -372,7 +386,7 @@ export const Shop = () => {
               </div>
             )}
             {/* At rest → control PILLS stacked vertically (left) + category image tiles (right) */}
-            {!stuck && (
+            {!stripStuck && (
             <div className="flex gap-3 md:gap-4 items-center">
               {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
               <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
@@ -505,18 +519,11 @@ export const Shop = () => {
 
           {/* Listing */}
           <div className="lg:col-span-9">
-            {activeCategory ? (
-              <div className="mb-6">
-                <h1 className="font-display text-2xl md:text-3xl text-brand-forest">{activeCategory.name}</h1>
-                {activeCategory.description && (
-                  <p className="text-sm text-brand-muted mt-1.5 max-w-2xl leading-relaxed">{activeCategory.description}</p>
-                )}
-              </div>
-            ) : designationLabel ? (
-              <div className="mb-6">
-                <h1 className="font-display text-2xl md:text-3xl text-brand-forest">{designationLabel}</h1>
-              </div>
-            ) : null}
+            {/* Category name is redundant here (shown as the active pill + a removable
+                chip below). Keep only the category description when present. */}
+            {activeCategory?.description && (
+              <p className="mb-5 text-sm text-brand-muted max-w-2xl leading-relaxed">{activeCategory.description}</p>
+            )}
             <div className="flex justify-between items-center gap-4 mb-6 flex-wrap min-h-9">
               <div className="flex gap-2 flex-wrap items-center">
                 <button onClick={() => setFiltersOpen(!filtersOpen)} className="lg:hidden flex items-center gap-2 px-3 py-1.5 border border-brand-line rounded-full text-[12px] font-medium">
