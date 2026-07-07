@@ -100,107 +100,75 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Chocolate comb — the accent word starts leaf green and a hand-held spatula
-   combs couverture brown over it in vertical strokes (down, up, down, up)
-   progressing slowly rightward, then the coated word drips. Comb + blade share
-   one 2000ms timeline (delay 450ms): the blade holds x while stroking a column
-   vertically, then shifts right; the paint edge (vertical) steps right in
-   lockstep. Slow + delightful is intentional (a once-per-load hero moment —
-   the marketing/explanatory exception to the sub-300ms UI rule). Reduced
-   motion: finished brown word, no blade, no drips. */
+/* Chocolate paint — the accent word starts leaf green and couverture brown
+   sweeps across it left→right, once per load. GPU-only (clip-path). The slow,
+   delightful reveal is the marketing/explanatory exception to the sub-300ms UI
+   rule. Reduced motion: finished brown word, no sweep. */
 :root {
   --ease-out-strong:    cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
-
-/* Paint edge is a vertical wall stepping right, matched to the blade's column
-   shifts. Holds during each vertical stroke, jumps on the between-column
-   shift — so coverage tracks the comb. */
-@keyframes co-comb-paint {
+@keyframes co-paint-sweep {
   0%   { clip-path: inset(0 100% 0 0); }
-  6%   { clip-path: inset(0 88% 0 0); }   /* col 1 reached */
-  22%  { clip-path: inset(0 82% 0 0); }   /* stroke 1 (hold x) */
-  28%  { clip-path: inset(0 70% 0 0); }   /* shift → col 2 */
-  44%  { clip-path: inset(0 64% 0 0); }   /* stroke 2 */
-  50%  { clip-path: inset(0 52% 0 0); }   /* shift → col 3 */
-  66%  { clip-path: inset(0 46% 0 0); }   /* stroke 3 */
-  72%  { clip-path: inset(0 34% 0 0); }   /* shift → col 4 */
-  88%  { clip-path: inset(0 28% 0 0); }   /* stroke 4 */
-  94%  { clip-path: inset(0 4% 0 0); }    /* final shift + close */
   100% { clip-path: inset(0 0 0 0); }
 }
 .choc-paint {
   clip-path: inset(0 0 0 0);
-  animation: co-comb-paint 2000ms var(--ease-in-out-strong) 450ms backwards;
+  animation: co-paint-sweep 1100ms var(--ease-out-strong) 400ms backwards;
 }
-
-/* Blade track — sized to the word box so translate(X%,Y%) means "% of the
-   word": GPU-safe, no left/top. Vertical strokes (y −16↔114) at held x, quick
-   ease-out shifts between columns. */
-@keyframes co-comb-track {
-  0%   { transform: translate(8%, -16%);  animation-timing-function: var(--ease-in-out-strong); }
-  22%  { transform: translate(8%, 114%);  animation-timing-function: var(--ease-out-strong); }   /* down col1 */
-  28%  { transform: translate(27%, 114%); animation-timing-function: var(--ease-in-out-strong); } /* shift */
-  44%  { transform: translate(27%, -14%); animation-timing-function: var(--ease-out-strong); }   /* up col2 */
-  50%  { transform: translate(46%, -14%); animation-timing-function: var(--ease-in-out-strong); }
-  66%  { transform: translate(46%, 114%); animation-timing-function: var(--ease-out-strong); }   /* down col3 */
-  72%  { transform: translate(65%, 114%); animation-timing-function: var(--ease-in-out-strong); }
-  88%  { transform: translate(65%, -14%); animation-timing-function: var(--ease-out-strong); }   /* up col4 */
-  94%  { transform: translate(88%, -14%); animation-timing-function: var(--ease-out-strong); }   /* park right */
-  100% { transform: translate(88%, 40%); }
-}
-.choc-scraper-track {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-  animation: co-comb-track 2000ms linear 450ms both;
-}
-/* Glyph — fades in on the first stroke, out as it parks. Slight tilt; transform
-   pinned in every stop (no base-style drift). */
-@keyframes co-comb-glyph {
-  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg); }
-  6%   { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); }
-  90%  { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); }
-  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg); }
-}
-.choc-scraper-glyph {
-  position: absolute;
-  top: 0;
-  left: 0;
-  animation: co-comb-glyph 2000ms var(--ease-out-strong) 450ms both;
-}
-
-/* Drips — hang off the coated word once the comb finishes (~2450ms). Grow down
-   slowly (surface tension) then sag (gravity; ease-in is physically correct for
-   a falling drip). Varied length/delay per drip. */
-@keyframes co-drip {
-  0%   { transform: translateX(-50%) scaleY(0);   opacity: 0; }
-  25%  { opacity: 1; }
-  60%  { transform: translateX(-50%) scaleY(1); }
-  100% { transform: translateX(-50%) scaleY(1) translateY(0.2em); opacity: 0.95; }
-}
-.choc-drips { pointer-events: none; z-index: 5; }
-.choc-drip {
-  position: absolute;
-  bottom: 0.04em;
-  width: 0.13em;
-  height: 0.24em;
-  background: radial-gradient(120% 75% at 34% 24%, #7a5230 0%, #5b3a21 55%, #452b16 100%);
-  border-radius: 42% 42% 50% 50% / 16% 16% 92% 92%;
-  transform: translateX(-50%) scaleY(0);
-  transform-origin: top center;
-  animation: co-drip 1100ms cubic-bezier(0.55, 0, 0.85, 0.35) 2450ms both;
-}
-.choc-drip:nth-child(1) { width: 0.12em; height: 0.20em; animation-delay: 2460ms; }
-.choc-drip:nth-child(2) { width: 0.15em; height: 0.30em; animation-delay: 2560ms; }
-.choc-drip:nth-child(3) { width: 0.11em; height: 0.17em; animation-delay: 2500ms; }
-.choc-drip:nth-child(4) { width: 0.14em; height: 0.28em; animation-delay: 2620ms; }
-.choc-drip:nth-child(5) { width: 0.12em; height: 0.22em; animation-delay: 2540ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .choc-paint { animation: none; }
-  .choc-scraper-track, .choc-drips { display: none; }
+}
+
+/* Hero search — rotating glow border. A conic gradient (teal → greens) sweeps
+   360° around the pill. We animate the gradient's start ANGLE (registered via
+   @property so it can tween), not the element, so the wide rounded rect never
+   tilts. ::before is the crisp 2px ring peeking past the white pill; ::after is
+   a blurred copy for the soft glow. Both share one continuous spin (linear is
+   correct here — a steady rotating highlight, not hand-driven motion). */
+@property --co-glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes co-glow-spin {
+  to { --co-glow-angle: 360deg; }
+}
+.co-glow { position: relative; }
+/* Both layers paint the conic gradient into a ring only: the mask keeps the
+   padding band (border-box minus content-box) and cuts out the interior, so the
+   colour never fills the pill — just the outline. ::after is the crisp 2px
+   outline; ::before is a wider, blurred copy for the soft glow. */
+.co-glow::before,
+.co-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--co-glow-angle),
+    #0d9488 0%, #14b8a6 15%, #2dd4bf 30%,
+    #a3e635 48%, #5c9329 65%, #14b8a6 82%, #0d9488 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: co-glow-spin 4.5s linear infinite;
+}
+.co-glow::after {    /* crisp 2px outline ring at the pill edge */
+  inset: 0;
+  padding: 2px;
+}
+.co-glow::before {   /* soft glow — a wider ring, blurred and dimmed */
+  inset: -3px;
+  padding: 5px;
+  filter: blur(7px);
+  opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .co-glow::before, .co-glow::after { animation: none; }
 }
 
 /* Marquee — live sourcing ticker */
