@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
@@ -239,6 +239,23 @@ export const Shop = () => {
   const showTiles = (categoryTiles.length + designationTiles.length) > 0;
   const nothingSelected = !categoryId && !designation;
 
+  // Collapse-on-scroll: the browse strip shows image tiles at rest and
+  // condenses to a compact pill bar once it freezes under the header. A
+  // sentinel ABOVE the strip drives it — its position doesn't move when the
+  // strip's own height changes, so the collapse can't retrigger itself.
+  const stripSentinelRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = stripSentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setStuck(!e.isIntersecting),
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showTiles]);
+
   const reduceMotion = useReducedMotion();
   const heroEnter = (delay: number) => ({
     initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
@@ -316,10 +333,27 @@ export const Shop = () => {
           it's reachable without scrolling up. "All" resets; active tile gets a
           ring; clicking the active tile deselects (show-all). The subcategory
           drill nav rides inside the same sticky unit. ── */}
+      {/* Sentinel above the strip — drives the tiles→pills collapse without flicker. */}
+      {showTiles && <div ref={stripSentinelRef} aria-hidden="true" className="h-px w-full" />}
       {showTiles && (
         <div className="sticky top-20 z-30 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
           <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2.5">
-            {/* p-1.5/-m-1.5: interior padding so the active ring-offset isn't clipped by overflow-x scroll */}
+            {/* Frozen → compact pill bar (condensed nav) */}
+            {stuck && (
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>All</NavPill>
+                {designationTiles.map((d) => (
+                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                  </NavPill>
+                ))}
+                {tree.roots.map((c) => (
+                  <NavPill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => (breadcrumb[0]?.id === c.id ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}>{c.name}</NavPill>
+                ))}
+              </div>
+            )}
+            {/* At rest → full image tiles. p-1.5/-m-1.5: interior padding so the active ring-offset isn't clipped by overflow-x scroll */}
+            {!stuck && (
             <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x p-1.5 -m-1.5">
               {/* All / reset — gold-glow forest control tile */}
               <button
@@ -382,6 +416,7 @@ export const Shop = () => {
                 );
               })}
             </div>
+            )}
 
             {/* Subcategory drill nav — inside the frozen unit, shown only while
                 inside a category branch with depth or children. */}
@@ -576,6 +611,21 @@ function slugKindLabel(products: { tags?: { slug: string; label: string }[] }[],
   for (const p of products) for (const t of p.tags ?? []) if (t.slug === slug) return t.label;
   return undefined;
 }
+
+/** Compact nav pill — the condensed (frozen-strip) form of a browse tile. */
+const NavPill: React.FC<{ active: boolean; gold?: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, gold, onClick, children }) => (
+  <button
+    onClick={onClick}
+    aria-pressed={active}
+    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
+      active
+        ? (gold ? 'bg-brand-gold text-brand-ink border-brand-gold' : 'bg-brand-forest text-white border-brand-forest')
+        : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
+    }`}
+  >
+    {children}
+  </button>
+);
 
 const FacetGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="pb-6 border-b border-brand-line">
