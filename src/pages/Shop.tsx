@@ -1,13 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
-  FileCheck, Network, HandCoins, Leaf, Sprout,
-  Cookie, CupSoda, IceCream, Soup,
+  LayoutGrid, Flame, Sparkles,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
 import { RequestProduct } from '../components/RequestProduct';
+import { TrustBand } from '../components/TrustBand';
+import { AmbientVideo } from '../components/AmbientVideo';
+import { ScraperReveal } from '../components/ScraperReveal';
+import { PHASES } from '../data/thirtySixSteps';
+import { PHASE_VIDEOS } from '../data/phaseVideos';
 import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
@@ -22,15 +27,11 @@ const SORT_LABELS: Record<SortKey, string> = {
   'name':        'Name A–Z',
 };
 
-// "Shop by use" quick entries — use_case tags surfaced as a light chip row.
-// Presentation only; which products match is data-driven via product_tags.
-const APPLICATION_ICONS: { slug: string; Icon: typeof Cookie }[] = [
-  { slug: 'baking',   Icon: Cookie },
-  { slug: 'drinks',   Icon: CupSoda },
-  { slug: 'desserts', Icon: IceCream },
-  { slug: 'savory',   Icon: Soup },
+// Designation entries surfaced as browse tiles alongside categories.
+const DESIGNATIONS: { slug: string; label: string; Icon: typeof Flame }[] = [
+  { slug: 'bestseller',  label: 'Bestsellers',  Icon: Flame },
+  { slug: 'new-arrival', label: 'New arrivals', Icon: Sparkles },
 ];
-const ROTATING = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cooks'];
 
 // Tag filter groups, derived from tag.kind (no hardcoded slug lists). `designation`
 // renders as badges (on the card), so it's excluded from filters.
@@ -40,14 +41,6 @@ const KIND_TITLES: Record<string, string> = {
   dietary:       'Dietary',
   use_case:      'Use &amp; application',
 };
-
-const TRUST_MARKS: { label: string; Icon: typeof Cookie }[] = [
-  { label: 'CoA on every lot',    Icon: FileCheck },
-  { label: '36-step traceable',   Icon: Network },
-  { label: 'Fairtrade',           Icon: HandCoins },
-  { label: 'Rainforest Alliance', Icon: Leaf },
-  { label: 'India Organic',       Icon: Sprout },
-];
 
 // Forest/leaf/lime dot tones cycled across the live-sourcing ticker.
 const TICKER_DOTS = ['#27401b', '#4e7d24', '#c08a2e', '#5c9329', '#a6741f', '#172a10'];
@@ -68,12 +61,7 @@ export const Shop = () => {
   const [sortKey, setSortKey]         = useState<SortKey>('recommended');
   const [sortOpen, setSortOpen]       = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [wordIdx, setWordIdx]         = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setWordIdx((i) => (i + 1) % ROTATING.length), 2200);
-    return () => clearInterval(t);
-  }, []);
+  const [designation, setDesignation] = useState<string | null>(null); // bestseller / new-arrival browse filter
 
   // URL → state (resolve once the tree is loaded). `?cat=<slug>`, with a `?category=<name>`
   // back-compat fallback; `?q` for search.
@@ -142,14 +130,6 @@ export const Shop = () => {
       .filter((g) => g.rows.length > 0);
   }, [inCategory]);
 
-  // Use_case tags present in the catalogue → the light "Shop by use" chip row.
-  const useCasePresent = useMemo(() => {
-    const present = new Map<string, string>();
-    PRODUCTS.forEach((p) => (p.tags ?? []).forEach((t) => { if (t.kind === 'use_case') present.set(t.slug, t.label); }));
-    return present;
-  }, [PRODUCTS]);
-  const applications = useMemo(() => APPLICATION_ICONS.filter((a) => useCasePresent.has(a.slug)).map((a) => ({ ...a, label: useCasePresent.get(a.slug)! })), [useCasePresent]);
-
   const activeCategory = categoryId ? tree.byId.get(categoryId) ?? null : null;
 
   // Basic SEO for category / search views (SPA — set title + meta description).
@@ -189,6 +169,7 @@ export const Shop = () => {
     let list = PRODUCTS.filter((p) => {
       if (q && !`${p.name} ${p.brand} ${p.origin} ${p.tag} ${p.category}`.toLowerCase().includes(q)) return false;
       if (subtree && !(p.categoryId && subtree.has(p.categoryId))) return false;
+      if (designation && !(p.tags ?? []).some((t) => t.slug === designation)) return false;
       if (maxRupees != null && minPaiseOf(p) > maxRupees * 100) return false;
       if (origins.size > 0 && !origins.has(countryOf(p.origin))) return false;
       for (const [, slugs] of selByKind) {
@@ -203,15 +184,28 @@ export const Shop = () => {
       case 'newest':     list = [...list].sort((a, b) => isNew(b) - isNew(a)); break;
     }
     return list;
-  }, [PRODUCTS, subtree, search, origins, tagSlugs, slugKind, maxRupees, sortKey]);
+  }, [PRODUCTS, subtree, designation, search, origins, tagSlugs, slugKind, maxRupees, sortKey]);
 
   const toggleSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
     const next = new Set(set); next.has(val) ? next.delete(val) : next.add(val); setter(next);
   };
 
-  // Navigate the category tree. Keeps `?q` if present; tags/origins compose.
+  // Navigate the category tree. Keeps `?q` if present; tags/origins compose but
+  // are PRUNED to what the new category actually offers, so the filters stay in
+  // step with the tiles (no orphaned filter yielding zero results).
   const selectCategory = (id: string | null) => {
     setCategoryId(id);
+    setDesignation(null);
+    if (id) {
+      const sub = tree.descendantIds(id);
+      const prods = PRODUCTS.filter((p) => p.categoryId && sub.has(p.categoryId));
+      const availOrigins = new Set(prods.map((p) => countryOf(p.origin)));
+      const availTags = new Set(prods.flatMap((p) => (p.tags ?? []).map((t) => t.slug)));
+      setOrigins((prev) => new Set([...prev].filter((o) => availOrigins.has(o))));
+      setTagSlugs((prev) => new Set([...prev].filter((s) => availTags.has(s))));
+      const maxInCat = prods.reduce((m, p) => Math.max(m, minPaiseOf(p)), 0) / 100;
+      setMaxRupees((prev) => (prev != null && prev < maxInCat ? prev : null));
+    }
     const slug = id ? tree.byId.get(id)?.slug : undefined;
     const params: Record<string, string> = {};
     if (slug) params.cat = slug;
@@ -219,52 +213,155 @@ export const Shop = () => {
     setSearchParams(params);
   };
 
+  // Browse by designation (bestseller / new-arrival) — the tile analogue of a category.
+  const selectDesignation = (slug: string) => {
+    setCategoryId(null); setDesignation(slug); setSearchParams({});
+    scrollToCatalog();
+  };
+
+  // Redirect-to-catalog: flag the intent; the scroll runs in a layout effect
+  // AFTER the filtered grid re-renders, so the target position is stable (no
+  // mid-animation clamp) and clears the full sticky stack (header + browse bar).
+  const pendingCatalogScroll = useRef(false);
+  // Redirect to the catalog. The strip is already collapsed to pills the moment
+  // a filter is set (stripStuck), so it stays stable through the scroll and
+  // won't flicker back to tiles.
+  const scrollToCatalog = () => { pendingCatalogScroll.current = true; };
+
+  // Scroll to the catalog AFTER the pills + filtered grid commit — a single,
+  // stable scroll (no correction needed now that the strip pre-collapses).
+  // #catalog's scroll-margin-top clears the sticky stack (header + pill bar).
+  useLayoutEffect(() => {
+    if (!pendingCatalogScroll.current) return;
+    pendingCatalogScroll.current = false;
+    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [categoryId, designation, search]);
+
   const clearAll = () => {
-    setCategoryId(null); setOrigins(new Set()); setTagSlugs(new Set());
+    setCategoryId(null); setDesignation(null); setOrigins(new Set()); setTagSlugs(new Set());
     setSearch(''); setMaxRupees(null); setSearchParams({});
   };
 
   // Hero search → fresh global search: clear facets + category, set ?q, scroll to grid.
   const runSearch = (q: string) => {
-    setCategoryId(null); setOrigins(new Set()); setTagSlugs(new Set());
+    setCategoryId(null); setDesignation(null); setOrigins(new Set()); setTagSlugs(new Set());
     setSearch(q);
     setSearchParams(q ? { q } : {});
-    requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
+    scrollToCatalog();
   };
+
+  // Browse tiles — designation tiles (bestseller/new-arrival, imaged from a
+  // representative product) then image-led category tiles. Landing state only.
+  const designationTiles = useMemo(() =>
+    DESIGNATIONS
+      .map((d) => {
+        const rep = PRODUCTS.find((p) => p.image && (p.tags ?? []).some((t) => t.slug === d.slug));
+        return rep ? { ...d, image: rep.image } : null;
+      })
+      .filter((d): d is { slug: string; label: string; Icon: typeof Flame; image: string } => d !== null),
+    [PRODUCTS]);
+  const categoryTiles = useMemo(() => tree.roots.filter((c) => c.imageUrl), [tree.roots]);
+  // The tile strip is the category nav now (the old pill row is gone), so it
+  // stays visible whether or not something is selected.
+  const showTiles = (categoryTiles.length + designationTiles.length) > 0;
+
+  // Collapse-on-scroll: the browse strip shows image tiles at rest and
+  // condenses to a compact pill bar once it freezes under the header. A
+  // sentinel ABOVE the strip drives it — its position doesn't move when the
+  // strip's own height changes, so the collapse can't retrigger itself.
+  const stripSentinelRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = stripSentinelRef.current;
+    if (!el) return;
+    // Collapse to pills once the sentinel's top passes the 96px line (just below
+    // the header). 96 (not 80) so a redirect that lands the grid right under the
+    // pill bar still reads as stuck — no flicker back to tiles. A sentinel below
+    // the fold has top >> 96, so short viewports still open as tiles.
+    const io = new IntersectionObserver(
+      ([e]) => setStuck(e.boundingClientRect.top < 96),
+      { rootMargin: '-96px 0px 0px 0px', threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [showTiles]);
+
+  const reduceMotion = useReducedMotion();
+  const heroEnter = (delay: number) => ({
+    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
+    animate: reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 },
+    transition: { duration: 0.28, delay, ease: [0.23, 1, 0.32, 1] as const },
+  });
+
+  // The strip is collapsed (pills) whenever the user has scrolled past it OR a
+  // browse filter is active — so selecting a category keeps it condensed with
+  // the active pill, and it never flickers back to tiles while browsing.
+  const stripStuck = stuck || !!(categoryId || designation || search.trim());
+
+  // Keep the selected pill in view within the horizontal pill bar (block:nearest
+  // so it only pans the bar, never the page).
+  useEffect(() => {
+    if (!stripStuck) return;
+    document
+      .querySelector('section[aria-label="Shop by category"] button[aria-pressed="true"]')
+      ?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [stripStuck, categoryId, designation]);
 
   const breadcrumb   = categoryId ? tree.ancestorsOf(categoryId) : [];
   const drillChildren = categoryId ? tree.childrenOf(categoryId) : [];
   const tagLabel = (slug: string) => slugKindLabel(PRODUCTS, slug) ?? slug;
-  const activeCount = (categoryId ? 1 : 0) + origins.size + tagSlugs.size + (maxRupees != null && maxRupees < priceCeil ? 1 : 0);
+  const designationLabel = DESIGNATIONS.find((d) => d.slug === designation)?.label ?? null;
+  const activeCount = (categoryId ? 1 : 0) + (designation ? 1 : 0) + origins.size + tagSlugs.size + (maxRupees != null && maxRupees < priceCeil ? 1 : 0);
+  // "Shop all" is active only when the catalog is truly unfiltered (incl. origin/
+  // tag/price/search), and clicking it resets everything.
+  const noFilters = activeCount === 0 && !search.trim();
 
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
-      {/* ── Hero ── */}
+      {/* ── Hero — 1A headline · 1B journey strip with the search bar riding it ──
+          (eyebrow + rotating audience line promoted to the global topbar) */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
-          <div className="min-w-0 max-w-3xl mx-auto text-center">
-            <p className="eyebrow text-brand-leaf mb-3 md:mb-4">The pure-ingredient marketplace</p>
-            <h1 className="text-4xl md:text-6xl leading-[0.98]">
-              Find your secret <em className="display-italic text-brand-leaf">ingredient</em>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 pb-6 md:pb-8 min-w-0">
+          {/* 1A — headline; keyword painted brown by the chocolate sweep */}
+          <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
+            {/* Fluid type: scales with the viewport (one line on every screen)
+                and caps at 52px — a notch below the old 60px so the hero video
+                strip + search stay the focal point. */}
+            {/* font-bold overrides the global h1 extrabold — softer at hero size */}
+            <h1 className="text-[clamp(1.35rem,6.9vw,3.25rem)] leading-[1.08] whitespace-nowrap font-bold">
+              <span className="text-brand-gold-deep">Find your secret</span>{' '}
+              <ScraperReveal><em className="display-italic">ingredient</em></ScraperReveal>
             </h1>
-            <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
-              Sourced direct from origin, built for{' '}
-              <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-forest font-medium">{ROTATING[wordIdx]}</span>
-            </p>
+          </motion.div>
+        </div>
 
-            <div className="mt-5 md:mt-6 max-w-xl mx-auto">
+        {/* 1B — full-bleed journey strip (EARTH-collage reference); the search
+            bar rides the centre where the tagline used to be. Labels on hover. */}
+        <motion.div {...heroEnter(0.08)} className="relative w-full">
+          <div className="grid grid-cols-6 w-full h-[42vh] min-h-[300px] max-h-[520px]">
+            {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
+              <Link
+                key={p.id}
+                to={`/36-steps#${p.id}`}
+                aria-label={`Phase ${p.number} — ${p.title}`}
+                className="group relative block overflow-hidden bg-brand-forest"
+              >
+                <AmbientVideo src={PHASE_VIDEOS[p.id]} className="absolute inset-0 w-full h-full object-cover" />
+                <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
+                <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
+                  <span className="block font-display font-bold text-[9px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+          {/* Search bar centred over the strip */}
+          <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none">
+            <div className="w-full max-w-xl pointer-events-auto drop-shadow-[0_10px_30px_rgba(4,35,29,0.45)]">
               <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
             </div>
-
-            <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
-              {TRUST_MARKS.map(({ label, Icon }) => (
-                <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-leaf whitespace-nowrap">
-                  <Icon size={14} strokeWidth={1.5} /> {label}
-                </span>
-              ))}
-            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Live sourcing ticker — the scrolling bulletin of origins, light to match the landing */}
         {ticker.length > 0 && (
@@ -280,72 +377,104 @@ export const Shop = () => {
         )}
       </section>
 
-      {/* ── Category nav (L1 row + drill row) ── */}
-      <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2 md:py-3 flex gap-2 overflow-x-auto no-scrollbar">
-          <Pill active={!categoryId} onClick={() => selectCategory(null)}>All</Pill>
-          {tree.roots.map((c) => (
-            <Pill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => selectCategory(c.id)}>{c.name}</Pill>
-          ))}
-        </div>
-        {/* Drill row — breadcrumb of the active branch + children to go deeper */}
-        {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
-          <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pb-2 md:pb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
-            {breadcrumb.map((c, i) => (
-              <React.Fragment key={c.id}>
-                {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
-                <button
-                  onClick={() => selectCategory(c.id)}
-                  className={`shrink-0 ${c.id === categoryId ? 'text-brand-forest font-semibold' : 'text-brand-muted hover:text-brand-forest'}`}
-                >
-                  {c.name}
-                </button>
-              </React.Fragment>
-            ))}
-            {drillChildren.length > 0 && (
-              <>
-                <span className="text-brand-line px-1 shrink-0">|</span>
-                {drillChildren.map((ch) => (
-                  <button
-                    key={ch.id}
-                    onClick={() => selectCategory(ch.id)}
-                    className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-forest hover:border-brand-forest transition-colors"
-                  >
-                    {ch.name}
-                  </button>
-                ))}
-              </>
-            )}
-          </div>
-        )}
-      </div>
+      {/* ── Trust stamps — same five approved claims, stamp-style band ── */}
+      <TrustBand />
 
-      {/* ── Shop by use — single light use_case quick-row (landing only) ── */}
-      {!categoryId && !search.trim() && applications.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 flex items-center gap-2 flex-wrap">
-          <span className="eyebrow mr-1">Shop by use</span>
-          {applications.map(({ slug, label, Icon }) => {
-            const active = tagSlugs.has(slug);
-            return (
-              <button
-                key={slug}
-                onClick={() => {
-                  toggleSet(tagSlugs, slug, setTagSlugs);
-                  requestAnimationFrame(() => setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40));
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[13px] transition-colors ${
-                  active ? 'bg-brand-forest text-white border-brand-forest' : 'text-brand-forest border-brand-line hover:border-brand-forest hover:bg-brand-surface'
-                }`}
-              >
-                <Icon size={14} strokeWidth={1.7} /> {label}
-              </button>
-            );
-          })}
+      {/* ── Browse strip — the category nav. Frozen (sticky) under the header so
+          it's reachable without scrolling up. "All" resets; active tile gets a
+          ring; clicking the active tile deselects (show-all). The subcategory
+          drill nav rides inside the same sticky unit. ── */}
+      {/* Sentinel above the strip — drives the tiles→pills collapse without flicker. */}
+      {showTiles && <div ref={stripSentinelRef} aria-hidden="true" className="h-px w-full" />}
+      {showTiles && (
+        <div className="sticky top-20 z-30 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
+          <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2.5">
+            {/* Frozen → compact pill bar (condensed nav) */}
+            {stripStuck && (
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
+                {designationTiles.map((d) => (
+                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                  </NavPill>
+                ))}
+                {tree.roots.map((c) => (
+                  <NavPill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => (breadcrumb[0]?.id === c.id ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}>{c.name}</NavPill>
+                ))}
+              </div>
+            )}
+            {/* At rest → control PILLS stacked vertically (left) + category image tiles (right) */}
+            {!stripStuck && (
+            <div className="flex gap-3 md:gap-4 items-center">
+              {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
+              <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
+                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
+                {designationTiles.map((d) => (
+                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                  </NavPill>
+                ))}
+              </div>
+              {/* Category image tiles — horizontal scroll. py-1.5/pl-1.5: interior room so the active ring-offset isn't clipped by overflow-x scroll */}
+              <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x py-1.5 pl-1.5 min-w-0">
+                {categoryTiles.map((c) => {
+                  const active = breadcrumb[0]?.id === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
+                      aria-label={`Shop ${c.name}`}
+                      aria-pressed={active}
+                      className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                    >
+                      <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
+                        <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            )}
+
+            {/* Subcategory drill nav — inside the frozen unit, shown only while
+                inside a category branch with depth or children. */}
+            {categoryId && (breadcrumb.length > 1 || drillChildren.length > 0) && (
+              <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[12px]">
+                {breadcrumb.map((c, i) => (
+                  <React.Fragment key={c.id}>
+                    {i > 0 && <ChevronRight size={12} className="text-brand-muted shrink-0" />}
+                    <button
+                      onClick={() => selectCategory(c.id)}
+                      className={`shrink-0 ${c.id === categoryId ? 'text-brand-forest font-semibold' : 'text-brand-muted hover:text-brand-forest'}`}
+                    >
+                      {c.name}
+                    </button>
+                  </React.Fragment>
+                ))}
+                {drillChildren.length > 0 && (
+                  <>
+                    <span className="text-brand-line px-1 shrink-0">|</span>
+                    {drillChildren.map((ch) => (
+                      <button
+                        key={ch.id}
+                        onClick={() => selectCategory(ch.id)}
+                        className="shrink-0 px-2.5 py-1 rounded-full border border-brand-line text-brand-forest hover:border-brand-forest transition-colors"
+                      >
+                        {ch.name}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </section>
         </div>
       )}
 
       {/* ── Catalog ── */}
-      <section id="catalog" className="scroll-mt-28 px-4 md:px-12 lg:px-20 py-10">
+      <section id="catalog" className="scroll-mt-36 px-4 md:px-12 lg:px-20 py-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Filters */}
           <aside className={`lg:col-span-3 ${filtersOpen ? 'fixed inset-0 z-50 bg-brand-paper overflow-y-auto px-5 pt-5 pb-28 lg:static lg:z-auto lg:bg-transparent lg:overflow-visible lg:p-0' : 'hidden lg:block'}`}>
@@ -408,13 +537,10 @@ export const Shop = () => {
 
           {/* Listing */}
           <div className="lg:col-span-9">
-            {activeCategory && (
-              <div className="mb-6">
-                <h1 className="font-display text-2xl md:text-3xl text-brand-forest">{activeCategory.name}</h1>
-                {activeCategory.description && (
-                  <p className="text-sm text-brand-muted mt-1.5 max-w-2xl leading-relaxed">{activeCategory.description}</p>
-                )}
-              </div>
+            {/* Category name is redundant here (shown as the active pill + a removable
+                chip below). Keep only the category description when present. */}
+            {activeCategory?.description && (
+              <p className="mb-5 text-sm text-brand-muted max-w-2xl leading-relaxed">{activeCategory.description}</p>
             )}
             <div className="flex justify-between items-center gap-4 mb-6 flex-wrap min-h-9">
               <div className="flex gap-2 flex-wrap items-center">
@@ -422,6 +548,8 @@ export const Shop = () => {
                   <Filter size={12} /> Filters {activeCount > 0 && `(${activeCount})`}
                 </button>
                 {search && <Chip label={`"${search}"`} onRemove={() => setSearch('')} />}
+                {activeCategory && <Chip label={activeCategory.name} onRemove={() => selectCategory(null)} />}
+                {designationLabel && <Chip label={designationLabel} onRemove={() => setDesignation(null)} />}
                 {[...origins].map((o) => <Chip key={o} label={o} onRemove={() => toggleSet(origins, o, setOrigins)} />)}
                 {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
               </div>
@@ -479,9 +607,11 @@ export const Shop = () => {
             { title: 'Certified & traceable', desc: 'Certifications shown per product, set by our sourcing team.' },
             { title: `Free shipping over ${freeShippingLabel(cfg)}`, desc: `Across India, with a ${cfg.returnWindowDays}-day quality guarantee on every order.` },
           ].map((it) => (
-            <div key={it.title}>
-              <h4 className="font-display text-xl mb-3 text-brand-forest">{it.title}</h4>
-              <p className="text-sm text-brand-muted leading-relaxed">{it.desc}</p>
+            <div key={it.title} className="flex flex-col items-center">
+              {/* min-height reserves 2 lines so the body copy aligns across columns
+                  regardless of how the heading wraps */}
+              <h4 className="font-display text-xl text-brand-forest leading-snug min-h-[3.75rem] flex items-center text-center">{it.title}</h4>
+              <p className="text-sm text-brand-muted leading-relaxed mt-2.5 max-w-[30ch]">{it.desc}</p>
             </div>
           ))}
         </div>
@@ -497,11 +627,15 @@ function slugKindLabel(products: { tags?: { slug: string; label: string }[] }[],
   return undefined;
 }
 
-const Pill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
+/** Compact nav pill — the condensed (frozen-strip) form of a browse tile. */
+const NavPill: React.FC<{ active: boolean; gold?: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, gold, onClick, children }) => (
   <button
     onClick={onClick}
-    className={`flex-shrink-0 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[12px] md:text-[13px] font-medium transition-all border ${
-      active ? 'bg-brand-forest text-white border-brand-forest' : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
+    aria-pressed={active}
+    className={`flex-shrink-0 inline-flex items-center justify-start gap-2 px-3.5 py-1.5 rounded-full text-[12px] md:text-[13px] font-semibold border whitespace-nowrap transition-colors ${
+      active
+        ? (gold ? 'bg-brand-gold text-brand-ink border-brand-gold' : 'bg-brand-forest text-white border-brand-forest')
+        : 'bg-brand-surface text-brand-forest border-brand-line hover:border-brand-forest'
     }`}
   >
     {children}

@@ -16,6 +16,7 @@
   /* Leaf green — links, active, primary CTA */
   --color-brand-leaf:        #4e7d24;
   --color-brand-leaf-bright: #5c9329;  /* hover / success / "added" */
+  --color-brand-lime:        #a3e635;  /* bright lime pop — accents on dark chrome only */
 
   /* Gold — SPARING premium accent (NEW badge, cart count, hero CTA, logo "36") */
   --color-brand-gold:        #c08a2e;
@@ -58,9 +59,10 @@
     @apply font-display font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
   }
 
-  /* Brand card — flat, hairline border, soft rounded. */
+  /* Brand card — flat, hairline border, soft rounded. Transition only what
+     moves (transform + shadow), not `all`. */
   .card {
-    @apply bg-white border border-brand-line rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)];
+    @apply bg-white border border-brand-line rounded-2xl overflow-hidden transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)];
   }
 
   /* Primary transactional CTA — solid leaf green + white text (Add to bag,
@@ -76,6 +78,18 @@
     @apply inline-flex items-center justify-center gap-2 bg-white text-brand-forest font-semibold rounded-full px-6 py-3 border border-brand-forest hover:bg-brand-band transition-all duration-200;
   }
 
+  /* Press feedback on primary pressables — instant "the UI heard you" signal
+     (transform-only, 160ms strong ease-out). */
+  .btn-primary,
+  .btn-ghost {
+    transition: background-color 200ms ease, border-color 200ms ease,
+      transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .btn-primary:active,
+  .btn-ghost:active {
+    transform: scale(0.97);
+  }
+
   /* Pill badge */
   .pill {
     @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold;
@@ -85,6 +99,80 @@
 /* Scrollbar polish */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Chocolate paint — the accent word starts leaf green and couverture brown
+   sweeps across it left→right, once per load. GPU-only (clip-path). The slow,
+   delightful reveal is the marketing/explanatory exception to the sub-300ms UI
+   rule. Reduced motion: finished brown word, no sweep. */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes co-paint-sweep {
+  0%   { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+.choc-paint {
+  clip-path: inset(0 0 0 0);
+  animation: co-paint-sweep 1100ms var(--ease-out-strong) 400ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choc-paint { animation: none; }
+}
+
+/* Hero search — rotating glow border. A conic gradient (teal → greens) sweeps
+   360° around the pill. We animate the gradient's start ANGLE (registered via
+   @property so it can tween), not the element, so the wide rounded rect never
+   tilts. ::before is the crisp 2px ring peeking past the white pill; ::after is
+   a blurred copy for the soft glow. Both share one continuous spin (linear is
+   correct here — a steady rotating highlight, not hand-driven motion). */
+@property --co-glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes co-glow-spin {
+  to { --co-glow-angle: 360deg; }
+}
+.co-glow { position: relative; }
+/* Both layers paint the conic gradient into a ring only: the mask keeps the
+   padding band (border-box minus content-box) and cuts out the interior, so the
+   colour never fills the pill — just the outline. ::after is the crisp 2px
+   outline; ::before is a wider, blurred copy for the soft glow. */
+.co-glow::before,
+.co-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  /* var() fallback: browsers without @property still render a static ring */
+  background: conic-gradient(
+    from var(--co-glow-angle, 0deg),
+    #0d9488 0%, #14b8a6 15%, #2dd4bf 30%,
+    #a3e635 48%, #5c9329 65%, #14b8a6 82%, #0d9488 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  animation: co-glow-spin 4.5s linear infinite;
+}
+.co-glow::after {    /* crisp outline ring at the pill edge — whole pixels only:
+                        fractional padding + mask-composite can round the two
+                        mask boxes together at some zoom/DPI levels, making the
+                        ring vanish entirely */
+  inset: 0;
+  padding: 2px;
+}
+.co-glow::before {   /* soft glow — a wider ring, blurred and dimmed */
+  inset: -3px;
+  padding: 5px;
+  filter: blur(8px);
+  opacity: 0.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .co-glow::before, .co-glow::after { animation: none; }
+}
 
 /* Marquee — live sourcing ticker */
 @keyframes co-marquee {

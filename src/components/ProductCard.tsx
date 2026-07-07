@@ -5,6 +5,7 @@ import { ArrowRight, Plus, Check } from 'lucide-react';
 import { Product, ProductSize } from '../types';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
+import { CertStamp } from './CertStamp';
 
 interface Props {
   product: Product;
@@ -27,7 +28,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   const badgeItems = designationTags.length
     ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
     : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
-  const certTags = (product.tags ?? []).filter((t) => t.kind === 'certification' || t.kind === 'dietary').slice(0, 3);
+  const certTags = (product.tags ?? []).filter((t) => t.kind === 'certification' || t.kind === 'dietary').slice(0, 5);
 
   const flash = () => { setAdded(true); setTimeout(() => setAdded(false), 1200); };
   const add = (size: ProductSize, e?: React.MouseEvent) => {
@@ -87,11 +88,9 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
         </Link>
 
         {certTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap items-center gap-2 mt-3 text-brand-forest/75">
             {certTags.map((t) => (
-              <span key={t.slug} className="font-display font-bold text-[10px] uppercase tracking-[0.06em] text-brand-muted bg-brand-surface border border-brand-line px-2 py-1 rounded">
-                {t.label}
-              </span>
+              <CertStamp key={t.slug} slug={t.slug} label={t.label} size={22} />
             ))}
           </div>
         )}

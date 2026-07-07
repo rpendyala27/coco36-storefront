@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Menu, Search, ShoppingBag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,6 +17,9 @@ const NAV_LINKS = [
   { to: '/impact',       label: 'Impact' },
 ];
 
+// Rotating audience line — lived in the Shop hero, promoted to the topbar.
+const AUDIENCES = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cooks'];
+
 export const Navigation: React.FC = () => {
   const { user } = useAuth();
   const { itemCount, openCart } = useCart();
@@ -24,6 +27,12 @@ export const Navigation: React.FC = () => {
   const cfg = useStoreConfig();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [audienceIdx, setAudienceIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setAudienceIdx((i) => (i + 1) % AUDIENCES.length), 2600);
+    return () => clearInterval(t);
+  }, []);
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `text-sm font-medium transition-colors duration-200 pb-1 ${
@@ -34,11 +43,23 @@ export const Navigation: React.FC = () => {
     <>
       <header className="fixed top-0 left-0 w-full z-40">
         {/* Topbar */}
-        <div className="h-[30px] bg-brand-forest text-white/85 flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 font-display font-bold text-[10px] md:text-[11px] uppercase tracking-[0.08em]">
-            <span className="truncate">FSSAI Licensed · Sourced direct from origin estates</span>
-            <span className="hidden md:block whitespace-nowrap text-white/65">
-              Free shipping over {freeShippingLabel(cfg)} &nbsp;·&nbsp; Bulk &amp; trade enquiries &nbsp;·&nbsp; ₹ INR
+        <div className="h-[30px] bg-brand-forest text-white flex items-center">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-6 font-display font-semibold text-[10px] md:text-[10.5px] uppercase tracking-[0.11em] leading-none">
+            {/* Left (hero) — positioning leads at the extreme left, on every breakpoint */}
+            <span className="truncate text-white/90">
+              The pure-ingredient marketplace
+              <span className="hidden lg:inline text-white/50"> · built for </span>
+              <span className="hidden lg:inline-block min-w-[7em] text-brand-lime font-bold">{AUDIENCES[audienceIdx]}</span>
+            </span>
+            {/* Right — trust + value props (md+) */}
+            <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
+              <span>FSSAI Licensed</span>
+              <span className="text-white/25">·</span>
+              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span className="hidden lg:inline text-white/25">·</span>
+              <span className="hidden lg:inline">Bulk &amp; trade</span>
+              <span className="text-white/25">·</span>
+              <span>₹ INR</span>
             </span>
           </div>
         </div>
