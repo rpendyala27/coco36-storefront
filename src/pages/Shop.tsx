@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
-  LayoutGrid, Flame, Sparkles,
+  Flame, Sparkles,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
@@ -355,69 +355,38 @@ export const Shop = () => {
                 ))}
               </div>
             )}
-            {/* At rest → full image tiles. p-1.5/-m-1.5: interior padding so the active ring-offset isn't clipped by overflow-x scroll */}
+            {/* At rest → control PILLS stacked vertically (left) + category image tiles (right) */}
             {!stuck && (
-            <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x p-1.5 -m-1.5">
-              {/* All / reset — gold-glow forest control tile */}
-              <button
-                onClick={() => selectCategory(null)}
-                aria-label="Show all ingredients"
-                aria-pressed={nothingSelected}
-                className={`group relative shrink-0 w-28 md:w-32 aspect-[4/3] rounded-xl overflow-hidden bg-brand-forest snap-start transition-shadow ${nothingSelected ? 'ring-2 ring-brand-gold ring-offset-2 ring-offset-brand-paper' : 'hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-              >
-                <span aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(192,138,46,0.30),transparent_62%)]" />
-                <LayoutGrid aria-hidden size={70} strokeWidth={1.25} className="absolute -right-4 -bottom-4 text-white/[0.07]" />
-                <span className="relative h-full flex flex-col justify-between p-3">
-                  <LayoutGrid size={14} strokeWidth={2.25} className="text-brand-gold-pale" />
-                  <span>
-                    <span className="block font-display font-bold text-lg text-brand-gold-pale leading-[1.0]">Shop all</span>
-                    <span className="block font-display font-bold text-[8px] uppercase tracking-[0.14em] text-white/75 mt-1">Ingredients</span>
-                  </span>
-                </span>
-              </button>
-
-              {designationTiles.map((d) => {
-                const active = designation === d.slug;
-                return (
-                  <button
-                    key={d.slug}
-                    onClick={() => (active ? setDesignation(null) : selectDesignation(d.slug))}
-                    aria-label={`Shop ${d.label}`}
-                    aria-pressed={active}
-                    className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-gold ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-                  >
-                    <img src={d.image} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.05]" />
-                    {/* curated warm scrim: forest base + gold wash */}
-                    <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/10 to-transparent" />
-                    <span className="absolute inset-0 bg-[linear-gradient(to_top,rgba(192,138,46,0.34),transparent_55%)] mix-blend-soft-light" />
-                    <span className="absolute top-2 left-2 inline-flex items-center gap-1 bg-brand-gold text-brand-ink font-display font-bold text-[8px] uppercase tracking-[0.12em] px-1.5 py-1 rounded-full shadow-sm">
-                      <d.Icon size={9} strokeWidth={2.5} /> Featured
-                    </span>
-                    <span className="absolute inset-x-0 bottom-0 pt-7 pb-2 px-2.5">
-                      <span className="block h-0.5 w-6 bg-brand-gold rounded-full mb-1.5" />
-                      <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{d.label}</span>
-                    </span>
-                  </button>
-                );
-              })}
-
-              {categoryTiles.map((c) => {
-                const active = breadcrumb[0]?.id === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
-                    aria-label={`Shop ${c.name}`}
-                    aria-pressed={active}
-                    className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-                  >
-                    <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
-                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
-                      <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="flex gap-3 md:gap-4 items-center">
+              {/* Shop all / Bestsellers / New arrivals — vertical pill stack */}
+              <div className="flex flex-col items-start justify-center gap-2 shrink-0">
+                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
+                {designationTiles.map((d) => (
+                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                  </NavPill>
+                ))}
+              </div>
+              {/* Category image tiles — horizontal scroll. py-1.5/pl-1.5: interior room so the active ring-offset isn't clipped by overflow-x scroll */}
+              <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x py-1.5 pl-1.5 min-w-0">
+                {categoryTiles.map((c) => {
+                  const active = breadcrumb[0]?.id === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
+                      aria-label={`Shop ${c.name}`}
+                      aria-pressed={active}
+                      className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                    >
+                      <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
+                        <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             )}
 
