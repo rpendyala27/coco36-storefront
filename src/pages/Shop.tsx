@@ -249,7 +249,10 @@ export const Shop = () => {
     const el = stripSentinelRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      ([e]) => setStuck(!e.isIntersecting),
+      // Stuck ONLY when the sentinel has scrolled ABOVE the header line
+      // (top < 80). A sentinel below the fold is also "not intersecting" but
+      // must read as NOT stuck (tiles), else short viewports open in pill mode.
+      ([e]) => setStuck(!e.isIntersecting && e.boundingClientRect.top < 80),
       { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
     );
     io.observe(el);
@@ -341,7 +344,7 @@ export const Shop = () => {
             {/* Frozen → compact pill bar (condensed nav) */}
             {stuck && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>All</NavPill>
+                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
                     <d.Icon size={12} strokeWidth={2.5} /> {d.label}
@@ -367,7 +370,7 @@ export const Shop = () => {
                 <span className="relative h-full flex flex-col justify-between p-3">
                   <LayoutGrid size={14} strokeWidth={2.25} className="text-brand-gold-pale" />
                   <span>
-                    <span className="block font-display font-bold text-2xl text-brand-gold-pale leading-[0.9]">All</span>
+                    <span className="block font-display font-bold text-lg text-brand-gold-pale leading-[1.0]">Shop all</span>
                     <span className="block font-display font-bold text-[8px] uppercase tracking-[0.14em] text-white/75 mt-1">Ingredients</span>
                   </span>
                 </span>
