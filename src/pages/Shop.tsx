@@ -327,7 +327,8 @@ export const Shop = () => {
             {/* Fluid type: scales with the viewport (one line on every screen)
                 and caps at 52px — a notch below the old 60px so the hero video
                 strip + search stay the focal point. */}
-            <h1 className="text-[clamp(1.35rem,6.9vw,3.25rem)] leading-[1.08] whitespace-nowrap">
+            {/* font-bold overrides the global h1 extrabold — softer at hero size */}
+            <h1 className="text-[clamp(1.35rem,6.9vw,3.25rem)] leading-[1.08] whitespace-nowrap font-bold">
               <span className="text-brand-gold-deep">Find your secret</span>{' '}
               <ScraperReveal><em className="display-italic">ingredient</em></ScraperReveal>
             </h1>
