@@ -100,42 +100,64 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Chocolate tempering paint — the headline starts leaf green and is painted
-   couverture brown in three serpentine passes (L→R, R→L, L→R), the S-motion of
-   a chocolatier spreading on marble. Three brown text copies are each clipped
-   to a horizontal third and revealed in their sweep direction; the blade rides
-   the same serpentine on ONE shared linear 1.8s timeline (delay 350ms), so
-   paint and blade stay in lockstep. Sweep windows within the master timeline:
-   0–25%, 28–53% (reversed), 56–81% — band delays below are 350ms + those
-   offsets. One-time entrance; reduced-motion = finished brown, no scraper. */
-@keyframes co-paint-a { from { clip-path: inset(0 100% 66% 0); }  to { clip-path: inset(0 0 66% 0); } }
-@keyframes co-paint-b { from { clip-path: inset(33% 0 33% 100%); } to { clip-path: inset(33% 0 33% 0); } }
-@keyframes co-paint-c { from { clip-path: inset(66% 100% 0 0); }  to { clip-path: inset(66% 0 0 0); } }
-.choc-paint-1 { clip-path: inset(0 0 66% 0);   animation: co-paint-a 450ms linear 350ms backwards; }
-.choc-paint-2 { clip-path: inset(33% 0 33% 0); animation: co-paint-b 450ms linear 854ms backwards; }
-.choc-paint-3 { clip-path: inset(66% 0 0 0);   animation: co-paint-c 450ms linear 1358ms backwards; }
-
-/* The blade: sweep right along the top third, drop + flip for the backhand
-   pass right→left, drop + flip back, sweep right along the bottom third. */
-@keyframes co-scraper-s {
-  0%   { left: -5%;  top: 17%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
-  3%   { opacity: 1; }
-  25%  { left: 103%; top: 17%; transform: translate(-50%, -50%) rotate(14deg); }
-  28%  { left: 103%; top: 50%; transform: translate(-50%, -50%) rotate(-14deg) scale(-1, 1); }
-  53%  { left: -3%;  top: 50%; transform: translate(-50%, -50%) rotate(-14deg) scale(-1, 1); }
-  56%  { left: -3%;  top: 83%; transform: translate(-50%, -50%) rotate(14deg); }
-  81%  { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 1; }
-  86%  { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
-  100% { left: 103%; top: 83%; transform: translate(-50%, -50%) rotate(14deg); opacity: 0; }
+/* Chocolate pour — the accent word starts leaf green and is stroked couverture
+   brown in ONE fluid top→bottom pull. The paint edge is a horizontal, gently
+   rolling liquid line (7-pt polygon; the wave undulates as it descends) and
+   the blade rides it — one 800ms strongly-eased timeline for both, so paint
+   and blade never drift apart. One-time entrance; reduced-motion = finished
+   brown word, no blade. */
+:root {
+  --ease-out-strong:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
-.choc-scraper-s {
+
+/* Covered region grows downward: two fixed top corners (y=-12%), then the
+   rolling bottom edge sampled right→left at x = 102/77/52/27/-2. */
+@keyframes co-pour {
+  0%   { clip-path: polygon(-2% -12%, 102% -12%, 102% -6%, 77% -9%, 52% -5%, 27% -8%, -2% -6%); }
+  55%  { clip-path: polygon(-2% -12%, 102% -12%, 102% 52%, 77% 62%, 52% 46%, 27% 60%, -2% 50%); }
+  100% { clip-path: polygon(-2% -12%, 102% -12%, 102% 112%, 77% 116%, 52% 110%, 27% 115%, -2% 112%); }
+}
+.choc-pour {
+  clip-path: polygon(-2% -12%, 102% -12%, 102% 112%, 77% 116%, 52% 110%, 27% 115%, -2% 112%);
+  animation: co-pour 800ms var(--ease-in-out-strong) 450ms backwards;
+}
+
+/* The blade track — sized to the word box (inset:0) so its OWN percentage
+   translate means "X/Y % of the word's box": the GPU-safe equivalent of
+   animating left/top. Descends centred over the word, just ahead of the edge. */
+/* Matches the pour's keyframe structure (0/55/100) so per-segment easing
+   keeps blade and paint edge in lockstep; the blade sits just above the
+   rolling edge's mean (52%) at the midpoint, like it's pulling the pour. */
+@keyframes co-pull-track {
+  0%   { transform: translate(50%, -14%); }
+  55%  { transform: translate(50%, 50%); }
+  100% { transform: translate(50%, 112%); }
+}
+.choc-scraper-track {
   position: absolute;
+  inset: 0;
+  pointer-events: none;
   z-index: 10;
-  animation: co-scraper-s 1800ms linear 350ms both;
+  animation: co-pull-track 800ms var(--ease-in-out-strong) 450ms both;
+}
+/* The glyph — fades in at the start of the pull and out at the end; slight
+   tilt for life. transform pinned in every stop (no base-style drift). */
+@keyframes co-pull-glyph {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) rotate(-6deg); }
+  86%  { opacity: 1; transform: translate(-50%, -50%) rotate(-6deg); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg); }
+}
+.choc-scraper-glyph {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: co-pull-glyph 800ms var(--ease-out-strong) 450ms both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .choc-paint-1, .choc-paint-2, .choc-paint-3 { animation: none; }
-  .choc-scraper-s { display: none; }
+  .choc-pour { animation: none; }
+  .choc-scraper-track { display: none; }
 }
 
 /* Marquee — live sourcing ticker */

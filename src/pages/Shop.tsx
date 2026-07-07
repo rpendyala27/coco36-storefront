@@ -325,9 +325,8 @@ export const Shop = () => {
           {/* 1A — headline; keyword painted by the chocolate scraper */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl leading-[1.06]">
-              <ScraperReveal>
-                Find your secret <em className="display-italic">ingredient</em>
-              </ScraperReveal>
+              <span className="text-brand-gold-deep">Find your secret</span>{' '}
+              <ScraperReveal><em className="display-italic">ingredient</em></ScraperReveal>
             </h1>
           </motion.div>
         </div>
