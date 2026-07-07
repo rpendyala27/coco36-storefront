@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   ChevronDown, ChevronRight, X, Filter,
-  FileCheck, Network, HandCoins, Leaf, Sprout,
   Cookie, CupSoda, IceCream, Soup,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
 import { RequestProduct } from '../components/RequestProduct';
+import { TrustBand } from '../components/TrustBand';
 import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
@@ -40,14 +40,6 @@ const KIND_TITLES: Record<string, string> = {
   dietary:       'Dietary',
   use_case:      'Use &amp; application',
 };
-
-const TRUST_MARKS: { label: string; Icon: typeof Cookie }[] = [
-  { label: 'CoA on every lot',    Icon: FileCheck },
-  { label: '36-step traceable',   Icon: Network },
-  { label: 'Fairtrade',           Icon: HandCoins },
-  { label: 'Rainforest Alliance', Icon: Leaf },
-  { label: 'India Organic',       Icon: Sprout },
-];
 
 // Forest/leaf/lime dot tones cycled across the live-sourcing ticker.
 const TICKER_DOTS = ['#27401b', '#4e7d24', '#c08a2e', '#5c9329', '#a6741f', '#172a10'];
@@ -255,14 +247,6 @@ export const Shop = () => {
             <div className="mt-5 md:mt-6 max-w-xl mx-auto">
               <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
             </div>
-
-            <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
-              {TRUST_MARKS.map(({ label, Icon }) => (
-                <span key={label} className="inline-flex items-center gap-2 font-mono text-[10px] md:text-[11px] uppercase tracking-[0.04em] text-brand-leaf whitespace-nowrap">
-                  <Icon size={14} strokeWidth={1.5} /> {label}
-                </span>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -279,6 +263,9 @@ export const Shop = () => {
           </div>
         )}
       </section>
+
+      {/* ── Trust stamps — same five approved claims, stamp-style band ── */}
+      <TrustBand />
 
       {/* ── Category nav (L1 row + drill row) ── */}
       <div className="sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
