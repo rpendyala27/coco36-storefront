@@ -99,19 +99,34 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* Chocolate-scraper swipe — paints the hero keyword in couverture brown,
-   left to right, like a scraper pass. One-time entrance; reduced-motion
-   users see the finished state. */
+/* Chocolate-scraper reveal — a smear is DRAWN in behind the hero keyword,
+   left to right, with a slanted leading edge (the blade angle) while the
+   scraper glyph travels across in sync. One-time entrance; reduced-motion
+   users see the finished state, no scraper. */
 @keyframes co-choc-swipe {
-  from { clip-path: inset(0 100% 0 0 round 10px); }
-  to   { clip-path: inset(0 0 0 0 round 10px); }
+  from { clip-path: polygon(-2% -12%, 5% -12%, -1% 112%, -2% 112%); }
+  to   { clip-path: polygon(-2% -12%, 114% -12%, 106% 112%, -2% 112%); }
 }
 .choc-swipe {
-  clip-path: inset(0 0 0 0 round 10px);
-  animation: co-choc-swipe 700ms cubic-bezier(0.23, 1, 0.32, 1) 350ms backwards;
+  clip-path: polygon(-2% -12%, 114% -12%, 106% 112%, -2% 112%);
+  animation: co-choc-swipe 900ms cubic-bezier(0.23, 1, 0.32, 1) 400ms backwards;
+}
+/* Scraper glyph rides the smear's leading edge, left → right, in sync. */
+@keyframes co-scraper {
+  0%   { left: -8%;  opacity: 0; }
+  12%  { opacity: 1; }
+  86%  { opacity: 1; }
+  100% { left: 108%; opacity: 0; }
+}
+.choc-scraper {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -52%) rotate(13deg);
+  animation: co-scraper 900ms cubic-bezier(0.23, 1, 0.32, 1) 400ms both;
 }
 @media (prefers-reduced-motion: reduce) {
   .choc-swipe { animation: none; }
+  .choc-scraper { display: none; }
 }
 
 /* Marquee — live sourcing ticker */
