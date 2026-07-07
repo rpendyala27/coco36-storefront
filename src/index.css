@@ -157,15 +157,15 @@
   pointer-events: none;
   animation: co-glow-spin 4.5s linear infinite;
 }
-.co-glow::after {    /* crisp 2px outline ring at the pill edge */
+.co-glow::after {    /* crisp hairline outline ring at the pill edge */
   inset: 0;
-  padding: 2px;
+  padding: 1.5px;
 }
 .co-glow::before {   /* soft glow — a wider ring, blurred and dimmed */
-  inset: -3px;
-  padding: 5px;
-  filter: blur(7px);
-  opacity: 0.6;
+  inset: -2px;
+  padding: 3.5px;
+  filter: blur(6px);
+  opacity: 0.4;
 }
 @media (prefers-reduced-motion: reduce) {
   .co-glow::before, .co-glow::after { animation: none; }

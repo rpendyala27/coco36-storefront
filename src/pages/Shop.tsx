@@ -324,7 +324,10 @@ export const Shop = () => {
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 pb-6 md:pb-8 min-w-0">
           {/* 1A — headline; keyword painted brown by the chocolate sweep */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl leading-[1.06]">
+            {/* Fluid type: scales with the viewport (one line on every screen)
+                and caps at 52px — a notch below the old 60px so the hero video
+                strip + search stay the focal point. */}
+            <h1 className="text-[clamp(1.35rem,6.9vw,3.25rem)] leading-[1.08] whitespace-nowrap">
               <span className="text-brand-gold-deep">Find your secret</span>{' '}
               <ScraperReveal><em className="display-italic">ingredient</em></ScraperReveal>
             </h1>
