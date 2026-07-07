@@ -16,6 +16,7 @@
   /* Leaf green — links, active, primary CTA */
   --color-brand-leaf:        #4e7d24;
   --color-brand-leaf-bright: #5c9329;  /* hover / success / "added" */
+  --color-brand-lime:        #a3e635;  /* bright lime pop — accents on dark chrome only */
 
   /* Gold — SPARING premium accent (NEW badge, cart count, hero CTA, logo "36") */
   --color-brand-gold:        #c08a2e;

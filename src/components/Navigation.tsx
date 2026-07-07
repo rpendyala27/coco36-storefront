@@ -43,17 +43,21 @@ export const Navigation: React.FC = () => {
     <>
       <header className="fixed top-0 left-0 w-full z-40">
         {/* Topbar */}
-        <div className="h-[30px] bg-brand-forest text-white/85 flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-4 font-display font-bold text-[10px] md:text-[11px] uppercase tracking-[0.08em]">
-            <span className="truncate">
-              FSSAI Licensed · The pure-ingredient marketplace
-              <span className="hidden lg:inline text-white/65">
-                {' '}· Sourced direct from origin, built for{' '}
-                <span className="inline-block min-w-[7.5em] text-brand-gold-pale normal-case tracking-normal font-semibold">{AUDIENCES[audienceIdx]}</span>
-              </span>
+        <div className="h-[30px] bg-brand-forest text-white flex items-center">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-6 font-display font-semibold text-[10px] md:text-[10.5px] uppercase tracking-[0.11em] leading-none">
+            {/* Left — trust + positioning; extra clauses reveal only when there's room */}
+            <span className="truncate text-white/90">
+              FSSAI Licensed
+              <span className="hidden lg:inline text-white/50"> · The pure-ingredient marketplace · built for </span>
+              <span className="hidden lg:inline-block min-w-[6.5em] text-brand-lime normal-case tracking-[0.01em] font-bold">{AUDIENCES[audienceIdx]}</span>
             </span>
-            <span className="hidden md:block whitespace-nowrap text-white/65">
-              Free shipping over {freeShippingLabel(cfg)} &nbsp;·&nbsp; Bulk &amp; trade enquiries &nbsp;·&nbsp; ₹ INR
+            {/* Right — value props (md+) */}
+            <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
+              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span className="text-white/25">·</span>
+              <span>Bulk &amp; trade</span>
+              <span className="text-white/25">·</span>
+              <span>₹ INR</span>
             </span>
           </div>
         </div>
