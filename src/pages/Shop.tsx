@@ -190,10 +190,22 @@ export const Shop = () => {
     const next = new Set(set); next.has(val) ? next.delete(val) : next.add(val); setter(next);
   };
 
-  // Navigate the category tree. Keeps `?q` if present; tags/origins compose.
+  // Navigate the category tree. Keeps `?q` if present; tags/origins compose but
+  // are PRUNED to what the new category actually offers, so the filters stay in
+  // step with the tiles (no orphaned filter yielding zero results).
   const selectCategory = (id: string | null) => {
     setCategoryId(id);
     setDesignation(null);
+    if (id) {
+      const sub = tree.descendantIds(id);
+      const prods = PRODUCTS.filter((p) => p.categoryId && sub.has(p.categoryId));
+      const availOrigins = new Set(prods.map((p) => countryOf(p.origin)));
+      const availTags = new Set(prods.flatMap((p) => (p.tags ?? []).map((t) => t.slug)));
+      setOrigins((prev) => new Set([...prev].filter((o) => availOrigins.has(o))));
+      setTagSlugs((prev) => new Set([...prev].filter((s) => availTags.has(s))));
+      const maxInCat = prods.reduce((m, p) => Math.max(m, minPaiseOf(p)), 0) / 100;
+      setMaxRupees((prev) => (prev != null && prev < maxInCat ? prev : null));
+    }
     const slug = id ? tree.byId.get(id)?.slug : undefined;
     const params: Record<string, string> = {};
     if (slug) params.cat = slug;
@@ -252,7 +264,6 @@ export const Shop = () => {
   // The tile strip is the category nav now (the old pill row is gone), so it
   // stays visible whether or not something is selected.
   const showTiles = (categoryTiles.length + designationTiles.length) > 0;
-  const nothingSelected = !categoryId && !designation;
 
   // Collapse-on-scroll: the browse strip shows image tiles at rest and
   // condenses to a compact pill bar once it freezes under the header. A
@@ -301,6 +312,9 @@ export const Shop = () => {
   const tagLabel = (slug: string) => slugKindLabel(PRODUCTS, slug) ?? slug;
   const designationLabel = DESIGNATIONS.find((d) => d.slug === designation)?.label ?? null;
   const activeCount = (categoryId ? 1 : 0) + (designation ? 1 : 0) + origins.size + tagSlugs.size + (maxRupees != null && maxRupees < priceCeil ? 1 : 0);
+  // "Shop all" is active only when the catalog is truly unfiltered (incl. origin/
+  // tag/price/search), and clicking it resets everything.
+  const noFilters = activeCount === 0 && !search.trim();
 
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
@@ -374,7 +388,7 @@ export const Shop = () => {
             {/* Frozen → compact pill bar (condensed nav) */}
             {stripStuck && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
+                <NavPill active={noFilters} onClick={clearAll}>Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
                     <d.Icon size={12} strokeWidth={2.5} /> {d.label}
@@ -390,7 +404,7 @@ export const Shop = () => {
             <div className="flex gap-3 md:gap-4 items-center">
               {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
               <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
-                <NavPill active={nothingSelected} onClick={() => selectCategory(null)}>Shop all</NavPill>
+                <NavPill active={noFilters} onClick={clearAll}>Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
                     <d.Icon size={12} strokeWidth={2.5} /> {d.label}
