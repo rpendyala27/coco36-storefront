@@ -13,11 +13,11 @@ import { useId } from 'react';
  */
 export const Coco36Seal = ({ size = 34, className = '' }: { size?: number; className?: string }) => {
   const uid = useId();
-  const ticks = Array.from({ length: 48 }, (_, i) => {
-    const a = (i / 48) * Math.PI * 2;
+  const ticks = Array.from({ length: 44 }, (_, i) => {
+    const a = (i / 44) * Math.PI * 2;
     return {
-      x1: 50 + Math.cos(a) * 45, y1: 50 + Math.sin(a) * 45,
-      x2: 50 + Math.cos(a) * 48, y2: 50 + Math.sin(a) * 48,
+      x1: 50 + Math.cos(a) * 43, y1: 50 + Math.sin(a) * 43,
+      x2: 50 + Math.cos(a) * 46, y2: 50 + Math.sin(a) * 46,
     };
   });
 
@@ -30,31 +30,32 @@ export const Coco36Seal = ({ size = 34, className = '' }: { size?: number; class
     >
       <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" fill="none" aria-hidden="true">
         <defs>
-          <path id={`${uid}-t`} d="M 11 50 A 39 39 0 0 1 89 50" />
-          <path id={`${uid}-b`} d="M 14 50 A 36 36 0 0 0 86 50" />
+          {/* Text-band arcs, pulled inward so glyphs clear the outer ring + bezel. */}
+          <path id={`${uid}-t`} d="M 15.5 50 A 34.5 34.5 0 0 1 84.5 50" />
+          <path id={`${uid}-b`} d="M 13.5 50 A 36.5 36.5 0 0 0 86.5 50" />
         </defs>
 
         {/* knurled bezel */}
         {ticks.map((t, i) => (
-          <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke="currentColor" strokeWidth="1" />
+          <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} stroke="currentColor" strokeWidth="0.8" />
         ))}
-        {/* rings */}
-        <circle cx="50" cy="50" r="44" stroke="currentColor" strokeWidth="1.5" />
-        <circle cx="50" cy="50" r="32.5" stroke="currentColor" strokeWidth="1" />
-        {/* side separator dots */}
-        <circle cx="11" cy="50" r="1.5" fill="currentColor" />
-        <circle cx="89" cy="50" r="1.5" fill="currentColor" />
+        {/* rings — text band sits between them */}
+        <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="1.25" />
+        <circle cx="50" cy="50" r="29" stroke="currentColor" strokeWidth="1" />
+        {/* side separator dots at 9 / 3 o'clock */}
+        <circle cx="15" cy="50" r="1.1" fill="currentColor" />
+        <circle cx="85" cy="50" r="1.1" fill="currentColor" />
 
         {/* curved text */}
-        <text className="font-display" fontSize="8" fontWeight="700" letterSpacing="0.6" fill="currentColor">
+        <text className="font-display" fontSize="5.4" fontWeight="700" letterSpacing="0.4" fill="currentColor">
           <textPath href={`#${uid}-t`} startOffset="50%" textAnchor="middle">FULLY TRACEABLE</textPath>
         </text>
-        <text className="font-display" fontSize="8" fontWeight="700" letterSpacing="0.6" fill="currentColor">
+        <text className="font-display" fontSize="5.4" fontWeight="700" letterSpacing="0.4" fill="currentColor">
           <textPath href={`#${uid}-b`} startOffset="50%" textAnchor="middle">CROP TO CRAFT</textPath>
         </text>
 
         {/* centre — brand "36" (gold, matching the wordmark) */}
-        <text x="50" y="51" textAnchor="middle" dominantBaseline="central" className="font-display" fontSize="30" fontWeight="800" letterSpacing="0.5" fill="#c08a2e">36</text>
+        <text x="50" y="51" textAnchor="middle" dominantBaseline="central" className="font-display" fontSize="29" fontWeight="800" letterSpacing="0.5" fill="#c08a2e">36</text>
       </svg>
     </span>
   );
