@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
-  Flame, Sparkles,
+  LayoutGrid, Flame, Sparkles,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
@@ -388,7 +388,7 @@ export const Shop = () => {
             {/* Frozen → compact pill bar (condensed nav) */}
             {stripStuck && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                <NavPill active={noFilters} onClick={clearAll}>Shop all</NavPill>
+                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
                     <d.Icon size={12} strokeWidth={2.5} /> {d.label}
@@ -404,7 +404,7 @@ export const Shop = () => {
             <div className="flex gap-3 md:gap-4 items-center">
               {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
               <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
-                <NavPill active={noFilters} onClick={clearAll}>Shop all</NavPill>
+                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
                 {designationTiles.map((d) => (
                   <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
                     <d.Icon size={12} strokeWidth={2.5} /> {d.label}
