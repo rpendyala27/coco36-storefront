@@ -1,15 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
-  ChevronDown, ChevronRight, X, Filter,
+  ChevronDown, ChevronLeft, ChevronRight, X, Filter,
   Cookie, CupSoda, IceCream, Soup,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
 import { RequestProduct } from '../components/RequestProduct';
 import { TrustBand } from '../components/TrustBand';
-import { formatMoney } from '../lib/currency';
+import { AmbientVideo } from '../components/AmbientVideo';
+import { PHASES } from '../data/thirtySixSteps';
+import { PHASE_VIDEOS } from '../data/phaseVideos';
+import type { Product } from '../types';
 import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
@@ -24,6 +27,36 @@ const SORT_LABELS: Record<SortKey, string> = {
   'name':        'Name A–Z',
 };
 
+/** Netflix-style horizontal product row — scroll-snap strip with desktop
+ *  arrows. Hides itself when the designation has no products yet. */
+const ProductRow = ({ title, products }: { title: string; products: Product[] }) => {
+  const railRef = useRef<HTMLDivElement>(null);
+  if (!products.length) return null;
+  const scroll = (dir: number) =>
+    railRef.current?.scrollBy({ left: dir * railRef.current.clientWidth * 0.8, behavior: 'smooth' });
+
+  return (
+    <div className="mt-10 md:mt-12 text-left">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="font-display font-bold text-lg md:text-xl text-brand-forest">{title}</h2>
+        {products.length > 4 && (
+          <div className="hidden md:flex gap-2">
+            <button onClick={() => scroll(-1)} aria-label={`Scroll ${title} back`} className="size-9 rounded-full border border-brand-line bg-white text-brand-forest flex items-center justify-center hover:bg-brand-band transition-colors"><ChevronLeft size={16} /></button>
+            <button onClick={() => scroll(1)} aria-label={`Scroll ${title} forward`} className="size-9 rounded-full border border-brand-line bg-white text-brand-forest flex items-center justify-center hover:bg-brand-band transition-colors"><ChevronRight size={16} /></button>
+          </div>
+        )}
+      </div>
+      <div ref={railRef} className="flex gap-4 overflow-x-auto no-scrollbar snap-x pb-1">
+        {products.map((p, i) => (
+          <div key={p.id} className="w-[230px] md:w-[256px] shrink-0 snap-start">
+            <ProductCard product={p} index={i} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // "Shop by use" quick entries — use_case tags surfaced as a light chip row.
 // Presentation only; which products match is data-driven via product_tags.
 const APPLICATION_ICONS: { slug: string; Icon: typeof Cookie }[] = [
@@ -32,7 +65,6 @@ const APPLICATION_ICONS: { slug: string; Icon: typeof Cookie }[] = [
   { slug: 'desserts', Icon: IceCream },
   { slug: 'savory',   Icon: Soup },
 ];
-const ROTATING = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cooks'];
 
 // Tag filter groups, derived from tag.kind (no hardcoded slug lists). `designation`
 // renders as badges (on the card), so it's excluded from filters.
@@ -62,12 +94,6 @@ export const Shop = () => {
   const [sortKey, setSortKey]         = useState<SortKey>('recommended');
   const [sortOpen, setSortOpen]       = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [wordIdx, setWordIdx]         = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setWordIdx((i) => (i + 1) % ROTATING.length), 2200);
-    return () => clearInterval(t);
-  }, []);
 
   // URL → state (resolve once the tree is loaded). `?cat=<slug>`, with a `?category=<name>`
   // back-compat fallback; `?q` for search.
@@ -229,12 +255,10 @@ export const Shop = () => {
     scrollToCatalog();
   };
 
-  // Featured hero product — bestseller-tagged with a photo, else first with a photo.
-  const featured = useMemo(() => {
-    const withImage = PRODUCTS.filter((p) => p.image);
-    return withImage.find((p) => (p.tags ?? []).some((t) => t.slug === 'bestseller')) ?? withImage[0] ?? null;
-  }, [PRODUCTS]);
-  const featuredFromPaise = featured?.sizes.length ? Math.min(...featured.sizes.map((s) => s.priceInPaise)) : 0;
+  // Netflix-style rows — designation-tag-driven; each hides when empty and
+  // fills up as the reseed assigns bestseller / new-arrival tags.
+  const bestsellers = useMemo(() => PRODUCTS.filter((p) => (p.tags ?? []).some((t) => t.slug === 'bestseller')), [PRODUCTS]);
+  const newArrivals = useMemo(() => PRODUCTS.filter((p) => (p.tags ?? []).some((t) => t.slug === 'new-arrival')), [PRODUCTS]);
 
   // Image-led category tiles — landing state only, and only categories that
   // actually have a photo (set via admin; interim photos seeded 2026-07-06).
@@ -255,47 +279,45 @@ export const Shop = () => {
 
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
-      {/* ── Hero — copy left, featured bestseller photo right ── */}
+      {/* ── Hero — 1A headline+search · 1B journey reel · 1C product rows ──
+          (eyebrow + rotating audience line promoted to the global topbar) */}
       <section className="bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 py-8 md:py-10 min-w-0">
-          <div className={`grid gap-7 lg:gap-14 items-center ${featured ? 'lg:grid-cols-[1fr_400px]' : ''}`}>
-            <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto lg:mx-0 text-center lg:text-left">
-              <p className="eyebrow text-brand-leaf mb-3 md:mb-4">The pure-ingredient marketplace</p>
-              <h1 className="text-4xl md:text-6xl leading-[0.98]">
-                Find your secret <em className="display-italic text-brand-leaf">ingredient</em>
-              </h1>
-              <p className="mt-3 md:mt-4 text-brand-muted text-sm md:text-base">
-                Sourced direct from origin, built for{' '}
-                <span className="inline-block min-w-[7em] whitespace-nowrap text-brand-forest font-medium">{ROTATING[wordIdx]}</span>
-              </p>
+          {/* 1A */}
+          <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
+            <h1 className="text-4xl md:text-6xl leading-[1.06]">
+              Find your secret{' '}
+              <em className="display-italic choc-swipe inline-block bg-[#5b3a21] text-white px-3 md:px-4 pb-1 rounded-[10px]">ingredient</em>
+            </h1>
+            <div className="mt-6 max-w-xl mx-auto">
+              <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
+            </div>
+          </motion.div>
 
-              <div className="mt-5 md:mt-6 max-w-xl mx-auto lg:mx-0">
-                <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
-              </div>
-            </motion.div>
-
-            {featured && (
-              <motion.div {...heroEnter(0.08)} className="min-w-0">
+          {/* 1B — journey reel: one ambient clip per phase, linking into /36-steps */}
+          <motion.div {...heroEnter(0.08)} className="mt-8 md:mt-10">
+            <div className="flex md:grid md:grid-cols-6 gap-2.5 md:gap-3 overflow-x-auto md:overflow-visible no-scrollbar max-w-5xl mx-auto">
+              {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
                 <Link
-                  to={`/shop/${featured.id}`}
-                  className="group/feat relative block rounded-2xl overflow-hidden border border-brand-line aspect-[16/9] lg:aspect-[5/4] bg-brand-band"
+                  key={p.id}
+                  to={`/36-steps#${p.id}`}
+                  aria-label={`Phase ${p.number} — ${p.title}`}
+                  className="group relative block shrink-0 w-24 md:w-auto aspect-[9/16] rounded-xl overflow-hidden bg-brand-forest"
                 >
-                  <img
-                    key={featured.image}
-                    src={featured.image}
-                    alt={featured.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover/feat:scale-[1.03]"
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                  />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/35 to-transparent pt-14 pb-4 px-5 block">
-                    <span className="font-display font-bold text-[10px] uppercase tracking-[0.14em] text-white/75 block">Bestseller</span>
-                    <span className="font-display font-bold text-lg text-white leading-tight mt-0.5 block">{featured.name}</span>
-                    <span className="text-[13px] text-white/85 mt-1 block">From {formatMoney(featuredFromPaise)} · Shop now →</span>
+                  <AmbientVideo src={PHASE_VIDEOS[p.id]} className="absolute inset-0 w-full h-full object-cover opacity-85 transition-opacity duration-200 group-hover:opacity-100" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/80 via-transparent to-transparent" />
+                  <span className="absolute inset-x-0 bottom-0 p-2 md:p-2.5 text-left">
+                    <span className="block font-display font-bold text-[9px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                    <span className="block font-display font-bold text-[10px] uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
                   </span>
                 </Link>
-              </motion.div>
-            )}
-          </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* 1C — designation rows (Netflix-style) */}
+          <ProductRow title="Bestsellers" products={bestsellers} />
+          <ProductRow title="New arrivals" products={newArrivals} />
         </div>
 
         {/* Live sourcing ticker — the scrolling bulletin of origins, light to match the landing */}

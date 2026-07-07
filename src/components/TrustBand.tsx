@@ -1,31 +1,31 @@
 import { useId } from 'react';
-import { HandCoins, Leaf, Sprout } from 'lucide-react';
+import { HandCoins, Leaf, MoonStar, Sprout } from 'lucide-react';
 import { FrogFace } from './CertStamp';
 
 /**
- * Stamp-style trust band — the same five approved sourcing/cert claims the
- * hero's old text row carried, re-rendered as circular "ink stamp" marks
- * (Elements-Truffles-reference) in a rounded forest band under the hero.
- * House-drawn generic stamps, NOT the official certification seals — we mark
- * the claim without imitating a trademarked logo. No new claims here.
+ * Stamp-style certification band — international certification marks only
+ * (Rohan 2026-07-07: CoA / 36-step house claims removed; those live in the
+ * 36-steps journey instead). House-drawn generic stamps in currentColor, NOT
+ * the official trademarked seal artwork — swap in licensed files per mark
+ * when supplied. Compact single band under the hero.
  */
 
 type Stamp = {
   label: string;
-  /** Big centred letters (e.g. "36", "CoA") … */
-  letters?: string;
-  /** … or a centred icon … */
+  /** Centred icon … */
   Icon?: typeof Leaf;
-  /** … or a seal: curved text top/bottom + small centre glyph + inner ring. */
+  /** … or a seal: curved text top/bottom + small centre glyph + inner ring … */
   seal?: { top: string; bottom: string; Icon?: typeof Leaf; frog?: boolean };
+  /** … or a split seal: filled top half with knocked-out text (NON/GMO style). */
+  split?: [string, string];
 };
 
 const STAMPS: Stamp[] = [
-  { label: 'CoA on every lot',    letters: 'CoA' },
-  { label: '36-step traceable',   letters: '36' },
   { label: 'Fairtrade',           Icon: HandCoins },
   { label: 'Rainforest Alliance', seal: { top: 'RAINFOREST', bottom: 'ALLIANCE', frog: true } },
   { label: 'India Organic',       seal: { top: 'INDIA', bottom: 'ORGANIC', Icon: Sprout } },
+  { label: 'USDA Organic',        split: ['USDA', 'ORGANIC'] },
+  { label: 'Halal',               Icon: MoonStar },
 ];
 
 /** Semicircle arcs on r=24.5 — top arc reads over the crown, bottom arc is
@@ -35,13 +35,27 @@ const BOT_ARC = 'M 11.5 36 A 24.5 24.5 0 0 0 60.5 36';
 
 const StampMark = ({ stamp }: { stamp: Stamp }) => {
   const uid = useId();
-  const { letters, Icon, seal } = stamp;
+  const { Icon, seal, split } = stamp;
   const CenterIcon = seal?.Icon ?? Icon;
 
   return (
-    <span className="relative block size-14 md:size-16" aria-hidden="true">
+    <span className="relative block size-11 md:size-12" aria-hidden="true">
       <svg viewBox="0 0 72 72" className="absolute inset-0 size-full" fill="none">
-        <circle cx="36" cy="36" r="34" stroke="currentColor" strokeWidth="2" />
+        {split ? (
+          <>
+            {/* filled top hemisphere, label knocked out via mask */}
+            <mask id={`${uid}-m`}>
+              <rect width="72" height="72" fill="white" />
+              <text x="36" y="25" textAnchor="middle" dominantBaseline="central" className="font-display" fontWeight="700" fontSize={split[0].length > 3 ? 13 : 15} fill="black">{split[0]}</text>
+            </mask>
+            <path d="M4 36 a32 32 0 0 1 64 0 Z" fill="currentColor" mask={`url(#${uid}-m)`} />
+            <circle cx="36" cy="36" r="32" stroke="currentColor" strokeWidth="2.5" />
+            <line x1="5.5" y1="36" x2="66.5" y2="36" stroke="currentColor" strokeWidth="2" />
+            <text x="36" y="49" textAnchor="middle" dominantBaseline="central" className="font-display" fontWeight="700" fontSize={split[1].length > 4 ? 12 : 14} fill="currentColor">{split[1]}</text>
+          </>
+        ) : (
+          <circle cx="36" cy="36" r="34" stroke="currentColor" strokeWidth="2" />
+        )}
         {seal && (
           <>
             <defs>
@@ -59,15 +73,6 @@ const StampMark = ({ stamp }: { stamp: Stamp }) => {
             </text>
           </>
         )}
-        {letters && (
-          <text
-            x="36" y="37" textAnchor="middle" dominantBaseline="central"
-            className="font-display" fontWeight="700" letterSpacing="0.5"
-            fontSize={letters.length > 2 ? 17 : 22} fill="currentColor"
-          >
-            {letters}
-          </text>
-        )}
       </svg>
       {seal?.frog && (
         <span className="absolute inset-0 flex items-center justify-center">
@@ -76,7 +81,7 @@ const StampMark = ({ stamp }: { stamp: Stamp }) => {
       )}
       {CenterIcon && (
         <span className="absolute inset-0 flex items-center justify-center">
-          <CenterIcon size={seal ? 14 : 24} strokeWidth={1.75} />
+          <CenterIcon size={seal ? 11 : 19} strokeWidth={1.75} />
         </span>
       )}
     </span>
@@ -84,13 +89,13 @@ const StampMark = ({ stamp }: { stamp: Stamp }) => {
 };
 
 export const TrustBand = () => (
-  <section aria-label="Sourcing and certification trust marks" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-6 md:mt-8 mb-4 md:mb-6">
+  <section aria-label="Certification trust marks" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-5 md:mt-6 mb-3 md:mb-4">
     {/* Mobile: one swipeable row (matches the category-pill pattern); md+: centred wrap. */}
-    <ul className="rounded-2xl bg-brand-forest text-white/95 flex items-start gap-x-7 md:flex-wrap md:justify-center md:gap-x-16 gap-y-6 px-5 md:px-6 py-5 md:py-7 overflow-x-auto md:overflow-visible no-scrollbar">
+    <ul className="rounded-2xl bg-brand-forest text-white/95 flex items-start gap-x-6 md:flex-wrap md:justify-center md:gap-x-14 gap-y-4 px-5 md:px-6 py-4 md:py-5 overflow-x-auto md:overflow-visible no-scrollbar">
       {STAMPS.map((s) => (
-        <li key={s.label} className="flex flex-col items-center gap-2.5 shrink-0 w-[84px] md:w-24">
+        <li key={s.label} className="flex flex-col items-center gap-2 shrink-0 w-[76px] md:w-[84px]">
           <StampMark stamp={s} />
-          <span className="font-display font-bold text-[9.5px] md:text-[10px] uppercase tracking-[0.13em] leading-[1.4] text-center text-white/85">
+          <span className="font-display font-bold text-[9px] uppercase tracking-[0.12em] leading-[1.4] text-center text-white/85">
             {s.label}
           </span>
         </li>
