@@ -1,11 +1,27 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ArrowRight, Sparkles } from 'lucide-react';
 import { PHASES } from '../data/thirtySixSteps';
 
+/**
+ * Ambient journey reel — one short vertical clip per phase, dimmed under a
+ * forest scrim with the brand line overlaid. INTERIM stock footage (Pexels
+ * free license, SD renditions ≤3 MB each, verified 2026-07-07); swap for real
+ * origin/warehouse/kitchen footage when COCO36 shoots it. Keyed by phase id.
+ */
+const PHASE_VIDEOS: Record<string, string> = {
+  origin:  'https://videos.pexels.com/video-files/7116726/7116726-sd_540_960_25fps.mp4',   // estate berry harvest
+  processing: 'https://videos.pexels.com/video-files/12540973/12540973-sd_540_960_24fps.mp4', // hand-harvesting crops
+  quality: 'https://videos.pexels.com/video-files/8852736/8852736-sd_540_960_30fps.mp4',   // lab pipette testing
+  craft:   'https://videos.pexels.com/video-files/6092573/6092573-sd_506_960_30fps.mp4',   // pouring melted chocolate
+  logistics: 'https://videos.pexels.com/video-files/6169420/6169420-sd_540_960_25fps.mp4', // warehouse clipboard
+  kitchen: 'https://videos.pexels.com/video-files/5952083/5952083-sd_506_960_30fps.mp4',   // kneading dough
+};
+
 export const ThirtySixSteps = () => {
   const [expanded, setExpanded] = useState<string | null>('origin');
+  const reduceMotion = useReducedMotion();
 
   return (
     <div className="bg-brand-paper">
@@ -22,6 +38,58 @@ export const ThirtySixSteps = () => {
           <p className="text-xl md:text-2xl text-brand-ink/70 leading-relaxed font-display italic max-w-3xl mx-auto">
             Every ingredient we ship moves through the same framework: six phases and thirty-six checkpoints, built to protect the integrity of origin, from crop to craft.
           </p>
+
+          {/* Journey reel — one ambient vertical clip per phase, dimmed, with the
+              brand line riding on top. Each tile anchors to its phase below. */}
+          <div className="relative mt-12 md:mt-16">
+            {/* < lg: the grid is two rows, so the line sits above it in flow */}
+            <p className="lg:hidden font-display text-3xl md:text-4xl italic text-brand-forest leading-[1.02] mb-6">
+              Find your secret <span className="text-brand-leaf">ingredient</span>
+            </p>
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3">
+              {PHASES.map((p) => (
+                <a
+                  key={p.id}
+                  href={`#${p.id}`}
+                  aria-label={`Phase ${p.number} — ${p.title}`}
+                  className="group relative block aspect-[9/16] rounded-xl overflow-hidden bg-brand-forest"
+                >
+                  {PHASE_VIDEOS[p.id] && (
+                    <video
+                      src={PHASE_VIDEOS[p.id]}
+                      // React omits the `muted` attribute at parse time, which makes
+                      // browsers refuse autoplay — set it imperatively and nudge play.
+                      ref={(el) => {
+                        if (!el) return;
+                        el.muted = true;
+                        el.defaultMuted = true;
+                        if (!reduceMotion) el.play().catch(() => {});
+                      }}
+                      autoPlay={!reduceMotion}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover opacity-85 transition-opacity duration-200 group-hover:opacity-100"
+                    />
+                  )}
+                  {/* dim + label scrim */}
+                  <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/20 to-brand-forest-deep/30" />
+                  <span className="absolute inset-x-0 bottom-0 p-2.5 md:p-3 text-left">
+                    <span className="block font-display font-bold text-[10px] uppercase tracking-[0.18em] text-brand-gold-pale">{p.number}</span>
+                    <span className="block font-display font-bold text-[11px] md:text-[12px] uppercase tracking-[0.08em] text-white leading-tight mt-0.5">{p.title}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+            {/* lg+: single row — the brand line rides on the reel itself */}
+            <div className="hidden lg:flex absolute inset-0 items-center justify-center pointer-events-none px-6">
+              <p className="font-display text-5xl xl:text-6xl italic text-white text-center leading-[1.02] [text-shadow:0_2px_24px_rgba(4,35,29,0.55)]">
+                Find your secret <span className="text-brand-gold-pale">ingredient</span>
+              </p>
+            </div>
+          </div>
 
           {/* Framework strip — structural facts, not metrics */}
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 pt-10 border-t border-brand-ink/10">
