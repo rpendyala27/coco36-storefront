@@ -7,8 +7,9 @@ import { useReducedMotion } from 'motion/react';
  * immediately; the multi-MB video file is only fetched once the element is
  * on-screen AND the window `load` event has passed, keeping stock footage out
  * of the critical path (the six hero clips alone were ~10 MB of first-load
- * page weight). Small screens, Save-Data connections, and reduced-motion
- * users never fetch the video at all — the poster stands in.
+ * page weight). Save-Data connections and reduced-motion users never fetch
+ * the video at all — the poster stands in. Mobile DOES play video (deferred),
+ * per product's call; the deferral keeps it off the first-paint path.
  *
  * React omits the `muted` attribute at parse time, which makes browsers
  * refuse autoplay — so muted is set imperatively via ref with a play()
@@ -25,10 +26,10 @@ export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: 
 
   useEffect(() => {
     if (reduceMotion) return;
-    // Phones get the poster only: a 60px-wide hero tile doesn't justify a
-    // 1–3 MB download (and Save-Data users have asked us not to).
+    // Respect Save-Data (poster stands in); otherwise all screen sizes load
+    // the video, deferred until after load + in-viewport so it never blocks
+    // first paint.
     if ((navigator as any).connection?.saveData) return;
-    if (poster && !window.matchMedia('(min-width: 768px)').matches) return;
     const el = elRef.current;
     if (!el) return;
 
@@ -58,7 +59,7 @@ export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: 
       window.removeEventListener('load', arm);
       io?.disconnect();
     };
-  }, [reduceMotion, poster]);
+  }, [reduceMotion]);
 
   return (
     <video
