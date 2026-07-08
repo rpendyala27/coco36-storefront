@@ -322,7 +322,7 @@ export const Shop = () => {
       {/* ── Hero — 1A headline · 1B journey strip with the search bar riding it ──
           (eyebrow + rotating audience line promoted to the global topbar) */}
       <section className="bg-brand-surface border-b border-brand-line">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-8 md:pt-10 pb-6 md:pb-8 min-w-0">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-4 md:pt-10 pb-3 md:pb-8 min-w-0">
           {/* 1A — headline; keyword painted brown by the chocolate sweep */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
             {/* Fluid type: scales with the viewport (one line on every screen)
@@ -360,8 +360,10 @@ export const Shop = () => {
               </Link>
             ))}
           </div>
-          {/* Search bar centred over the strip */}
-          <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none">
+          {/* Search bar. Mobile: dropped to the bottom of the strip (thumb
+              zone) with padding off the edge. Desktop (md+): centred over the
+              strip as before. */}
+          <div className="absolute inset-0 flex items-end md:items-center justify-center px-6 pb-6 md:pb-0 pointer-events-none">
             <div className="w-full max-w-xl pointer-events-auto drop-shadow-[0_10px_30px_rgba(4,35,29,0.45)]">
               <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
             </div>
