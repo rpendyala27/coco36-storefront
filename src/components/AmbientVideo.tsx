@@ -8,12 +8,16 @@ import { useReducedMotion } from 'motion/react';
  * on-screen AND the window `load` event has passed, keeping stock footage out
  * of the critical path (the six hero clips alone were ~10 MB of first-load
  * page weight). Save-Data connections and reduced-motion users never fetch
- * the video at all — the poster stands in. Mobile DOES play video (deferred),
- * per product's call; the deferral keeps it off the first-paint path.
+ * the video at all — the poster stands in.
  *
- * React omits the `muted` attribute at parse time, which makes browsers
- * refuse autoplay — so muted is set imperatively via ref with a play()
- * nudge. Always aria-hidden: pair it with a text label.
+ * Autoplay is driven imperatively, NOT via the `autoPlay` attribute: we set
+ * `muted` on the element and only then call `play()`. Muted playback is the
+ * one kind browsers reliably start without a user gesture, and doing it in
+ * this order sidesteps React's muted-attribute race (which let a cold-load
+ * autoplay be treated as "unmuted" and blocked). If the browser still refuses
+ * — strict policy, no prior engagement — we retry on the visitor's first
+ * interaction; the poster stays until playback actually begins. aria-hidden:
+ * pair it with a text label.
  */
 export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: string }> = ({
   src,
@@ -24,6 +28,7 @@ export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: 
   const elRef = useRef<HTMLVideoElement | null>(null);
   const [videoOn, setVideoOn] = useState(false);
 
+  // ── Arm: attach the video src only after window `load` + in-viewport ──
   useEffect(() => {
     if (reduceMotion) return;
     // Respect Save-Data (poster stands in); otherwise all screen sizes load
@@ -61,18 +66,29 @@ export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: 
     };
   }, [reduceMotion]);
 
+  // ── Play: muted-first play() once armed, with a first-interaction retry ──
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el || !videoOn || reduceMotion) return;
+    const play = () => {
+      el.muted = true;          // guarantee muted BEFORE play() every time
+      el.defaultMuted = true;
+      el.play().catch(() => {}); // blocked → poster stays; retried below
+    };
+    play();
+    // Fallback: if the browser refused the cold-load autoplay, the first user
+    // gesture (which grants activation) starts it. once:true self-removes.
+    const evts = ['pointerdown', 'touchstart', 'keydown', 'scroll'] as const;
+    const opts: AddEventListenerOptions = { once: true, passive: true };
+    evts.forEach((ev) => window.addEventListener(ev, play, opts));
+    return () => evts.forEach((ev) => window.removeEventListener(ev, play));
+  }, [videoOn, reduceMotion]);
+
   return (
     <video
+      ref={elRef}
       src={videoOn ? src : undefined}
       poster={poster}
-      ref={(el) => {
-        elRef.current = el;
-        if (!el) return;
-        el.muted = true;
-        el.defaultMuted = true;
-        if (videoOn && !reduceMotion) el.play().catch(() => {});
-      }}
-      autoPlay={videoOn && !reduceMotion}
       muted
       loop
       playsInline
