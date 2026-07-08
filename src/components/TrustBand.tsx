@@ -28,7 +28,7 @@ export const TrustBand = () => (
       {/* COCO36's own house seal — leads, then a divider, then third-party certs */}
       <li className="flex flex-col items-center gap-1.5 shrink-0 w-[62px] md:w-[76px]">
         <Coco36Seal size={34} />
-        <span className="font-display font-bold text-[8px] uppercase tracking-[0.09em] leading-[1.35] text-center text-brand-forest/70">
+        <span className="font-display font-bold text-[10px] uppercase tracking-[0.07em] leading-[1.35] text-center text-brand-forest/70">
           36-Step Traceable
         </span>
       </li>
@@ -36,7 +36,7 @@ export const TrustBand = () => (
       {MARKS.map((m) => (
         <li key={m.slug} className="flex flex-col items-center gap-1.5 shrink-0 w-[62px] md:w-[76px]">
           <CertStamp slug={m.slug} label={m.label} size={34} title={false} />
-          <span className="font-display font-bold text-[8px] uppercase tracking-[0.09em] leading-[1.35] text-center text-brand-forest/70">
+          <span className="font-display font-bold text-[10px] uppercase tracking-[0.07em] leading-[1.35] text-center text-brand-forest/70">
             {m.label}
           </span>
         </li>

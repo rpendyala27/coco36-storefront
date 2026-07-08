@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { PHASES } from '../data/thirtySixSteps';
 import { AmbientVideo } from '../components/AmbientVideo';
-import { PHASE_VIDEOS } from '../data/phaseVideos';
+import { PHASE_VIDEOS, PHASE_POSTERS } from '../data/phaseVideos';
 
 export const ThirtySixSteps = () => {
   const [active, setActive] = useState<string>('origin');
@@ -48,6 +48,7 @@ export const ThirtySixSteps = () => {
                   {PHASE_VIDEOS[p.id] && (
                     <AmbientVideo
                       src={PHASE_VIDEOS[p.id]}
+                      poster={PHASE_POSTERS[p.id]}
                       className="absolute inset-0 w-full h-full object-cover opacity-85 transition-opacity duration-200 group-hover:opacity-100"
                     />
                   )}

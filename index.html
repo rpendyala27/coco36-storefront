@@ -31,10 +31,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
-    <link rel="preconnect" href="https://unpkg.com" crossorigin />
 
-    <!-- Prefetch hero animation iframe (idle priority) -->
-    <link rel="prefetch" href="/cocoa-supply-chain/index.html" as="document" />
+    <!-- Fonts load from the head (not a CSS @import) so the request isn't
+         chained behind the app stylesheet -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
 
     <!-- Favicon + iOS touch icon -->
     <link rel="icon" type="image/png" href="/coco36-floral.png" />

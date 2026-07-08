@@ -176,18 +176,15 @@ export default function App() {
                     <div className="font-display text-2xl font-semibold">
                       COCO<span className="text-brand-gold italic">36</span>
                     </div>
-                    <div className="text-[8px] uppercase tracking-[0.3em] opacity-60 mt-1 font-medium">From crop to craft</div>
+                    <div className="text-[10px] uppercase tracking-[0.24em] opacity-60 mt-1 font-medium">From crop to craft</div>
                   </div>
                 </div>
                 <p className="text-sm text-white/70 leading-relaxed max-w-xs mb-6">
                   Origin ingredients, crafted for the kitchens of tomorrow. Direct from heritage farms and estates at origin.
                 </p>
-                <div className="flex gap-2">
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">IG</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">TT</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">YT</a>
-                  <a href="#" className="size-9 rounded-lg bg-white/10 hover:bg-brand-leaf text-white flex items-center justify-center transition-colors text-xs font-bold">in</a>
-                </div>
+                {/* Social chips removed until real profiles exist — placeholder
+                    href="#" links with cryptic two-letter text fail SEO link-text
+                    checks and lead nowhere. Restore as real <a> links when live. */}
               </div>
 
               {/* Nav columns */}

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import type { Product } from '../types';
+import { imageUrl } from '../lib/img';
 import { RequestProduct } from './RequestProduct';
 
 /**
@@ -119,10 +120,10 @@ export function SearchBox({
                     onClick={() => pickProduct(p)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-brand-surface text-left transition-colors"
                   >
-                    <img src={p.image} alt="" className="size-9 rounded object-cover bg-brand-surface shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
+                    <img src={imageUrl(p.image, 80)} alt="" loading="lazy" className="size-9 rounded object-cover bg-brand-surface shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }} />
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm text-brand-forest truncate">{p.name}</span>
-                      <span className="block text-[11px] text-brand-muted truncate">{p.origin || p.brand}</span>
+                      <span className="block text-xs text-brand-muted truncate">{p.origin || p.brand}</span>
                     </span>
                   </button>
                 </li>
