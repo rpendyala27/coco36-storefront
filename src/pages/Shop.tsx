@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   ChevronDown, ChevronRight, X, Filter,
   LayoutGrid, Flame, Sparkles,
@@ -394,54 +394,74 @@ export const Shop = () => {
       {showTiles && (
         <div className="sticky top-20 z-30 bg-brand-paper/95 backdrop-blur-md border-b border-brand-line">
           <section aria-label="Shop by category" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 py-2.5">
-            {/* Frozen → compact pill bar (condensed nav) */}
-            {stripStuck && (
-              <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
-                {designationTiles.map((d) => (
-                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
-                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
-                  </NavPill>
-                ))}
-                {tree.roots.map((c) => (
-                  <NavPill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => (breadcrumb[0]?.id === c.id ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}>{c.name}</NavPill>
-                ))}
-              </div>
-            )}
-            {/* At rest → control PILLS stacked vertically (left) + category image tiles (right) */}
-            {!stripStuck && (
-            <div className="flex gap-3 md:gap-4 items-center">
-              {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
-              <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
-                <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
-                {designationTiles.map((d) => (
-                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
-                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
-                  </NavPill>
-                ))}
-              </div>
-              {/* Category image tiles — horizontal scroll. py-1.5/pl-1.5: interior room so the active ring-offset isn't clipped by overflow-x scroll */}
-              <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x py-1.5 pl-1.5 min-w-0">
-                {categoryTiles.map((c) => {
-                  const active = breadcrumb[0]?.id === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
-                      aria-label={`Shop ${c.name}`}
-                      aria-pressed={active}
-                      className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
-                    >
-                      <img src={imageUrl(c.imageUrl!, 360)} srcSet={imageSrcSet(c.imageUrl!, [200, 360, 520])} sizes="(min-width: 768px) 176px, 160px" alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
-                      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
-                        <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            )}
+            {/* Tiles ⇄ pill-bar collapse. The `layout` wrapper tweens the
+                height change so the catalog below eases up instead of jumping
+                mid-scroll; the two states crossfade via AnimatePresence
+                (popLayout: the outgoing state leaves flow so heights don't
+                stack). All animation is skipped for reduced-motion. */}
+            <motion.div layout={!reduceMotion} transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }} className="overflow-hidden">
+              <AnimatePresence initial={false} mode="popLayout">
+                {stripStuck ? (
+                  <motion.div
+                    key="pills"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.14 }}
+                    className="flex gap-2 overflow-x-auto no-scrollbar"
+                  >
+                    <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
+                    {designationTiles.map((d) => (
+                      <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                        <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                      </NavPill>
+                    ))}
+                    {tree.roots.map((c) => (
+                      <NavPill key={c.id} active={breadcrumb[0]?.id === c.id} onClick={() => (breadcrumb[0]?.id === c.id ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}>{c.name}</NavPill>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="tiles"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.14 }}
+                    className="flex gap-3 md:gap-4 items-center"
+                  >
+                    {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
+                    <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
+                      <NavPill active={noFilters} onClick={clearAll}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
+                      {designationTiles.map((d) => (
+                        <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                          <d.Icon size={12} strokeWidth={2.5} /> {d.label}
+                        </NavPill>
+                      ))}
+                    </div>
+                    {/* Category image tiles — horizontal scroll. py-1.5/pl-1.5: interior room so the active ring-offset isn't clipped by overflow-x scroll */}
+                    <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x py-1.5 pl-1.5 min-w-0">
+                      {categoryTiles.map((c) => {
+                        const active = breadcrumb[0]?.id === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}
+                            aria-label={`Shop ${c.name}`}
+                            aria-pressed={active}
+                            className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
+                          >
+                            <img src={imageUrl(c.imageUrl!, 360)} srcSet={imageSrcSet(c.imageUrl!, [200, 360, 520])} sizes="(min-width: 768px) 176px, 160px" alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                            <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
+                              <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
             {/* Subcategory drill nav — inside the frozen unit, shown only while
                 inside a category branch with depth or children. */}
