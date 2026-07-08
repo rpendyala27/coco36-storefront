@@ -27,17 +27,13 @@
     <meta name="twitter:image" content="https://coco36.com/og.png" />
 
     <!-- Preconnect to perf-critical origins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
 
-    <!-- Fonts load from the head (not a CSS @import) so the request isn't
-         chained behind the app stylesheet -->
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
-    />
+    <!-- Fonts are self-hosted (public/fonts, @font-face rules in the CSS
+         bundle). Preload the two files virtually every page paints with. -->
+    <link rel="preload" href="/fonts/archivo-normal-400-900-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dm-sans-normal-300-700-latin.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- Favicon + iOS touch icon -->
     <link rel="icon" type="image/png" href="/coco36-floral.png" />
@@ -45,36 +41,8 @@
 
     <!-- Site-wide structured data (static: readable without JS rendering).
          Per-product JSON-LD is injected client-side on PDPs (src/lib/seo.ts). -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": "https://coco36.com/#org",
-        "name": "COCO36",
-        "legalName": "COCO36 Foods Pvt Ltd",
-        "url": "https://coco36.com/",
-        "logo": "https://coco36.com/coco36-floral.png",
-        "description": "Crop-to-craft marketplace — origin ingredients for makers: cocoa, flours, vanilla, and rare botanicals sourced direct from heritage farms."
-      }
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "@id": "https://coco36.com/#website",
-        "name": "COCO36",
-        "url": "https://coco36.com/",
-        "publisher": { "@id": "https://coco36.com/#org" },
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": {
-            "@type": "EntryPoint",
-            "urlTemplate": "https://coco36.com/shop?q={search_term_string}"
-          },
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://coco36.com/#org","name":"COCO36","legalName":"COCO36 Foods Pvt Ltd","url":"https://coco36.com/","logo":"https://coco36.com/coco36-floral.png","description":"Crop-to-craft marketplace — origin ingredients for makers: cocoa, flours, vanilla, and rare botanicals sourced direct from heritage farms."}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://coco36.com/#website","name":"COCO36","url":"https://coco36.com/","publisher":{"@id":"https://coco36.com/#org"},"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://coco36.com/shop?q={search_term_string}"},"query-input":"required name=search_term_string"}}</script>
   </head>
   <body>
     <div id="root"></div>
