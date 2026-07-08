@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Plus, Check } from 'lucide-react';
@@ -17,6 +17,24 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   const { addItem } = useCart();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [added, setAdded] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Dismiss the size popover on any pointer-down outside it (and outside the
+  // Add button, which handles its own toggle). `pointerdown` covers mouse +
+  // touch, so on tablet/mobile a tap anywhere closes it instead of it lingering
+  // over the card image; desktop keeps the Add-button toggle and gains
+  // outside-click-to-close too.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (pickerRef.current?.contains(t) || addBtnRef.current?.contains(t)) return;
+      setPickerOpen(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [pickerOpen]);
 
   const inStockSizes  = product.sizes.filter((s) => s.inStock);
   const minPricePaise = product.sizes.length ? Math.min(...product.sizes.map((s) => s.priceInPaise)) : 0;
@@ -110,7 +128,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             {unitLabel && <span className="block truncate text-xs text-brand-muted">/ {unitLabel}</span>}
             {hasOptions && <div className="text-xs text-brand-muted mt-1">From</div>}
           </div>
-          <button onClick={onAddClick} className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap">
+          <button ref={addBtnRef} onClick={onAddClick} className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap">
             {added
               ? <><Check size={14} strokeWidth={3} /> Added</>
               : <><Plus size={14} strokeWidth={2.5} /> {hasOptions ? 'Add' : <>Add<span className="hidden sm:inline"> to bag</span></>}</>}
@@ -119,7 +137,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
 
         {/* Quick-add size popover — adds without a PDP detour */}
         {pickerOpen && hasOptions && (
-          <div className="absolute left-4 right-4 bottom-16 z-20 bg-white border border-brand-line rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] p-2">
+          <div ref={pickerRef} className="absolute left-4 right-4 bottom-16 z-20 bg-white border border-brand-line rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] p-2">
             <div className="font-display font-bold text-[11px] uppercase tracking-wide text-brand-muted px-2 py-1.5">Pick a size</div>
             {inStockSizes.map((s) => (
               <button key={s.id} onClick={(e) => add(s, e)} className="w-full flex justify-between items-center px-2 py-2 rounded hover:bg-brand-surface text-left">
