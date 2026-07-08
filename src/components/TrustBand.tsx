@@ -23,8 +23,11 @@ const MARKS: { slug: string; label: string }[] = [
 export const TrustBand = () => (
   <section aria-label="Certification trust marks" className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-4 md:mt-5 mb-3">
     {/* Forest marks on a near-white band — dark-on-light reads like an authentic
-        ink stamp (vs a watermark). Mobile: one swipeable row; md+: centred wrap. */}
-    <ul className="rounded-2xl bg-brand-surface border border-brand-line text-brand-forest flex items-start gap-x-5 md:flex-wrap md:justify-center md:gap-x-8 lg:gap-x-10 gap-y-3 px-4 md:px-6 py-3.5 md:py-4 overflow-x-auto md:overflow-visible no-scrollbar">
+        ink stamp (vs a watermark). ALWAYS a single swipeable row (no wrapping —
+        it wrapped oddly at tablet widths). `safe center` centres the row on wide
+        screens where it fits, but falls back to a left-scrolling start when it
+        would overflow, so leading marks are never clipped. */}
+    <ul className="rounded-2xl bg-brand-surface border border-brand-line text-brand-forest flex items-start gap-x-5 md:gap-x-8 lg:gap-x-10 md:[justify-content:safe_center] px-4 md:px-6 py-3.5 md:py-4 overflow-x-auto no-scrollbar">
       {/* COCO36's own house seal — leads, then a divider, then third-party certs */}
       <li className="flex flex-col items-center gap-1.5 shrink-0 w-[62px] md:w-[76px]">
         <Coco36Seal size={34} />
