@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 
