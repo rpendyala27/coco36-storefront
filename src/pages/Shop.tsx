@@ -12,11 +12,12 @@ import { TrustBand } from '../components/TrustBand';
 import { AmbientVideo } from '../components/AmbientVideo';
 import { ScraperReveal } from '../components/ScraperReveal';
 import { PHASES } from '../data/thirtySixSteps';
-import { PHASE_VIDEOS } from '../data/phaseVideos';
+import { PHASE_VIDEOS, PHASE_POSTERS } from '../data/phaseVideos';
 import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { imageUrl } from '../lib/img';
 
 type SortKey = 'recommended' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 const SORT_LABELS: Record<SortKey, string> = {
@@ -346,11 +347,11 @@ export const Shop = () => {
                 aria-label={`Phase ${p.number} — ${p.title}`}
                 className="group relative block overflow-hidden bg-brand-forest"
               >
-                <AmbientVideo src={PHASE_VIDEOS[p.id]} className="absolute inset-0 w-full h-full object-cover" />
+                <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
                 <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
-                  <span className="block font-display font-bold text-[9px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
-                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                  <span className="block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
                 </span>
               </Link>
             ))}
@@ -368,7 +369,7 @@ export const Shop = () => {
           <div className="border-t border-brand-line bg-brand-paper overflow-hidden py-2.5">
             <div className="flex w-max" style={{ animation: 'co-marquee 45s linear infinite' }}>
               {[...ticker, ...ticker].map((t, i) => (
-                <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-[11px] uppercase tracking-[0.06em] text-brand-leaf whitespace-nowrap">
+                <span key={i} className="inline-flex items-center gap-2.5 px-6 border-r border-brand-line/70 font-mono text-xs uppercase tracking-[0.06em] text-brand-leaf whitespace-nowrap">
                   <span className="size-1.5 rounded-full flex-shrink-0" style={{ background: t.dot }} /> {t.text}
                 </span>
               ))}
@@ -427,7 +428,7 @@ export const Shop = () => {
                       aria-pressed={active}
                       className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
                     >
-                      <img src={c.imageUrl!} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                      <img src={imageUrl(c.imageUrl!, 360)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
                       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
                         <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
                       </span>
@@ -509,7 +510,7 @@ export const Shop = () => {
 
               <FacetGroup title="Max price">
                 <input type="range" min={200} max={priceCeil} step={100} value={priceVal} onChange={(e) => setMaxRupees(Number(e.target.value))} className="w-full accent-[#4e7d24]" />
-                <div className="flex justify-between font-mono text-[11px] text-brand-muted mt-1">
+                <div className="flex justify-between font-mono text-xs text-brand-muted mt-1">
                   <span>₹200</span>
                   <span className="text-brand-forest">₹{priceVal.toLocaleString('en-IN')}+</span>
                 </div>
@@ -655,7 +656,7 @@ const FacetRow: React.FC<{ label: string; count: number; checked: boolean; onTog
       {checked && (<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>)}
     </span>
     <span className={`text-sm flex-1 ${checked ? 'text-brand-forest font-medium' : 'text-brand-forest/80'} group-hover:text-brand-leaf transition-colors`}>{label}</span>
-    <span className="font-mono text-[11px] text-brand-muted tabular-nums">{count}</span>
+    <span className="font-mono text-xs text-brand-muted tabular-nums">{count}</span>
   </button>
 );
 

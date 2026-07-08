@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
 import { CertStamp } from '../components/CertStamp';
 import { formatMoney } from '../lib/currency';
+import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 
@@ -102,7 +103,7 @@ export const ProductDetail = () => {
         <div className="lg:sticky lg:top-28">
           <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-surface">
             {gallery[activeImage]
-              ? <img src={gallery[activeImage]} alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+              ? <img src={imageUrl(gallery[activeImage], 900)} srcSet={imageSrcSet(gallery[activeImage], [600, 900, 1200])} sizes="(min-width: 1024px) 45vw, 100vw" alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               // Light "awaiting photo" placeholder — matches the ProductCard treatment.
               : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
           </div>
@@ -114,7 +115,7 @@ export const ProductDetail = () => {
                   onClick={() => setActiveImage(i)}
                   className={`size-20 rounded-xl overflow-hidden border-2 transition-colors ${i === activeImage ? 'border-brand-leaf' : 'border-brand-line'}`}
                 >
-                  <img src={src} alt="" className="w-full h-full object-cover" />
+                  <img src={imageUrl(src, 160)} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

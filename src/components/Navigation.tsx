@@ -44,7 +44,7 @@ export const Navigation: React.FC = () => {
       <header className="fixed top-0 left-0 w-full z-40">
         {/* Topbar */}
         <div className="h-[30px] bg-brand-forest text-white flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-6 font-display font-semibold text-[10px] md:text-[10.5px] uppercase tracking-[0.11em] leading-none">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 flex items-center justify-between gap-6 font-display font-semibold text-[11px] md:text-xs uppercase tracking-[0.09em] leading-none">
             {/* Left (hero) — positioning leads at the extreme left, on every breakpoint */}
             <span className="truncate text-white/90">
               The pure-ingredient marketplace
@@ -193,7 +193,7 @@ export const Navigation: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSearchOpen(false)}
-                className="mt-4 inline-flex items-center gap-1.5 text-white/70 hover:text-white text-[11px] uppercase tracking-widest font-bold"
+                className="mt-4 inline-flex items-center gap-1.5 text-white/70 hover:text-white text-xs uppercase tracking-widest font-bold"
                 aria-label="Close search"
               >
                 <X size={13} /> Close
