@@ -52,35 +52,40 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       transition={{ delay: Math.min(index * 0.04, 0.32), duration: 0.5 }}
       className="card group flex flex-col h-full"
     >
-      {/* Image */}
-      <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
-        {product.image ? (
-          <img
-            src={imageUrl(product.image, 600)}
-            srcSet={imageSrcSet(product.image)}
-            sizes="(min-width: 1024px) 30vw, 50vw"
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-          />
-        ) : (
-          // Clean "awaiting photo" placeholder (light, not a dark void) — until the catalog reseed adds real images.
-          <div className="absolute inset-0 flex items-center justify-center bg-brand-surface">
-            <span className="font-display text-5xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span>
-          </div>
-        )}
-        <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start">
+      {/* Image. Badges live OUTSIDE the link (pointer-events-none, clicks fall
+          through) so the link's accessible text is the product name from the
+          img alt — not "Bestseller"/"New Arrival". */}
+      <div className="relative">
+        <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
+          {product.image ? (
+            <img
+              src={imageUrl(product.image, 600)}
+              srcSet={imageSrcSet(product.image)}
+              sizes="(min-width: 1024px) 24vw, 46vw"
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            // Clean "awaiting photo" placeholder (light, not a dark void) — until the catalog reseed adds real images.
+            <div className="absolute inset-0 flex items-center justify-center bg-brand-surface">
+              <span className="font-display text-5xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span>
+              <span className="sr-only">{product.name}</span>
+            </div>
+          )}
+          <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-forest flex items-center justify-center">
+            <ArrowRight size={15} strokeWidth={2} />
+          </span>
+        </Link>
+        <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start pointer-events-none">
           {badgeItems.map((b) => (
             <span key={b.label} className={`font-display font-bold text-[11px] uppercase tracking-[0.08em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-ink' : 'bg-white/90 text-brand-forest'}`}>
               {b.label}
             </span>
           ))}
         </div>
-        <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-forest flex items-center justify-center">
-          <ArrowRight size={15} strokeWidth={2} />
-        </span>
-      </Link>
+      </div>
 
       {/* Body */}
       <div className="p-3.5 md:p-5 flex flex-col flex-1 relative">

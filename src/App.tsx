@@ -181,7 +181,7 @@ export default function App() {
               {/* Brand col */}
               <div className="col-span-2">
                 <div className="flex items-center gap-3 mb-5">
-                  <img src="/coco36-floral.png" alt="" className="size-11" />
+                  <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={44} height={44} alt="" className="size-11" />
                   <div className="leading-none">
                     <div className="font-display text-2xl font-semibold">
                       COCO<span className="text-brand-gold italic">36</span>

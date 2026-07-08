@@ -17,7 +17,7 @@ import type { TagKind } from '../types';
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
-import { imageUrl } from '../lib/img';
+import { imageUrl, imageSrcSet } from '../lib/img';
 
 type SortKey = 'recommended' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 const SORT_LABELS: Record<SortKey, string> = {
@@ -347,6 +347,10 @@ export const Shop = () => {
                 aria-label={`Phase ${p.number} — ${p.title}`}
                 className="group relative block overflow-hidden bg-brand-forest"
               >
+                {/* sr-only link text: the visual labels below are hidden on
+                    mobile and hover-revealed on desktop, so crawlers (and
+                    screen readers on phones) need an always-rendered name. */}
+                <span className="sr-only">Phase {p.number} — {p.title}</span>
                 <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
                 <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
@@ -428,7 +432,7 @@ export const Shop = () => {
                       aria-pressed={active}
                       className={`group relative shrink-0 w-40 md:w-44 aspect-[4/3] rounded-xl overflow-hidden text-left snap-start transition-shadow ${active ? 'ring-2 ring-brand-forest ring-offset-2 ring-offset-brand-paper' : 'border border-brand-line hover:ring-2 hover:ring-brand-forest/30 hover:ring-offset-2 hover:ring-offset-brand-paper'}`}
                     >
-                      <img src={imageUrl(c.imageUrl!, 360)} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
+                      <img src={imageUrl(c.imageUrl!, 360)} srcSet={imageSrcSet(c.imageUrl!, [200, 360, 520])} sizes="(min-width: 768px) 176px, 160px" alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.04]" />
                       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-forest-deep/80 to-transparent pt-7 pb-2 px-2.5">
                         <span className="font-display font-bold text-[12px] uppercase tracking-[0.06em] text-white leading-tight">{c.name}</span>
                       </span>

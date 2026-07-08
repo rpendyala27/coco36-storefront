@@ -69,7 +69,7 @@ export const Navigation: React.FC = () => {
           <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 grid grid-cols-[auto_1fr_auto] items-center gap-6">
             {/* Logo */}
             <NavLink to="/" className="flex items-center gap-2.5 shrink-0" aria-label="COCO36 — From crop to craft">
-              <img src="/coco36-floral.png" alt="" className="h-10 w-auto" />
+              <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={41} height={40} alt="" className="h-10 w-auto" />
               <span className="flex flex-col items-start leading-none">
                 <span className="font-display text-[22px] font-semibold tracking-tight text-brand-forest">
                   COCO<span className="text-brand-gold italic">36</span>

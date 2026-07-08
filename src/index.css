@@ -1,5 +1,8 @@
-/* Google Fonts (Archivo / DM Sans / JetBrains Mono) load via <link> in
-   index.html — a CSS @import would chain the font request behind this file. */
+/* Self-hosted fonts (Archivo / DM Sans / JetBrains Mono) — latin +
+   latin-ext woff2 subsets in public/fonts, rules inlined into this bundle
+   at build. No Google Fonts request chain; the two critical latin files
+   are <link rel="preload">ed from index.html. */
+@import './fonts.css';
 @import "tailwindcss";
 
 @theme {

@@ -118,7 +118,7 @@ export const AuthPage = () => {
         transition={{ duration: 0.6 }}
         className="max-w-md w-full bg-white p-8 sm:p-10 border border-brand-line rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
       >
-        <img src="/coco36-floral.png" alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
+        <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={49} height={48} alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
 
         {passwordRecovery ? (
           /* ── Set a new password (lands here from the reset email link) ───── */
