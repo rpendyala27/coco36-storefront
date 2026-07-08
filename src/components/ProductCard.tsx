@@ -70,7 +70,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
           ) : (
             // Clean "awaiting photo" placeholder (light, not a dark void) — until the catalog reseed adds real images.
             <div className="absolute inset-0 flex items-center justify-center bg-brand-surface">
-              <span className="font-display text-5xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span>
+              <span aria-hidden="true" className="font-display text-5xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span>
               <span className="sr-only">{product.name}</span>
             </div>
           )}
