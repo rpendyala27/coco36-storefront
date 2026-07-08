@@ -9,6 +9,7 @@ import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { useJsonLd, setMetaDescription, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -39,8 +40,20 @@ export const ProductDetail = () => {
   }, []);
 
   useEffect(() => {
-    if (product) document.title = `${product.name} · COCO36`;
+    if (!product) return;
+    document.title = `${product.name} · COCO36`;
+    // Per-product meta description: the description text reads better in a
+    // SERP snippet than the terse tag line, so prefer it when present.
+    const text = stripMarkdown(product.description || product.tag || '');
+    if (text) setMetaDescription(`${text.slice(0, 140)} — sourced direct from origin by COCO36.`);
   }, [product]);
+
+  // Product + BreadcrumbList structured data for Google rich results.
+  // Memoized so useJsonLd only rewrites the script tag when the product changes.
+  const productLd    = useMemo(() => (product ? productJsonLd(product) : null), [product]);
+  const breadcrumbLd = useMemo(() => (product ? productBreadcrumbJsonLd(product) : null), [product]);
+  useJsonLd('product', productLd);
+  useJsonLd('product-breadcrumb', breadcrumbLd);
 
   const related = useMemo(
     () => (product ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : []),
