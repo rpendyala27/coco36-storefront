@@ -4,6 +4,7 @@ import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
 import { PincodePopup } from './components/PincodePopup';
+import { setMetaDescription } from './lib/seo';
 // The Shop catalog IS the landing page (catalog-first). Eagerly imported
 // as the above-the-fold experience. The old marketing Home is retired.
 import { Shop } from './pages/Shop';
@@ -42,6 +43,8 @@ const ROUTE_TITLES: Record<string, string> = {
 };
 
 const CANONICAL_ORIGIN = 'https://coco36.com';
+// Matches the static <meta name="description"> in index.html.
+const DEFAULT_DESCRIPTION = 'Cocoa, flours, vanilla, and rare botanicals — sourced direct from heritage farms across 12 countries. 36-step traceability, fair trade, free shipping across India.';
 
 function ScrollToTop() {
   const { pathname, hash } = useLocation();
@@ -68,6 +71,13 @@ function ScrollToTop() {
     } else if (!pathname.startsWith('/shop/') && !pathname.startsWith('/account/') && !pathname.startsWith('/track/')) {
       // PDP / order detail / tracking set their own titles; everything else falls back.
       document.title = 'COCO36 · From crop to craft';
+    }
+
+    // Meta description: Shop and PDPs set their own (after this effect — they
+    // mount deeper, but their data lands async); everything else resets to the
+    // base one so a product blurb never lingers on unrelated pages.
+    if (pathname !== '/' && !pathname.startsWith('/shop')) {
+      setMetaDescription(DEFAULT_DESCRIPTION);
     }
 
     // Canonical URL — `/` and `/shop` render the same catalog, so both point at
