@@ -74,7 +74,7 @@ export const CookieBanner = () => {
           {/* Mobile-only inline actions */}
           <button
             onClick={() => decide('accepted')}
-            className="md:hidden bg-brand-leaf text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg shrink-0"
+            className="md:hidden bg-brand-leaf text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg shrink-0"
           >
             Accept
           </button>

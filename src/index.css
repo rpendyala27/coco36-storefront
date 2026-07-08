@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..700&family=DM+Sans:opsz,wght@9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Google Fonts (Archivo / DM Sans / JetBrains Mono) load via <link> in
+   index.html — a CSS @import would chain the font request behind this file. */
 @import "tailwindcss";
 
 @theme {
@@ -54,9 +55,9 @@
     @apply font-display italic font-semibold;
   }
 
-  /* Eyebrow — bold uppercase label */
+  /* Eyebrow — bold uppercase label (12px floor: mobile legibility) */
   .eyebrow {
-    @apply font-display font-bold text-[11px] uppercase tracking-[0.1em] text-brand-muted;
+    @apply font-display font-bold text-xs uppercase tracking-[0.1em] text-brand-muted;
   }
 
   /* Brand card — flat, hairline border, soft rounded. Transition only what
@@ -92,7 +93,7 @@
 
   /* Pill badge */
   .pill {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
   }
 }
 

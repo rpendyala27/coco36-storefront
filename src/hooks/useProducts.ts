@@ -14,16 +14,17 @@ interface UseProductsResult {
  * Supabase-backed product hook.
  *
  * Strategy:
- *   • Warm-start with the static catalogue so the UI never flashes empty
- *     during the first network round-trip.
+ *   • Start EMPTY (callers show loading skeletons) — the old warm-start with
+ *     the static catalogue flashed fictional demo products (and burned their
+ *     Unsplash image downloads) for the first ~1s of every visit.
  *   • Once Supabase responds, **fully replace** with DB data — the merge
  *     approach caused duplicate listings with mismatched variant IDs at
  *     checkout (static sizes were 'sm'/'md'/'lg', not UUIDs).
  *   • The static catalogue is only displayed when Supabase is totally
- *     empty (e.g. first-ever boot, or offline).
+ *     empty (e.g. first-ever boot, or offline) — a dev-only fallback.
  */
 export function useProducts(): UseProductsResult {
-  const [products, setProducts]         = useState<Product[]>(PRODUCTS); // warm start
+  const [products, setProducts]         = useState<Product[]>([]);
   const [loading, setLoading]           = useState(true);
   const [fromSupabase, setFromSupabase] = useState(false);
 
@@ -52,7 +53,8 @@ export function useProducts(): UseProductsResult {
         }
       });
     } catch {
-      // Supabase unreachable — stay on static data silently
+      // Supabase unreachable — fall back to static data silently
+      setProducts(PRODUCTS);
       setLoading(false);
     }
 
