@@ -26,3 +26,10 @@ export const PHASE_POSTERS: Record<string, string> = {
   logistics:  '/hero-posters/6169420.jpg',
   kitchen:    '/hero-posters/6181811.jpg',
 };
+
+/** Seconds to trim off the FRONT of a clip — playback starts and loops from
+ *  this in-point (see AmbientVideo `startAt`). Only for clips whose opening
+ *  frames don't land well. */
+export const PHASE_VIDEO_START: Record<string, number> = {
+  quality: 1, // lab clip — skip the first second
+};

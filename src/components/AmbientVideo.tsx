@@ -19,9 +19,10 @@ import { useReducedMotion } from 'motion/react';
  * interaction; the poster stays until playback actually begins. aria-hidden:
  * pair it with a text label.
  */
-export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: string }> = ({
+export const AmbientVideo: React.FC<{ src: string; poster?: string; startAt?: number; className?: string }> = ({
   src,
   poster,
+  startAt,
   className = '',
 }) => {
   const reduceMotion = useReducedMotion();
@@ -76,21 +77,28 @@ export const AmbientVideo: React.FC<{ src: string; poster?: string; className?: 
       el.play().catch(() => {}); // blocked → poster stays; retried below
     };
     play();
+    // Trim the first `startAt` seconds: the src carries #t=startAt for the
+    // initial in-point, and native `loop` is off, so restart at startAt on end.
+    const onEnded = startAt != null ? () => { el.currentTime = startAt; el.play().catch(() => {}); } : undefined;
+    if (onEnded) el.addEventListener('ended', onEnded);
     // Fallback: if the browser refused the cold-load autoplay, the first user
     // gesture (which grants activation) starts it. once:true self-removes.
     const evts = ['pointerdown', 'touchstart', 'keydown', 'scroll'] as const;
     const opts: AddEventListenerOptions = { once: true, passive: true };
     evts.forEach((ev) => window.addEventListener(ev, play, opts));
-    return () => evts.forEach((ev) => window.removeEventListener(ev, play));
-  }, [videoOn, reduceMotion]);
+    return () => {
+      if (onEnded) el.removeEventListener('ended', onEnded);
+      evts.forEach((ev) => window.removeEventListener(ev, play));
+    };
+  }, [videoOn, reduceMotion, startAt]);
 
   return (
     <video
       ref={elRef}
-      src={videoOn ? src : undefined}
+      src={videoOn ? (startAt != null ? `${src}#t=${startAt}` : src) : undefined}
       poster={poster}
       muted
-      loop
+      loop={startAt == null}
       playsInline
       preload="none"
       aria-hidden="true"
