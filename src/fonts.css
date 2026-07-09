@@ -1,3 +1,17 @@
+/* Rupee glyph override. Archivo and DM Sans DO ship a ₹ (U+20B9) in their
+   latin-ext subset, but it renders cramped/mismatched against the bold price
+   digits. This @font-face captures ONLY U+20B9 and sources it from a clean
+   system grotesque, so every ₹ across the site (cards, PDP, cart, checkout,
+   prices inside sentences) picks up a well-formed rupee while all other
+   characters still come from the brand fonts. 'RupeeGlyph' is placed FIRST in
+   --font-sans / --font-display; if no local font resolves it simply falls
+   through to Archivo/DM Sans (today's rendering) — safe by construction. */
+@font-face {
+  font-family: 'RupeeGlyph';
+  font-display: swap;
+  src: local('Segoe UI'), local('Helvetica Neue'), local('Roboto'), local('Arial'), local('Noto Sans');
+  unicode-range: U+20B9;
+}
 /* latin-ext */
 @font-face {
   font-family: 'Archivo';

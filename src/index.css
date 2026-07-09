@@ -10,8 +10,11 @@
      Archivo (bold grotesque display) · DM Sans (body/UI) · JetBrains Mono (codes).
      NOTE: --font-display is intentionally mapped to Archivo (a sans) so every
      existing `font-display` / heading usage renders the bold grotesque. */
-  --font-sans:  "DM Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  /* 'RupeeGlyph' is first so the ₹ (U+20B9) renders from a clean system
+     grotesque (see fonts.css); it covers only that codepoint, so everything
+     else falls through to DM Sans / Archivo. */
+  --font-sans:  "RupeeGlyph", "DM Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "RupeeGlyph", "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
   /* ─── Brand palette — semantic names (Panera reference) ───────
