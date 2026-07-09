@@ -1,196 +1,140 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { PHASES } from '../data/thirtySixSteps';
-import { AmbientVideo } from '../components/AmbientVideo';
-import { PHASE_VIDEOS, PHASE_POSTERS, PHASE_VIDEO_START } from '../data/phaseVideos';
+import { PHASE_POSTERS } from '../data/phaseVideos';
 
+/**
+ * The 36-steps method page. Deliberately STILL: the homepage hero owns the
+ * ambient video treatment; here the six phases are poster flash cards.
+ * Hover (fine pointers), tap, or keyboard focus flips a card to its six
+ * steps. Card ids (#origin … #kitchen) are deep-link targets from the
+ * homepage hero tiles — do not rename them; a hash deep link auto-opens
+ * its card.
+ */
 export const ThirtySixSteps = () => {
-  const [active, setActive] = useState<string>('origin');
+  const [open, setOpen] = useState<string | null>(null);
 
-  const jumpTo = (id: string) => {
-    setActive(id);
-    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
-  };
+  // /36-steps#craft (homepage hero tiles) → open that card on arrival.
+  // App's ScrollToTop handles the scrolling; we only flip the card.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id && PHASES.some((p) => p.id === id)) setOpen(id);
+  }, []);
 
   return (
     <div className="bg-brand-paper">
-      {/* HERO */}
-      <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10">
+      {/* HERO — editorial and calm: one eyebrow, the headline, a short line,
+          and the framework facts. The cards below are the visual. */}
+      <section className="pt-36 pb-12 md:pb-14 px-6 md:px-12 lg:px-20 border-b border-brand-ink/10">
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-[10px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
+          <p className="text-[11px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-6">
             COCO<span className="text-brand-ink">36</span> · The Method
           </p>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl mb-10 leading-[0.95]">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl mb-6 leading-[1.05]">
             The 36-step journey<br />
-            <span className="italic">from crop to craft.</span>
+            <span className="italic pb-1">from crop to craft.</span>
           </h1>
-          <p className="text-xl md:text-2xl text-brand-ink/70 leading-relaxed font-display italic max-w-3xl mx-auto">
-            Every ingredient we ship moves through the same framework: six phases and thirty-six checkpoints, built to protect the integrity of origin, from crop to craft.
+          <p className="text-lg md:text-xl text-brand-ink/65 leading-relaxed max-w-2xl mx-auto">
+            Six phases, thirty-six checkpoints. The same framework protects every
+            ingredient we ship, from named origin to your kitchen.
           </p>
 
-          {/* Journey reel — one ambient vertical clip per phase, dimmed, with the
-              brand line riding on top. Each tile anchors to its phase below. */}
-          <div className="relative mt-12 md:mt-16">
-            {/* < lg: the grid is two rows, so the line sits above it in flow */}
-            <p className="lg:hidden font-display text-3xl md:text-4xl italic text-brand-forest leading-[1.02] mb-6">
-              Find your secret <span className="text-brand-leaf">ingredient</span>
-            </p>
-            <div className="grid grid-cols-3 lg:grid-cols-6 gap-2.5 md:gap-3">
-              {PHASES.map((p) => (
-                <a
-                  key={p.id}
-                  href={`#${p.id}`}
-                  aria-label={`Phase ${p.number} — ${p.title}`}
-                  className="group relative block aspect-[9/16] rounded-xl overflow-hidden bg-brand-forest"
-                >
-                  {PHASE_VIDEOS[p.id] && (
-                    <AmbientVideo
-                      src={PHASE_VIDEOS[p.id]}
-                      poster={PHASE_POSTERS[p.id]}
-                      startAt={PHASE_VIDEO_START[p.id]}
-                      className="absolute inset-0 w-full h-full object-cover opacity-85 transition-opacity duration-200 group-hover:opacity-100"
-                    />
-                  )}
-                  {/* dim + label scrim */}
-                  <span className="absolute inset-0 bg-gradient-to-t from-brand-forest-deep/85 via-brand-forest-deep/20 to-brand-forest-deep/30" />
-                  <span className="absolute inset-x-0 bottom-0 p-2.5 md:p-3 text-left">
-                    <span className="block font-display font-bold text-[10px] uppercase tracking-[0.18em] text-brand-gold-pale">{p.number}</span>
-                    <span className="block font-display font-bold text-[11px] md:text-[12px] uppercase tracking-[0.08em] text-white leading-tight mt-0.5">{p.title}</span>
-                  </span>
-                </a>
-              ))}
-            </div>
-            {/* lg+: single row — the brand line rides on the reel itself */}
-            <div className="hidden lg:flex absolute inset-0 items-center justify-center pointer-events-none px-6">
-              <p className="font-display text-5xl xl:text-6xl italic text-white text-center leading-[1.02] [text-shadow:0_2px_24px_rgba(4,35,29,0.55)]">
-                Find your secret <span className="text-brand-gold-pale">ingredient</span>
-              </p>
-            </div>
-          </div>
-
           {/* Framework strip — structural facts, not metrics */}
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-16 pt-10 border-t border-brand-ink/10">
+          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto mt-12 pt-9 border-t border-brand-ink/10">
             <div>
               <div className="text-4xl font-display italic text-brand-leaf mb-1">06</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Phases</p>
+              <p className="text-[11px] uppercase tracking-widest text-brand-muted font-bold">Phases</p>
             </div>
             <div>
               <div className="text-4xl font-display italic text-brand-leaf mb-1">36</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Checkpoints</p>
+              <p className="text-[11px] uppercase tracking-widest text-brand-muted font-bold">Checkpoints</p>
             </div>
             <div>
               <div className="text-4xl font-display italic text-brand-leaf mb-1">All 6</div>
-              <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">Categories</p>
+              <p className="text-[11px] uppercase tracking-widest text-brand-muted font-bold">Categories</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PHASE NAVIGATION (sticky, mobile/tablet — lg+ uses the left rail) */}
-      <nav className="lg:hidden sticky top-20 z-20 bg-brand-paper/95 backdrop-blur-md border-b border-brand-ink/10">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          <ul className="flex gap-1 sm:gap-3 py-3 min-w-max">
-            {PHASES.map((p) => (
-              <li key={p.id}>
-                <a
-                  href={`#${p.id}`}
-                  onClick={(e) => { e.preventDefault(); jumpTo(p.id); }}
-                  className={`flex items-center gap-3 px-4 py-2 text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${
-                    active === p.id
-                      ? 'bg-brand-ink text-brand-paper'
-                      : 'text-brand-muted hover:text-brand-ink'
-                  }`}
+      {/* PHASE FLASH CARDS — poster face, steps on the back. */}
+      <section className="px-6 md:px-12 lg:px-20 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-sm text-brand-muted mb-6">
+            Tap or hover a phase to see its six checkpoints.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+            {PHASES.map((phase, i) => {
+              const isOpen = open === phase.id;
+              return (
+                <motion.article
+                  key={phase.id}
+                  id={phase.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.5, delay: Math.min(i * 0.05, 0.25), ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => setOpen(isOpen ? null : phase.id)}
+                  className="group relative aspect-[2/3] sm:aspect-[3/4] rounded-2xl overflow-hidden bg-brand-forest scroll-mt-36 cursor-pointer"
                 >
-                  <span className="font-display italic text-sm normal-case">{p.number}.</span>
-                  {p.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </nav>
+                  {/* Poster face */}
+                  <img
+                    src={PHASE_POSTERS[phase.id]}
+                    alt=""
+                    loading={i < 3 ? 'eager' : 'lazy'}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                  />
+                  <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-brand-forest-deep/90 to-transparent" />
+                  <span className="absolute inset-x-0 bottom-0 p-5 text-left">
+                    <span className="block font-display font-bold text-[11px] uppercase tracking-[0.18em] text-brand-gold-pale">{phase.number}</span>
+                    <h2 className="font-display font-bold text-lg md:text-xl text-white leading-tight mt-1">{phase.title}</h2>
+                    <span className="block font-mono text-[11px] text-white/70 mt-1">{phase.subtitle}</span>
+                  </span>
 
-      {/* PHASES — vertical phase rail left (lg+), mapped image + step writeups right */}
-      <section className="px-6 md:px-12 lg:px-20 py-14 md:py-20">
-        <div className="max-w-7xl mx-auto lg:grid lg:grid-cols-[220px_1fr] lg:gap-10 lg:items-start">
-          {/* Vertical phase rail — sticky, mapped 1:1 to the sections on the right */}
-          <aside className="hidden lg:block sticky top-28 space-y-2.5" aria-label="Phases">
-            {PHASES.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => jumpTo(p.id)}
-                className={`relative block w-full rounded-xl overflow-hidden text-left px-4 py-3.5 transition-colors duration-200 ${
-                  active === p.id
-                    ? 'bg-brand-forest text-white'
-                    : 'bg-brand-surface text-brand-forest hover:bg-brand-band'
-                }`}
-              >
-                <span className={`font-display italic text-sm leading-none ${active === p.id ? 'text-brand-gold-pale' : 'text-brand-leaf'}`}>{p.number}.</span>
-                <span className="block font-display font-bold text-[11px] uppercase tracking-[0.08em] leading-tight mt-1">{p.title}</span>
-              </button>
-            ))}
-          </aside>
-
-          <div className="space-y-8">
-            {PHASES.map((phase, idx) => (
-              <motion.article
-                key={phase.id}
-                id={phase.id}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                className="border border-brand-ink/10 rounded-2xl overflow-hidden bg-brand-paper scroll-mt-36"
-              >
-                {/* Compact phase header */}
-                <div className="px-6 md:px-8 pt-6 md:pt-8 pb-5 flex items-start gap-5">
-                  <div className="shrink-0 size-12 rotate-45 border-2 border-brand-leaf bg-brand-paper flex items-center justify-center mt-1">
-                    <span className="-rotate-45 font-display italic text-lg text-brand-leaf">{phase.number}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-brand-leaf font-bold mb-1.5">
-                      Phase {idx + 1} · {phase.subtitle}
+                  {/* Steps panel — revealed on hover / focus / tap. While closed
+                      (hover-only preview) it never intercepts clicks; once
+                      tapped open it takes pointer events so it can scroll on
+                      small cards, and a tap on it dismisses (event bubbles to
+                      the card toggle). */}
+                  <div
+                    aria-hidden={!isOpen}
+                    className={`absolute inset-0 bg-brand-forest-deep p-5 md:p-6 overflow-y-auto no-scrollbar text-left transition-opacity duration-300 ${
+                      isOpen ? 'opacity-100' : 'pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+                    }`}
+                  >
+                    <p className="font-display font-bold text-[11px] uppercase tracking-[0.18em] text-brand-gold-pale">
+                      {phase.number}. {phase.title}
                     </p>
-                    <h2 className="text-2xl md:text-3xl leading-tight">{phase.title}</h2>
-                    <p className="text-sm text-brand-ink/60 mt-2 max-w-2xl">{phase.description}</p>
-                  </div>
-                </div>
-
-                {/* Image + step writeups, mapped */}
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border-t border-brand-ink/10">
-                  <div className="relative aspect-[4/3] lg:aspect-auto bg-brand-surface overflow-hidden order-last lg:order-first">
-                    <img
-                      src={phase.image}
-                      alt=""
-                      loading="lazy"
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                      className="w-full h-full object-cover grayscale-[0.3]"
-                    />
-                    <div className="absolute bottom-5 left-5 bg-brand-paper/95 px-3 py-1.5 rounded">
-                      <span className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">
-                        Phase {phase.number} · {phase.title}
-                      </span>
-                    </div>
+                    <ul className="mt-4 space-y-3">
+                      {phase.steps.map((step) => (
+                        <li key={step.number} className="flex gap-3">
+                          <span className="font-display italic text-lg text-brand-gold-pale tabular-nums shrink-0 leading-none w-7 pt-0.5">
+                            {String(step.number).padStart(2, '0')}
+                          </span>
+                          <div className="min-w-0">
+                            <h3 className="text-[13px] font-display font-bold text-white leading-snug">{step.title}</h3>
+                            <p className="text-xs text-white/65 leading-relaxed mt-0.5">{step.description}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <ul className="p-6 md:p-8 grid grid-cols-1 xl:grid-cols-2 gap-x-8 gap-y-4">
-                    {phase.steps.map((step) => (
-                      <li key={step.number} className="flex gap-4">
-                        <span className="font-display italic text-2xl text-brand-leaf tabular-nums shrink-0 leading-none w-9 pt-0.5">
-                          {String(step.number).padStart(2, '0')}
-                        </span>
-                        <div className="min-w-0">
-                          <h4 className="text-[15px] font-display font-bold text-brand-ink leading-snug">{step.title}</h4>
-                          <p className="text-[13px] text-brand-ink/60 leading-relaxed mt-0.5">{step.description}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </motion.article>
-            ))}
+                  {/* Toggle — same circular affordance as the product cards.
+                      Sits above the panel so it stays clickable in both states. */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setOpen(isOpen ? null : phase.id); }}
+                    aria-expanded={isOpen}
+                    aria-label={`${isOpen ? 'Hide' : 'Show'} the six steps of ${phase.title}`}
+                    className="absolute bottom-4 right-4 z-10 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-forest flex items-center justify-center"
+                  >
+                    <Plus size={15} strokeWidth={2.5} className={`transition-transform duration-200 ${isOpen ? 'rotate-45' : ''}`} />
+                  </button>
+                </motion.article>
+              );
+            })}
           </div>
         </div>
       </section>
