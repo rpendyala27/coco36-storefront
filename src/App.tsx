@@ -30,6 +30,7 @@ const Terms              = lazy(() => import('./pages/Terms').then(m => ({ defau
 const ROUTE_TITLES: Record<string, string> = {
   '/':             'Shop ingredients',
   '/shop':         'Shop ingredients',
+  '/quick-order':  'Quick order',
   '/36-steps':     '36 Steps · traceability',
   '/recipes':      'Recipe consultant',
   '/partnerships': 'Partnerships & innovation',
