@@ -96,9 +96,11 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             <ArrowRight size={15} strokeWidth={2} />
           </span>
         </Link>
-        <div className="absolute top-3.5 left-3.5 flex flex-col gap-1.5 items-start pointer-events-none">
+        {/* Badge chips scale with the card: compact on the ~170px-wide mobile
+            grid cards (they were covering ~40% of the image), full size md+. */}
+        <div className="absolute top-2.5 left-2.5 md:top-3.5 md:left-3.5 flex flex-col gap-1 md:gap-1.5 items-start pointer-events-none">
           {badgeItems.map((b) => (
-            <span key={b.label} className={`font-display font-bold text-[11px] uppercase tracking-[0.08em] px-3 py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-ink' : 'bg-white/90 text-brand-forest'}`}>
+            <span key={b.label} className={`font-display font-bold text-[10px] md:text-[11px] leading-none md:leading-normal uppercase tracking-[0.03em] md:tracking-[0.08em] px-2 py-1 md:px-3 md:py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-ink' : 'bg-white/90 text-brand-forest'}`}>
               {b.label}
             </span>
           ))}
