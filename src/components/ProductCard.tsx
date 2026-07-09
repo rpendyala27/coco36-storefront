@@ -13,6 +13,15 @@ interface Props {
   index?: number;
 }
 
+// Phone-width cards get compact chip text (full labels return at md+).
+// First-word fallback keeps future admin-defined designations safe.
+const SHORT_BADGE_LABELS: Record<string, string> = {
+  'new-arrival': 'New',
+  'limited-edition': 'Limited',
+};
+const shortBadgeLabel = ({ slug, label }: { slug: string; label: string }) =>
+  SHORT_BADGE_LABELS[slug] ?? label.split(' ')[0];
+
 export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   const { addItem } = useCart();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -96,12 +105,15 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             <ArrowRight size={15} strokeWidth={2} />
           </span>
         </Link>
-        {/* Badge chips scale with the card: compact on the ~170px-wide mobile
-            grid cards (they were covering ~40% of the image), full size md+. */}
-        <div className="absolute top-2.5 left-2.5 md:top-3.5 md:left-3.5 flex flex-col gap-1 md:gap-1.5 items-start pointer-events-none">
+        {/* Badge chips scale with the card: on the ~170px-wide mobile grid
+            cards they render as ONE row of short labels ("New", "Limited");
+            md+ gets the stacked full labels. Glass treatment: translucent
+            fill + backdrop blur + hairline border + inner highlight. */}
+        <div className="absolute top-2.5 left-2.5 md:top-3.5 md:left-3.5 flex flex-row flex-wrap md:flex-col gap-1 md:gap-1.5 items-start pointer-events-none">
           {badgeItems.map((b) => (
-            <span key={b.label} className={`font-display font-bold text-[10px] md:text-[11px] leading-none md:leading-normal uppercase tracking-[0.03em] md:tracking-[0.08em] px-2 py-1 md:px-3 md:py-1.5 rounded-full backdrop-blur-sm ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold text-brand-ink' : 'bg-white/90 text-brand-forest'}`}>
-              {b.label}
+            <span key={b.label} className={`font-display font-bold text-[10px] md:text-[11px] leading-none md:leading-normal uppercase tracking-[0.03em] md:tracking-[0.08em] px-2 py-1 md:px-3 md:py-1.5 rounded-full border backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] ${b.slug === 'new-arrival' || b.label === 'New' ? 'bg-brand-gold/75 border-white/30 text-brand-ink' : 'bg-white/70 border-white/50 text-brand-forest'}`}>
+              <span className="md:hidden">{shortBadgeLabel(b)}</span>
+              <span className="hidden md:inline">{b.label}</span>
             </span>
           ))}
         </div>
