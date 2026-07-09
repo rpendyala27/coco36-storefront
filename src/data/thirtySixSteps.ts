@@ -1,4 +1,4 @@
-export interface Step {
+﻿export interface Step {
   number: number;
   title: string;
   description: string;
@@ -10,20 +10,14 @@ export interface Phase {
   title: string;
   subtitle: string;
   description: string;
-  image: string;
   steps: Step[];
 }
-
-// Decorative, neutral imagery (grayscaled in the UI) reused across phases.
-const IMG_FIELD = 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&q=80&w=1200';
-const IMG_LAND  = 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&q=80&w=1200';
-const IMG_STORE = 'https://images.unsplash.com/photo-1494412651409-8963ce7935a7?auto=format&fit=crop&q=80&w=1200';
 
 /**
  * COCO36's crop-to-craft framework, written generically so it holds across
  * every category (cocoa, flours, sugars, extracts, spices, mixes). It describes
- * the STANDARD each lot moves through — no fabricated metrics or crop-specific
- * claims. The crop-specific work lives inside steps 08 and 20.
+ * the STANDARD each lot moves through, with no fabricated metrics or
+ * crop-specific claims. The crop-specific work lives inside steps 08 and 20.
  */
 export const PHASES: Phase[] = [
   {
@@ -32,7 +26,6 @@ export const PHASES: Phase[] = [
     title: 'Origin & Sourcing',
     subtitle: 'Steps 01-06',
     description: 'Every ingredient starts with where and how it is grown. We source from named origins, not anonymous channels.',
-    image: IMG_FIELD,
     steps: [
       { number: 1, title: 'Origin selection',      description: 'We match each crop to a region and growing conditions suited to it.' },
       { number: 2, title: 'Grower partnership',    description: 'We source from named estates, farms and collectives, never anonymous brokers.' },
@@ -48,7 +41,6 @@ export const PHASES: Phase[] = [
     title: 'Harvest & Primary Processing',
     subtitle: 'Steps 07-12',
     description: 'Raw crop becomes a stable, graded ingredient, with the lot recorded from the very first step.',
-    image: IMG_LAND,
     steps: [
       { number: 7,  title: 'Cleaning & sorting',    description: 'Debris, foreign matter and under-grade material are removed.' },
       { number: 8,  title: 'Primary processing',    description: 'The crop-specific first step, whether fermenting, hulling, pressing or distilling.' },
@@ -64,7 +56,6 @@ export const PHASES: Phase[] = [
     title: 'Quality & Testing',
     subtitle: 'Steps 13-18',
     description: 'No lot moves forward on trust alone. Each is sampled, tasted and lab-checked against our standard.',
-    image: IMG_STORE,
     steps: [
       { number: 13, title: 'Representative sampling', description: 'Samples are drawn from each lot for assessment.' },
       { number: 14, title: 'Sensory evaluation',      description: 'Taste, aroma and appearance are checked against our standard.' },
@@ -80,7 +71,6 @@ export const PHASES: Phase[] = [
     title: 'Craft & Transformation',
     subtitle: 'Steps 19-24',
     description: 'The ingredient is brought to its finished form, with consistency held to a published specification.',
-    image: IMG_FIELD,
     steps: [
       { number: 19, title: 'Intake check',            description: 'The lot is re-verified as it enters the craft stage.' },
       { number: 20, title: 'Transformation',          description: 'The category-appropriate craft step, such as roasting, milling, refining or blending.' },
@@ -96,7 +86,6 @@ export const PHASES: Phase[] = [
     title: 'Documentation & Logistics',
     subtitle: 'Steps 25-30',
     description: 'Provenance is compiled and the ingredient is packed, labelled and stored to reach you intact.',
-    image: IMG_STORE,
     steps: [
       { number: 25, title: 'Provenance record',       description: 'The origin-to-craft history of the lot is compiled into one record.' },
       { number: 26, title: 'Certification mapping',    description: 'Applicable certifications and documents are attached to the lot.' },
@@ -112,7 +101,6 @@ export const PHASES: Phase[] = [
     title: 'Kitchen & Feedback',
     subtitle: 'Steps 31-36',
     description: 'The journey ends in your kitchen, and begins again with feedback and fair value flowing back to origin.',
-    image: IMG_LAND,
     steps: [
       { number: 31, title: 'Last-mile delivery',      description: 'The order reaches your door in protective packaging.' },
       { number: 32, title: 'Lot traceability',        description: 'Each order carries its lot reference so its journey can be looked up.' },
