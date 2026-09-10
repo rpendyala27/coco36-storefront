@@ -2,6 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /account
 Disallow: /checkout
-Disallow: /auth
+# /auth is intentionally crawlable so Google sees its `X-Robots-Tag: noindex`
+# (set in vercel.json) and drops it from the index. Blocking it here would only
+# hide the noindex and leave the stale URL indexed. Re-add a Disallow once the
+# URL is gone from search results if you want to save crawl budget.
 
 Sitemap: https://coco36.com/sitemap.xml

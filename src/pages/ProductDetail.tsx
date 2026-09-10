@@ -9,7 +9,7 @@ import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
-import { useJsonLd, setMetaDescription, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
+import { useJsonLd, useNoindex, setMetaDescription, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -59,6 +59,12 @@ export const ProductDetail = () => {
     () => (product ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : []),
     [product, products],
   );
+
+  // The "not found" branch below still returns HTTP 200 on a static host — a
+  // soft 404. Keep crawlers from indexing it (covers every orphaned /shop/:id,
+  // e.g. pre-UUID legacy slugs like /shop/ceylon-cinnamon), and drop the tag
+  // again the instant a real product resolves.
+  useNoindex(!loading && !product);
 
   if (loading && !product) {
     return (
