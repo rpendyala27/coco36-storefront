@@ -14,6 +14,12 @@
       ]
     },
     {
+      "source": "/auth",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Frame-Options",        "value": "SAMEORIGIN" },

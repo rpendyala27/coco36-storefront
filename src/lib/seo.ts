@@ -44,6 +44,27 @@ export function setMetaDescription(text: string): void {
   meta.content = text;
 }
 
+/**
+ * Applies <meta name="robots" content="noindex, follow"> while `active`, then
+ * removes it when `active` flips false or the caller unmounts.
+ *
+ * For SPA states that must not be indexed but can't emit an HTTP status from a
+ * static host — the PDP "product not found" soft-404 branch, and "coming soon"
+ * stubs. Googlebot renders JS, so a client-injected robots meta is honored (the
+ * same reason the JSON-LD above works). `follow` still lets crawlers walk the
+ * on-page links (e.g. "back to shop") out to real pages.
+ */
+export function useNoindex(active = true): void {
+  useEffect(() => {
+    if (!active) return;
+    const meta = document.createElement('meta');
+    meta.name = 'robots';
+    meta.content = 'noindex, follow';
+    document.head.appendChild(meta);
+    return () => { meta.remove(); };
+  }, [active]);
+}
+
 /** Markdown → plain text, roughly — good enough for meta/JSON-LD strings. */
 export function stripMarkdown(md: string): string {
   return md

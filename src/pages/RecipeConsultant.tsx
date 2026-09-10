@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, ChefHat, ArrowLeftRight, Scale, Wrench } from 'lucide-react';
+import { useNoindex } from '../lib/seo';
 
 /**
  * /recipes — COCO AI Recipe Consultant.
@@ -19,6 +20,11 @@ const CAPABILITIES = [
 ];
 
 export const RecipeConsultant = () => {
+  // "Coming soon" stub — no real recipe content yet, so keep it out of Google's
+  // index (it was being flagged as a soft 404). Remove this line once the real
+  // consultant ships and the page has substantive content.
+  useNoindex();
+
   return (
     <div className="bg-brand-paper min-h-screen">
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20">
