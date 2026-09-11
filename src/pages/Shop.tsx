@@ -357,9 +357,13 @@ export const Shop = () => {
                 <span className="sr-only">Phase {p.number} — {p.title}</span>
                 <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
-                <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
+                {/* Phase caption. Touch devices have no hover, so it's shown by
+                    default on mobile — anchored to the TOP of the panel, clear
+                    of the search bar that rides the strip's bottom on mobile.
+                    md+ moves it to the bottom and keeps the hover reveal. */}
+                <span className="block absolute inset-x-0 top-0 md:top-auto md:bottom-0 pt-2.5 pb-7 px-2 md:pt-10 md:pb-3 md:px-3 text-left opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-b md:bg-gradient-to-t from-brand-forest-deep/90 to-transparent">
                   <span className="block font-display font-bold text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
-                  <span className="block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                  <span className="block font-display font-bold text-[10px] md:text-xs uppercase tracking-[0.04em] md:tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
                 </span>
               </Link>
             ))}

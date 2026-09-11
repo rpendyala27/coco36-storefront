@@ -90,6 +90,11 @@ export const Navigation: React.FC = () => {
               <button onClick={() => setSearchOpen(true)} className="p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label="Search">
                 <Search size={18} strokeWidth={1.75} />
               </button>
+              {/* Shop is the primary browse link — surface it in the header at
+                  the tablet/small-laptop widths where the full center nav has
+                  collapsed into the hamburger (md→lg). Hidden at lg+, where the
+                  center nav already carries Shop, to avoid a duplicate. */}
+              <NavLink to="/shop" className="hidden md:inline-flex lg:hidden items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Shop</NavLink>
               <NavLink to="/quick-order" className="hidden lg:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Quick order</NavLink>
               <NavLink to="/trade" className="hidden md:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Trade</NavLink>
               {user ? (
