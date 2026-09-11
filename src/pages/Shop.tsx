@@ -324,8 +324,10 @@ export const Shop = () => {
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
       {/* ── Hero — 1A headline · 1B journey strip with the search bar riding it ──
-          (eyebrow + rotating audience line promoted to the global topbar) */}
-      <section className="bg-brand-surface border-b border-brand-line">
+          (eyebrow + rotating audience line promoted to the global topbar)
+          relative z-20: keeps the hero search's suggestion dropdown above the
+          ticker + trust band that follow it in the DOM. */}
+      <section className="relative z-20 bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-4 md:pt-10 pb-3 md:pb-8 min-w-0">
           {/* 1A — headline; keyword painted brown by the chocolate sweep */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
@@ -341,8 +343,10 @@ export const Shop = () => {
         </div>
 
         {/* 1B — full-bleed journey strip (EARTH-collage reference); the search
-            bar rides the centre where the tagline used to be. Labels on hover. */}
-        <motion.div {...heroEnter(0.08)} className="relative w-full">
+            bar rides the centre where the tagline used to be. Labels on hover.
+            z-10: lifts the strip (and the search dropdown inside it) above the
+            sibling ticker below. */}
+        <motion.div {...heroEnter(0.08)} className="relative w-full z-10">
           <div className="grid grid-cols-6 w-full h-[42vh] min-h-[300px] max-h-[520px]">
             {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
               <Link
@@ -357,13 +361,15 @@ export const Shop = () => {
                 <span className="sr-only">Phase {p.number} — {p.title}</span>
                 <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
-                {/* Phase caption. Touch devices have no hover, so it's shown by
-                    default on mobile — anchored to the TOP of the panel, clear
-                    of the search bar that rides the strip's bottom on mobile.
-                    md+ moves it to the bottom and keeps the hover reveal. */}
-                <span className="block absolute inset-x-0 top-0 md:top-auto md:bottom-0 pt-2.5 pb-7 px-2 md:pt-10 md:pb-3 md:px-3 text-left opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-b md:bg-gradient-to-t from-brand-forest-deep/90 to-transparent">
-                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
-                  <span className="block font-display font-bold text-[10px] md:text-xs uppercase tracking-[0.04em] md:tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                {/* Phase caption. Touch devices have no hover, so on mobile we
+                    show a lightweight cue — just the phase NUMERAL, top-left,
+                    clear of the search bar — instead of the full title, which
+                    wraps to several lines in the narrow columns and reads busy.
+                    md+ adds the title and moves the whole caption to the bottom
+                    on hover. */}
+                <span className="block absolute inset-x-0 top-0 md:top-auto md:bottom-0 pt-2 pb-6 px-2 md:pt-10 md:pb-3 md:px-3 text-left opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-b md:bg-gradient-to-t from-brand-forest-deep/75 md:from-brand-forest-deep/90 to-transparent">
+                  <span className="block font-display font-bold text-xs md:text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                  <span className="hidden md:block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
                 </span>
               </Link>
             ))}
