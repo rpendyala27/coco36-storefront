@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
-import type { Product } from '../types';
+import type { SearchProduct } from '../services/productService';
 import { imageUrl } from '../lib/img';
 import { productPath } from '../lib/productPath';
 import { RequestProduct } from './RequestProduct';
@@ -22,7 +22,7 @@ import { RequestProduct } from './RequestProduct';
 const SCROLL_FLAG = 'coco36.scrollCatalog';
 
 interface Props {
-  products:       Product[];
+  products:       SearchProduct[];
   variant?:       'hero' | 'overlay';
   initialValue?:  string;
   autoFocus?:     boolean;
@@ -72,7 +72,7 @@ export function SearchBox({
     onNavigated?.();
   };
 
-  const pickProduct = (p: Product) => {
+  const pickProduct = (p: SearchProduct) => {
     setOpen(false);
     navigate(productPath(p));
     onNavigated?.();

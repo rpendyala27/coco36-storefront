@@ -68,6 +68,25 @@ function mapSupabaseProduct(row: any): Product {
   };
 }
 
+/** Minimal product shape for the header search typeahead — no variants, images
+ *  (beyond the primary), tags or descriptions. Full Product is assignable to it. */
+export interface SearchProduct {
+  id:       string;
+  name:     string;
+  brand:    string;
+  origin:   string;
+  category: string;
+  image:    string;
+}
+
+// Lean select for search — drops variants, tags, descriptions and secondary
+// images, the bulk of the full catalogue payload that the search never reads.
+const SEARCH_SELECT = `
+  id, name, brand, origin_country, origin_region,
+  category:categories(name),
+  images:product_images(url, is_primary, sort_order)
+`;
+
 export const productService = {
   /**
    * Subscribes to active products with realtime updates.
@@ -129,6 +148,36 @@ export const productService = {
     }
 
     return (data ?? []).map(mapSupabaseProduct);
+  },
+
+  /** Lean one-shot fetch for the header search index (see SearchProduct). */
+  async listSearch(): Promise<SearchProduct[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select(SEARCH_SELECT)
+      .eq('status', 'active')
+      .order('name');
+
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('[productService.listSearch]', error);
+      return [];
+    }
+
+    return (data ?? []).map((row: any) => {
+      const images = (row.images ?? []).slice().sort(
+        (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+      );
+      const primary = images.find((i: any) => i.is_primary) ?? images[0];
+      return {
+        id:       row.id,
+        name:     row.name,
+        brand:    row.brand ?? '',
+        origin:   [row.origin_country, row.origin_region].filter(Boolean).join(' · '),
+        category: row.category?.name ?? '',
+        image:    primary?.url ?? '',
+      };
+    });
   },
 
   /** Lookup a single product by id (UUID). */

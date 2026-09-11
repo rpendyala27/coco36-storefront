@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { productService } from '../services/productService';
+import { productService, type SearchProduct } from '../services/productService';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { slugify, idFromParam } from '../lib/productPath';
@@ -85,4 +85,21 @@ export function useProduct(id: string | undefined): { product: Product | undefin
     : undefined;
 
   return { product, loading };
+}
+
+/**
+ * Lightweight product index for the header search typeahead. A one-shot lean
+ * fetch (no variants / tags / secondary images) so the global Navigation — which
+ * mounts on every route — no longer pulls the entire catalogue on pages that
+ * only host the search box (e.g. /trade). Not realtime; a slightly stale search
+ * index is fine.
+ */
+export function useSearchIndex(): SearchProduct[] {
+  const [items, setItems] = useState<SearchProduct[]>([]);
+  useEffect(() => {
+    let active = true;
+    productService.listSearch().then((list) => { if (active) setItems(list); });
+    return () => { active = false; };
+  }, []);
+  return items;
 }

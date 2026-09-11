@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
-import { useProducts } from '../hooks/useProducts';
+import { useSearchIndex } from '../hooks/useProducts';
 import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
 
@@ -23,7 +23,7 @@ const AUDIENCES = ['chocolatiers', 'pâtissiers', 'bakers', 'cafés', 'home cook
 export const Navigation: React.FC = () => {
   const { user } = useAuth();
   const { itemCount, openCart } = useCart();
-  const { products } = useProducts();
+  const products = useSearchIndex();
   const cfg = useStoreConfig();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
