@@ -44,7 +44,7 @@ export function SearchBox({
     const t = q.trim().toLowerCase();
     if (!t) return [];
     return products
-      .filter((p) => `${p.name} ${p.brand} ${p.origin} ${p.category}`.toLowerCase().includes(t))
+      .filter((p) => `${p.name} ${p.brand} ${p.origin} ${p.categoryText || p.category}`.toLowerCase().includes(t))
       .slice(0, 6);
   }, [q, products]);
 
