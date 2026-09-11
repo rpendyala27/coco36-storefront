@@ -4,6 +4,7 @@ import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle, Check } from 'l
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
+import { productPath } from '../lib/productPath';
 import { shippingFor, freeShippingRemaining, freeShippingProgress } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
 
@@ -98,7 +99,7 @@ export const CartDrawer: React.FC = () => {
                       className="flex gap-4 p-3 bg-white rounded-2xl shadow-sm"
                     >
                       <Link
-                        to={`/shop/${item.productId}`}
+                        to={productPath({ id: item.productId, name: item.name })}
                         onClick={closeCart}
                         className="size-20 shrink-0 rounded-xl bg-brand-surface overflow-hidden"
                       >
@@ -108,7 +109,7 @@ export const CartDrawer: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between gap-2 mb-1">
                           <Link
-                            to={`/shop/${item.productId}`}
+                            to={productPath({ id: item.productId, name: item.name })}
                             onClick={closeCart}
                             className="font-semibold text-sm text-brand-ink hover:text-brand-leaf transition-colors leading-tight line-clamp-2"
                           >

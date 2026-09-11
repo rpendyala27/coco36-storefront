@@ -6,6 +6,7 @@ import { Product, ProductSize } from '../types';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
+import { productPath } from '../lib/productPath';
 import { CertStamp } from './CertStamp';
 
 interface Props {
@@ -83,7 +84,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
           through) so the link's accessible text is the product name from the
           img alt — not "Bestseller"/"New Arrival". */}
       <div className="relative">
-        <Link to={`/shop/${product.id}`} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
+        <Link to={productPath(product)} className="block relative overflow-hidden aspect-[4/3] bg-brand-surface">
           {product.image ? (
             <img
               src={imageUrl(product.image, 600)}
@@ -125,7 +126,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
       <div className="p-3.5 md:p-5 flex flex-col flex-1 relative">
         <span className="eyebrow leading-tight mb-2">{product.origin || product.brand}</span>
 
-        <Link to={`/shop/${product.id}`} className="font-display font-bold text-[18px] md:text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-forest hover:text-brand-leaf transition-colors">
+        <Link to={productPath(product)} className="font-display font-bold text-[18px] md:text-[22px] leading-[1.15] tracking-[-0.005em] text-brand-forest hover:text-brand-leaf transition-colors">
           {product.name}
         </Link>
 
@@ -161,7 +162,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
                 <span className="text-sm font-semibold text-brand-forest tabular-nums">{formatMoney(s.priceInPaise)}</span>
               </button>
             ))}
-            <Link to={`/shop/${product.id}`} className="block text-center text-[12px] text-brand-leaf py-1.5 mt-1 border-t border-brand-line">View full details →</Link>
+            <Link to={productPath(product)} className="block text-center text-[12px] text-brand-leaf py-1.5 mt-1 border-t border-brand-line">View full details →</Link>
           </div>
         )}
       </div>

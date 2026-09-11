@@ -272,19 +272,23 @@ export const Shop = () => {
   // strip's own height changes, so the collapse can't retrigger itself.
   const stripSentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
+  // Collapse the tall image-tile rail to a slim pill bar once it freezes under
+  // the header, so it stops holding ~40% of the viewport while the grid scrolls.
+  // Driven by a scroll listener reading the sentinel's live position — a plain,
+  // deterministic check (the previous IntersectionObserver silently never
+  // re-collapsed). The sentinel sits ABOVE the rail, so collapsing the rail
+  // can't move it and retrigger the check. 96px ≈ just below the 80px header.
   useEffect(() => {
     const el = stripSentinelRef.current;
     if (!el) return;
-    // Collapse to pills once the sentinel's top passes the 96px line (just below
-    // the header). 96 (not 80) so a redirect that lands the grid right under the
-    // pill bar still reads as stuck — no flicker back to tiles. A sentinel below
-    // the fold has top >> 96, so short viewports still open as tiles.
-    const io = new IntersectionObserver(
-      ([e]) => setStuck(e.boundingClientRect.top < 96),
-      { rootMargin: '-96px 0px 0px 0px', threshold: 0 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    const update = () => setStuck(el.getBoundingClientRect().top < 96);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
   }, [showTiles]);
 
   const reduceMotion = useReducedMotion();

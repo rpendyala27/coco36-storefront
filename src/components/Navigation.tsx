@@ -90,12 +90,12 @@ export const Navigation: React.FC = () => {
               <button onClick={() => setSearchOpen(true)} className="p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label="Search">
                 <Search size={18} strokeWidth={1.75} />
               </button>
-              <NavLink to="/quick-order" className="hidden lg:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Quick order</NavLink>
-              <NavLink to="/trade" className="hidden md:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Trade</NavLink>
+              <NavLink to="/quick-order" className="hidden lg:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Quick order</NavLink>
+              <NavLink to="/trade" className="hidden md:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Trade</NavLink>
               {user ? (
                 <ProfileDropdown />
               ) : (
-                <NavLink to="/auth" className="hidden md:inline text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Account</NavLink>
+                <NavLink to="/auth" className="hidden md:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Account</NavLink>
               )}
 
               {/* Cart */}

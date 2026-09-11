@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { productService } from '../services/productService';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
+import { slugify, idFromParam } from '../lib/productPath';
 
 interface UseProductsResult {
   products: Product[];
@@ -77,17 +78,11 @@ export function useProducts(): UseProductsResult {
 export function useProduct(id: string | undefined): { product: Product | undefined; loading: boolean } {
   const { products, loading } = useProducts();
 
+  // `id` may be a bare UUID (legacy links), a `<slug>-<uuid>` combo (current),
+  // or a legacy bare name-slug — resolve all three.
   const product = id
-    ? products.find((p) => p.id === id) ?? products.find((p) => slugify(p.name) === id)
+    ? products.find((p) => p.id === idFromParam(id)) ?? products.find((p) => slugify(p.name) === id)
     : undefined;
 
   return { product, loading };
-}
-
-/** Lowercase, hyphenated, alphanumeric-only — matches the static catalogue slug style. */
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')   // any non-alphanum → hyphen
-    .replace(/^-+|-+$/g, '');      // trim leading/trailing hyphens
 }

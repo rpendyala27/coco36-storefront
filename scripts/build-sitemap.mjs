@@ -14,6 +14,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(__dirname, '..', 'public', 'sitemap.xml');
 const SITE = 'https://coco36.com';
 
+// Mirrors src/lib/productPath.ts — product URLs are `/shop/<name-slug>-<uuid>`.
+const slugify = (name) => (name || '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+const productPath = (p) => {
+  const slug = slugify(p.name);
+  return slug ? `/shop/${slug}-${p.id}` : `/shop/${p.id}`;
+};
+
 const STATIC_PATHS = [
   { path: '/',              changefreq: 'weekly',  priority: 1.0 },
   { path: '/shop',          changefreq: 'daily',   priority: 0.9 },
@@ -36,7 +46,7 @@ if (url && key) {
   const supabase = createClient(url, key, { auth: { persistSession: false } });
   const { data, error } = await supabase
     .from('products')
-    .select('id, updated_at')
+    .select('id, name, updated_at')
     .eq('status', 'active')
     .is('deleted_at', null);
   if (error) {
@@ -50,7 +60,7 @@ const entries = [
   ...STATIC_PATHS.map(p => `  <url><loc>${SITE}${p.path}</loc><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`),
   ...products.map(p => {
     const lastmod = p.updated_at ? new Date(p.updated_at).toISOString().slice(0, 10) : null;
-    return `  <url><loc>${SITE}/shop/${p.id}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}<changefreq>weekly</changefreq><priority>0.7</priority></url>`;
+    return `  <url><loc>${SITE}${productPath(p)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}<changefreq>weekly</changefreq><priority>0.7</priority></url>`;
   }),
 ];
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import type { Product } from '../types';
 import { imageUrl } from '../lib/img';
+import { productPath } from '../lib/productPath';
 import { RequestProduct } from './RequestProduct';
 
 /**
@@ -73,7 +74,7 @@ export function SearchBox({
 
   const pickProduct = (p: Product) => {
     setOpen(false);
-    navigate(`/shop/${p.id}`);
+    navigate(productPath(p));
     onNavigated?.();
   };
 
