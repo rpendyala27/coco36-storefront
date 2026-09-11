@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
-import type { Product } from '../types';
+import type { SearchProduct } from '../services/productService';
 import { imageUrl } from '../lib/img';
+import { productPath } from '../lib/productPath';
 import { RequestProduct } from './RequestProduct';
 
 /**
@@ -21,7 +22,7 @@ import { RequestProduct } from './RequestProduct';
 const SCROLL_FLAG = 'coco36.scrollCatalog';
 
 interface Props {
-  products:       Product[];
+  products:       SearchProduct[];
   variant?:       'hero' | 'overlay';
   initialValue?:  string;
   autoFocus?:     boolean;
@@ -43,7 +44,7 @@ export function SearchBox({
     const t = q.trim().toLowerCase();
     if (!t) return [];
     return products
-      .filter((p) => `${p.name} ${p.brand} ${p.origin} ${p.category}`.toLowerCase().includes(t))
+      .filter((p) => `${p.name} ${p.brand} ${p.origin} ${p.categoryText || p.category}`.toLowerCase().includes(t))
       .slice(0, 6);
   }, [q, products]);
 
@@ -71,9 +72,9 @@ export function SearchBox({
     onNavigated?.();
   };
 
-  const pickProduct = (p: Product) => {
+  const pickProduct = (p: SearchProduct) => {
     setOpen(false);
-    navigate(`/shop/${p.id}`);
+    navigate(productPath(p));
     onNavigated?.();
   };
 

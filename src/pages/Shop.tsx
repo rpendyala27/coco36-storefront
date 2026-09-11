@@ -272,19 +272,23 @@ export const Shop = () => {
   // strip's own height changes, so the collapse can't retrigger itself.
   const stripSentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
+  // Collapse the tall image-tile rail to a slim pill bar once it freezes under
+  // the header, so it stops holding ~40% of the viewport while the grid scrolls.
+  // Driven by a scroll listener reading the sentinel's live position — a plain,
+  // deterministic check (the previous IntersectionObserver silently never
+  // re-collapsed). The sentinel sits ABOVE the rail, so collapsing the rail
+  // can't move it and retrigger the check. 96px ≈ just below the 80px header.
   useEffect(() => {
     const el = stripSentinelRef.current;
     if (!el) return;
-    // Collapse to pills once the sentinel's top passes the 96px line (just below
-    // the header). 96 (not 80) so a redirect that lands the grid right under the
-    // pill bar still reads as stuck — no flicker back to tiles. A sentinel below
-    // the fold has top >> 96, so short viewports still open as tiles.
-    const io = new IntersectionObserver(
-      ([e]) => setStuck(e.boundingClientRect.top < 96),
-      { rootMargin: '-96px 0px 0px 0px', threshold: 0 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
+    const update = () => setStuck(el.getBoundingClientRect().top < 96);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
   }, [showTiles]);
 
   const reduceMotion = useReducedMotion();
@@ -320,8 +324,10 @@ export const Shop = () => {
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">
       {/* ── Hero — 1A headline · 1B journey strip with the search bar riding it ──
-          (eyebrow + rotating audience line promoted to the global topbar) */}
-      <section className="bg-brand-surface border-b border-brand-line">
+          (eyebrow + rotating audience line promoted to the global topbar)
+          relative z-20: keeps the hero search's suggestion dropdown above the
+          ticker + trust band that follow it in the DOM. */}
+      <section className="relative z-20 bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20 pt-4 md:pt-10 pb-3 md:pb-8 min-w-0">
           {/* 1A — headline; keyword painted brown by the chocolate sweep */}
           <motion.div {...heroEnter(0)} className="min-w-0 max-w-3xl mx-auto text-center">
@@ -337,8 +343,10 @@ export const Shop = () => {
         </div>
 
         {/* 1B — full-bleed journey strip (EARTH-collage reference); the search
-            bar rides the centre where the tagline used to be. Labels on hover. */}
-        <motion.div {...heroEnter(0.08)} className="relative w-full">
+            bar rides the centre where the tagline used to be. Labels on hover.
+            z-10: lifts the strip (and the search dropdown inside it) above the
+            sibling ticker below. */}
+        <motion.div {...heroEnter(0.08)} className="relative w-full z-10">
           <div className="grid grid-cols-6 w-full h-[42vh] min-h-[300px] max-h-[520px]">
             {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
               <Link
@@ -353,6 +361,10 @@ export const Shop = () => {
                 <span className="sr-only">Phase {p.number} — {p.title}</span>
                 <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
+                {/* Phase caption — desktop/laptop only, revealed on cursor
+                    hover (number + phase name). Touch devices show a clean image
+                    strip with no caption; the sr-only link text above still
+                    names each phase for screen readers and crawlers. */}
                 <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
                   <span className="block font-display font-bold text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
                   <span className="block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>

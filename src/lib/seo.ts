@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Product } from '../types';
 import { imageUrl } from './img';
+import { productPath } from './productPath';
 
 /**
  * Structured-data + meta helpers for the SPA.
@@ -77,9 +78,20 @@ export function stripMarkdown(md: string): string {
 
 const paiseToRupees = (paise: number) => (paise / 100).toFixed(2);
 
+/** Upsert <link rel="canonical"> to an absolute URL for the given path. */
+export function setCanonical(path: string): void {
+  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'canonical';
+    document.head.appendChild(link);
+  }
+  link.href = ORIGIN + path;
+}
+
 /** schema.org Product with Offer/AggregateOffer built from the variants. */
 export function productJsonLd(p: Product): object {
-  const url = `${ORIGIN}/shop/${p.id}`;
+  const url = `${ORIGIN}${productPath(p)}`;
   const inStock = p.sizes.some((s) => s.inStock);
   const availability = inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
   const prices = p.sizes.map((s) => s.priceInPaise);
@@ -125,7 +137,7 @@ export function productBreadcrumbJsonLd(p: Product): object {
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Shop', item: `${ORIGIN}/shop` },
       { '@type': 'ListItem', position: 2, name: p.category, item: `${ORIGIN}/shop?category=${encodeURIComponent(p.category)}` },
-      { '@type': 'ListItem', position: 3, name: p.name, item: `${ORIGIN}/shop/${p.id}` },
+      { '@type': 'ListItem', position: 3, name: p.name, item: `${ORIGIN}${productPath(p)}` },
     ],
   };
 }

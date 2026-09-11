@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import type * as React from 'react';
 import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -9,7 +9,8 @@ import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
-import { useJsonLd, useNoindex, setMetaDescription, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
+import { useJsonLd, useNoindex, setMetaDescription, setCanonical, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
+import { productPath } from '../lib/productPath';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -26,6 +27,7 @@ export const ProductDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
   const [open, setOpen] = useState({ description: true, details: false, certs: false, dietary: false });
+  const primaryAddRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (product && !product.sizes.some((s) => s.id === selectedSizeId)) {
@@ -33,15 +35,26 @@ export const ProductDetail = () => {
     }
   }, [product, selectedSizeId]);
 
+  // Reveal the sticky buy-bar only once the primary Add-to-bag button has
+  // scrolled up out of view (behind the fixed 80px header) — never while it's
+  // still on screen, so the two identical CTAs never stack.
   useEffect(() => {
-    const onScroll = () => setShowSticky(window.scrollY > 520);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    const el = primaryAddRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setShowSticky(!e.isIntersecting && e.boundingClientRect.top < 80),
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [product]);
 
   useEffect(() => {
     if (!product) return;
     document.title = `${product.name} · COCO36`;
+    // Canonicalize to the readable slug URL so the UUID and slug forms don't
+    // compete as duplicate content.
+    setCanonical(productPath(product));
     // Per-product meta description: the description text reads better in a
     // SERP snippet than the terse tag line, so prefer it when present.
     const text = stripMarkdown(product.description || product.tag || '');
@@ -203,7 +216,7 @@ export const ProductDetail = () => {
               <span className="min-w-8 text-center font-semibold tabular-nums">{quantity}</span>
               <button onClick={() => setQuantity((q) => q + 1)} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
             </div>
-            <button onClick={handleAddToCart} disabled={!selectedSize?.inStock} className="btn-primary flex-1 min-w-[200px] !py-3.5 disabled:opacity-30 disabled:cursor-not-allowed">
+            <button ref={primaryAddRef} onClick={handleAddToCart} disabled={!selectedSize?.inStock} className="btn-primary flex-1 min-w-[200px] !py-3.5 disabled:opacity-30 disabled:cursor-not-allowed">
               <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
             </button>
             <button onClick={handleBuyNow} disabled={!selectedSize?.inStock} className="btn-ghost !py-3.5 px-7 disabled:opacity-30">Buy now</button>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { productService } from '../services/productService';
+import { productService, type SearchProduct } from '../services/productService';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
+import { slugify, idFromParam } from '../lib/productPath';
 
 interface UseProductsResult {
   products: Product[];
@@ -77,17 +78,28 @@ export function useProducts(): UseProductsResult {
 export function useProduct(id: string | undefined): { product: Product | undefined; loading: boolean } {
   const { products, loading } = useProducts();
 
+  // `id` may be a bare UUID (legacy links), a `<slug>-<uuid>` combo (current),
+  // or a legacy bare name-slug — resolve all three.
   const product = id
-    ? products.find((p) => p.id === id) ?? products.find((p) => slugify(p.name) === id)
+    ? products.find((p) => p.id === idFromParam(id)) ?? products.find((p) => slugify(p.name) === id)
     : undefined;
 
   return { product, loading };
 }
 
-/** Lowercase, hyphenated, alphanumeric-only — matches the static catalogue slug style. */
-function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')   // any non-alphanum → hyphen
-    .replace(/^-+|-+$/g, '');      // trim leading/trailing hyphens
+/**
+ * Lightweight product index for the header search typeahead. A one-shot lean
+ * fetch (no variants / tags / secondary images) so the global Navigation — which
+ * mounts on every route — no longer pulls the entire catalogue on pages that
+ * only host the search box (e.g. /trade). Not realtime; a slightly stale search
+ * index is fine.
+ */
+export function useSearchIndex(): SearchProduct[] {
+  const [items, setItems] = useState<SearchProduct[]>([]);
+  useEffect(() => {
+    let active = true;
+    productService.listSearch().then((list) => { if (active) setItems(list); });
+    return () => { active = false; };
+  }, []);
+  return items;
 }
