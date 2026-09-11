@@ -361,15 +361,13 @@ export const Shop = () => {
                 <span className="sr-only">Phase {p.number} — {p.title}</span>
                 <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
                 <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
-                {/* Phase caption. Touch devices have no hover, so on mobile we
-                    show a lightweight cue — just the phase NUMERAL, top-left,
-                    clear of the search bar — instead of the full title, which
-                    wraps to several lines in the narrow columns and reads busy.
-                    md+ adds the title and moves the whole caption to the bottom
-                    on hover. */}
-                <span className="block absolute inset-x-0 top-0 md:top-auto md:bottom-0 pt-2 pb-6 px-2 md:pt-10 md:pb-3 md:px-3 text-left opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-b md:bg-gradient-to-t from-brand-forest-deep/75 md:from-brand-forest-deep/90 to-transparent">
-                  <span className="block font-display font-bold text-xs md:text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
-                  <span className="hidden md:block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
+                {/* Phase caption — desktop/laptop only, revealed on cursor
+                    hover (number + phase name). Touch devices show a clean image
+                    strip with no caption; the sr-only link text above still
+                    names each phase for screen readers and crawlers. */}
+                <span className="hidden md:block absolute inset-x-0 bottom-0 pt-10 pb-3 px-3 text-left opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-brand-forest-deep/85 to-transparent">
+                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.16em] text-brand-gold-pale">{p.number}</span>
+                  <span className="block font-display font-bold text-xs uppercase tracking-[0.06em] text-white leading-tight mt-0.5">{p.title}</span>
                 </span>
               </Link>
             ))}
