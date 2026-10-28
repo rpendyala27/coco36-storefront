@@ -47,6 +47,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   }, [pickerOpen]);
 
   const inStockSizes  = product.sizes.filter((s) => s.inStock);
+  const isOutOfStock  = product.sizes.length > 0 && inStockSizes.length === 0;
   const minPricePaise = product.sizes.length ? Math.min(...product.sizes.map((s) => s.priceInPaise)) : 0;
   const hasOptions    = product.sizes.length > 1;
   const unitLabel     = product.sizes.length === 1 ? product.sizes[0].label : '';
@@ -68,6 +69,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   };
   const onAddClick = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
+    if (isOutOfStock) return;
     if (hasOptions) setPickerOpen((o) => !o);
     else if (inStockSizes[0]) add(inStockSizes[0]);
   };
@@ -105,6 +107,18 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
           <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-forest flex items-center justify-center">
             <ArrowRight size={15} strokeWidth={2} />
           </span>
+          {/* Soft overlay + corner pill when every size is out of stock —
+              matches the PDP "Out of stock" treatment (forest pill, white
+              text) and dims the image so the card reads as unavailable
+              without hiding the product. */}
+          {isOutOfStock && (
+            <>
+              <div aria-hidden className="absolute inset-0 bg-white/55" />
+              <span className="absolute top-3.5 right-3.5 font-display font-bold text-[10px] md:text-[11px] uppercase tracking-[0.1em] px-3 py-1.5 rounded-full bg-brand-forest text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
+                Out of stock
+              </span>
+            </>
+          )}
         </Link>
         {/* Badge chips scale with the card: on the ~170px-wide mobile grid
             cards they render as ONE row of short labels ("New", "Limited");
@@ -145,10 +159,18 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             {unitLabel && <span className="block truncate text-xs text-brand-muted">/ {unitLabel}</span>}
             {hasOptions && <div className="text-xs text-brand-muted mt-1">From</div>}
           </div>
-          <button ref={addBtnRef} onClick={onAddClick} className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap">
-            {added
-              ? <><Check size={14} strokeWidth={3} /> Added</>
-              : <><Plus size={14} strokeWidth={2.5} /> {hasOptions ? 'Add' : <>Add<span className="hidden sm:inline"> to bag</span></>}</>}
+          <button
+            ref={addBtnRef}
+            onClick={onAddClick}
+            disabled={isOutOfStock}
+            aria-disabled={isOutOfStock}
+            className="btn-primary !px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isOutOfStock
+              ? 'Sold out'
+              : added
+                ? <><Check size={14} strokeWidth={3} /> Added</>
+                : <><Plus size={14} strokeWidth={2.5} /> {hasOptions ? 'Add' : <>Add<span className="hidden sm:inline"> to bag</span></>}</>}
           </button>
         </div>
 
