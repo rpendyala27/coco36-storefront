@@ -55,9 +55,14 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   // Badges = designation-kind tags (data-driven); fall back to the static
   // `badges` strings for the warm-start catalogue. Chips = cert + dietary tags.
   const designationTags = (product.tags ?? []).filter((t) => t.kind === 'designation');
-  const badgeItems = designationTags.length
-    ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
-    : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
+  // When a product is sold out the OOS pill owns the top of the image —
+  // don't also render Bestseller / New / Limited chips there (they clash
+  // visually with the pill AND claim status the product can't fulfil).
+  const badgeItems = isOutOfStock
+    ? []
+    : designationTags.length
+      ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
+      : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
   const certTags = (product.tags ?? []).filter((t) => t.kind === 'certification' || t.kind === 'dietary').slice(0, 5);
 
   const flash = () => { setAdded(true); setTimeout(() => setAdded(false), 1200); };
