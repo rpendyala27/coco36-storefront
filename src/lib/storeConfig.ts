@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_URL } from './supabase';
+import { DEFAULT_POLICY, type StorePolicy } from '../seo/site';
 
 /**
  * Store policy the storefront displays — fetched from the admin so the
@@ -7,24 +8,14 @@ import { API_URL } from './supabase';
  * what the server actually charges (`/api/orders/create` reads the same
  * `settings`). All money in paise.
  */
-export interface StoreConfig {
-  freeShippingPaise: number;
-  flatShippingPaise: number;
-  codSurchargePaise: number;
-  returnWindowDays:  number;
-}
+export type StoreConfig = StorePolicy;
 
 /**
  * Fallback = the live seeded `settings` values, so the storefront matches the
  * server even before the config fetch resolves or if it's offline.
  * Keep in sync with the admin `settings` defaults.
  */
-export const DEFAULT_CONFIG: StoreConfig = {
-  freeShippingPaise: 120000, // ₹1,200 (matches settings.shipping.free_threshold_paise)
-  flatShippingPaise: 9900,   // ₹99
-  codSurchargePaise: 5000,   // ₹50
-  returnWindowDays:  7,
-};
+export const DEFAULT_CONFIG: StoreConfig = DEFAULT_POLICY; // ₹1,200 free / ₹99 flat / ₹50 COD / 7 days
 
 let cache: StoreConfig = DEFAULT_CONFIG;
 let inflight: Promise<StoreConfig> | null = null;

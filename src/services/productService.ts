@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Product, ProductTag } from '../types';
+import type { Product } from '../types';
+import { PRODUCT_SELECT, mapSupabaseProduct } from './productMapper';
 
 /**
  * Supabase product reader for the storefront.
@@ -14,59 +15,6 @@ import { Product, ProductTag } from '../types';
  *
  * Pricing is paise end-to-end — no conversion happens here.
  */
-
-const PRODUCT_SELECT = `
-  id, sku, name, brand, origin_country, origin_region, tag_line, description_md,
-  variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
-  images:product_images(id, url, is_primary, sort_order, alt_text),
-  category:categories(id, name, slug, parent_id),
-  product_tags(tag:tags(slug, label, kind))
-`;
-
-/** Supabase row → Vite Product shape. */
-function mapSupabaseProduct(row: any): Product {
-  const images = (row.images ?? []).slice().sort(
-    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  );
-  const primary = images.find((i: any) => i.is_primary) ?? images[0];
-  const hover   = images.find((i: any) => !i.is_primary) ?? images[1];
-
-  const variants = (row.variants ?? []).slice().sort(
-    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
-  );
-
-  // product_tags → { slug, label, kind }[]. Designation tags surface as badges.
-  const tags: ProductTag[] = (row.product_tags ?? [])
-    .map((pt: any) => pt.tag)
-    .filter(Boolean)
-    .map((t: any) => ({ slug: t.slug as string, label: t.label as string, kind: (t.kind ?? 'attribute') }));
-  const badges = tags.filter((t) => t.kind === 'designation').map((t) => t.label);
-
-  return {
-    id:       row.id,
-    sku:      row.sku ?? '',
-    name:     row.name,
-    brand:    row.brand ?? '',
-    origin:   [row.origin_country, row.origin_region].filter(Boolean).join(' · '),
-    tag:      row.tag_line ?? '',
-    image:    primary?.url ?? '',
-    imageHover: hover?.url,
-    category:     row.category?.name ?? 'Uncategorized',
-    categoryId:   row.category?.id,
-    categorySlug: row.category?.slug,
-    description: row.description_md ?? '',
-    badges,
-    tags,
-    sizes: variants.map((v: any) => ({
-      id:           v.id,                  // = variant_id, used at checkout
-      label:        v.size_label,
-      priceInPaise: v.selling_price_paise, // canonical money type
-      inStock:      v.in_stock ?? true,
-    })),
-    rating:      undefined,
-    reviewCount: undefined,
-  };
-}
 
 /** Minimal product shape for the header search typeahead — no variants, images
  *  (beyond the primary), tags or descriptions. Full Product is assignable to it. */
@@ -152,7 +100,9 @@ export const productService = {
       .from('products')
       .select(PRODUCT_SELECT)
       .eq('status', 'active')
-      .order('name');
+      .is('deleted_at', null)
+      .order('name')
+      .order('id');
 
     if (error) {
       // eslint-disable-next-line no-console
@@ -169,7 +119,7 @@ export const productService = {
   async listSearch(): Promise<SearchProduct[]> {
     if (!isSupabaseConfigured) return [];
     const [prodRes, catRes] = await Promise.all([
-      supabase.from('products').select(SEARCH_SELECT).eq('status', 'active').order('name'),
+      supabase.from('products').select(SEARCH_SELECT).eq('status', 'active').is('deleted_at', null).order('name').order('id'),
       supabase.from('categories').select('id, name, parent_id').is('deleted_at', null),
     ]);
 
@@ -221,6 +171,7 @@ export const productService = {
       .select(PRODUCT_SELECT)
       .eq('id', id)
       .eq('status', 'active')
+      .is('deleted_at', null)
       .maybeSingle();
 
     if (error || !data) return null;
