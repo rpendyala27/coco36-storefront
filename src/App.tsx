@@ -5,6 +5,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
 import { PincodePopup } from './components/PincodePopup';
 import { setMetaDescription } from './lib/seo';
+import { trackPageView } from './lib/analytics';
 // The Shop catalog IS the landing page (catalog-first). Eagerly imported
 // as the above-the-fold experience. The old marketing Home is retired.
 import { Shop } from './pages/Shop';
@@ -48,7 +49,8 @@ const CANONICAL_ORIGIN = 'https://coco36.com';
 const DEFAULT_DESCRIPTION = 'Cocoa, flours, vanilla, and rare botanicals — sourced direct from heritage farms across 12 countries. 36-step traceability, fair trade, free shipping across India.';
 
 function ScrollToTop() {
-  const { pathname, hash } = useLocation();
+  const { pathname, hash, search } = useLocation();
+
   useEffect(() => {
     // Honor a #hash anchor (e.g. /36-steps#quality from the homepage journey
     // tiles). Routes are lazy-loaded, so poll briefly for the target to exist,
@@ -93,6 +95,16 @@ function ScrollToTop() {
     }
     link.href = CANONICAL_ORIGIN + canonicalPath;
   }, [pathname, hash]);
+
+  // GA pageview per client-side navigation. Declared after the effect above so
+  // it runs after it, with document.title already current. Its deps are
+  // deliberately different: a query change such as /shop?category=… is a new
+  // pageview for analytics, but must NOT re-trigger the scroll-to-top that
+  // would yank the page out from under someone changing a filter.
+  useEffect(() => {
+    trackPageView(pathname + search);
+  }, [pathname, search]);
+
   return null;
 }
 
