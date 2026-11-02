@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { productService, type SearchProduct } from '../services/productService';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
-import { slugify, idFromParam } from '../lib/productPath';
+import { resolveProductParam, type ProductResolution } from '../lib/productPath';
 
 interface UseProductsResult {
   products: Product[];
@@ -66,25 +66,26 @@ export function useProducts(): UseProductsResult {
 }
 
 /**
- * Single-product lookup. Useful in ProductDetail without re-subscribing
- * to the full collection.
+ * Single-product lookup for the PDP, without re-subscribing to the collection.
  *
- * Matches:
- *   1. Direct UUID/id match — primary path for Supabase products.
- *   2. Slug fallback — turns "india-trinitario-couverture" into a name
- *      match so legacy bookmarks/URLs from the static catalogue era keep
- *      resolving without a DB migration.
+ * Resolves the `/shop/:id` route param exactly as the server does
+ * (lib/productPath.resolveProductParam): a clean slug is `found`; a legacy
+ * `<slug>-<uuid>`, bare UUID or static-catalogue slug is a `redirect` to the
+ * clean URL; anything else is `gone` or `not-found`. `resolution` stays
+ * undefined until the catalogue has loaded.
  */
-export function useProduct(id: string | undefined): { product: Product | undefined; loading: boolean } {
+export function useProduct(id: string | undefined): {
+  product: Product | undefined;
+  resolution: ProductResolution<Product> | undefined;
+  loading: boolean;
+} {
   const { products, loading } = useProducts();
-
-  // `id` may be a bare UUID (legacy links), a `<slug>-<uuid>` combo (current),
-  // or a legacy bare name-slug — resolve all three.
-  const product = id
-    ? products.find((p) => p.id === idFromParam(id)) ?? products.find((p) => slugify(p.name) === id)
-    : undefined;
-
-  return { product, loading };
+  const resolution = useMemo(
+    () => (id && !loading ? resolveProductParam(id, products) : undefined),
+    [id, products, loading],
+  );
+  const product = resolution && resolution.kind === 'found' ? resolution.product : undefined;
+  return { product, resolution, loading };
 }
 
 /**
