@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product, ProductTag } from '../types';
 
 /**
@@ -98,6 +98,14 @@ export const productService = {
    * so `useProducts` works unchanged.
    */
   subscribe(callback: (products: Product[]) => void): () => void {
+    // No credentials: report "empty catalogue" once so useProducts drops to the
+    // static demo data, and skip the realtime channel — an unconfigured client
+    // would otherwise sit in a websocket reconnect loop against a dead host.
+    if (!isSupabaseConfigured) {
+      callback([]);
+      return () => {};
+    }
+
     // Initial fetch
     void (async () => {
       const list = await productService.list();
@@ -139,6 +147,7 @@ export const productService = {
 
   /** One-shot fetch — used by SSR-like flows or manual refresh. */
   async list(): Promise<Product[]> {
+    if (!isSupabaseConfigured) return [];
     const { data, error } = await supabase
       .from('products')
       .select(PRODUCT_SELECT)
@@ -158,6 +167,7 @@ export const productService = {
    *  Also pulls the (tiny) categories table to roll each product's category up
    *  its ancestry, so parent-category words are searchable. */
   async listSearch(): Promise<SearchProduct[]> {
+    if (!isSupabaseConfigured) return [];
     const [prodRes, catRes] = await Promise.all([
       supabase.from('products').select(SEARCH_SELECT).eq('status', 'active').order('name'),
       supabase.from('categories').select('id, name, parent_id').is('deleted_at', null),
@@ -205,6 +215,7 @@ export const productService = {
 
   /** Lookup a single product by id (UUID). */
   async get(id: string): Promise<Product | null> {
+    if (!isSupabaseConfigured) return null;
     const { data, error } = await supabase
       .from('products')
       .select(PRODUCT_SELECT)

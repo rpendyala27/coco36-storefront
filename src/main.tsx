@@ -7,23 +7,72 @@ import { CartProvider } from './context/CartContext';
 import { initSentry, Sentry } from './lib/sentry';
 import { initAnalytics } from './lib/analytics';
 import { readConsent } from './lib/consent';
+import { isSupabaseConfigured } from './lib/supabase';
 
 initSentry();
 // Returning visitors who already accepted get GA straight away; everyone else
 // waits for the cookie banner. Nothing reaches Google before that.
 initAnalytics(readConsent());
 
+/**
+ * A production build with no Supabase credentials must NOT quietly serve the
+ * static catalogue in src/data/products.ts. That data is fictional demo stock
+ * with non-UUID variant ids, so customers would browse products that do not
+ * exist and hit a checkout that cannot work. An honest page is better.
+ *
+ * In dev the opposite is true: booting on static data lets someone work on the
+ * UI without credentials, which is why the fallback exists at all.
+ */
+const misconfigured = !isSupabaseConfigured && import.meta.env.PROD;
+
+if (misconfigured) {
+  Sentry.captureMessage('Storefront booted without Supabase credentials', 'fatal');
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Sentry.ErrorBoundary fallback={<GlobalErrorFallback />}>
-      <AuthProvider>
-        <CartProvider>
-          <App />
-        </CartProvider>
-      </AuthProvider>
+      {misconfigured ? (
+        <ConfigErrorFallback />
+      ) : (
+        <AuthProvider>
+          <CartProvider>
+            <App />
+          </CartProvider>
+        </AuthProvider>
+      )}
     </Sentry.ErrorBoundary>
   </StrictMode>,
 );
+
+/** Shown instead of the shop when a production build has no backend credentials. */
+function ConfigErrorFallback() {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', padding: '2rem',
+      fontFamily: 'system-ui, sans-serif', textAlign: 'center', background: '#f3f1e8',
+    }}>
+      <h1 style={{ fontSize: '2rem', marginBottom: '0.75rem', color: '#1a1a1a' }}>
+        The shop is temporarily unavailable.
+      </h1>
+      <p style={{ color: '#666', marginBottom: '2rem', maxWidth: 480, lineHeight: 1.6 }}>
+        We're fixing a configuration problem on our end. Nothing is wrong with
+        your connection — please try again shortly.
+      </p>
+      <a
+        href="mailto:pendyalarohan27@gmail.com"
+        style={{
+          padding: '0.875rem 2rem', background: '#4e7d24', color: '#ffffff',
+          textDecoration: 'none', fontSize: '0.75rem', fontWeight: 'bold',
+          letterSpacing: '0.15em', textTransform: 'uppercase',
+        }}
+      >
+        Contact us
+      </a>
+    </div>
+  );
+}
 
 function GlobalErrorFallback() {
   return (
