@@ -80,12 +80,12 @@ function load(): void {
 
 /**
  * Called once at boot (main.tsx). Loads GA only if the visitor already
- * accepted in a previous session; otherwise waits for the banner.
+ * accepted in a previous session; otherwise waits for the banner. No pageview
+ * here: App.tsx's route effect fires on mount and records the landing page.
  */
 export function initAnalytics(consent: 'accepted' | 'rejected' | null): void {
   if (consent !== 'accepted') return;
   load();
-  trackPageView(window.location.pathname + window.location.search);
 }
 
 /**
