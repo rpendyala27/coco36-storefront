@@ -5,8 +5,13 @@ import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { initSentry, Sentry } from './lib/sentry';
+import { initAnalytics } from './lib/analytics';
+import { readConsent } from './lib/consent';
 
 initSentry();
+// Returning visitors who already accepted get GA straight away; everyone else
+// waits for the cookie banner. Nothing reaches Google before that.
+initAnalytics(readConsent());
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

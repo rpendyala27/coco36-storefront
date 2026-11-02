@@ -2,15 +2,8 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cookie, X } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-
-const STORAGE_KEY = 'coco36.cookie-consent';
-type Consent = 'accepted' | 'rejected' | null;
-
-const readConsent = (): Consent => {
-  if (typeof window === 'undefined') return null;
-  const v = window.localStorage.getItem(STORAGE_KEY);
-  return v === 'accepted' || v === 'rejected' ? v : null;
-};
+import { readConsent, writeConsent, type Consent } from '../lib/consent';
+import { setAnalyticsConsent } from '../lib/analytics';
 
 export const CookieBanner = () => {
   const [consent, setConsent] = useState<Consent>(null);
@@ -20,7 +13,9 @@ export const CookieBanner = () => {
   useEffect(() => { setConsent(readConsent()); setMounted(true); }, []);
 
   const decide = (choice: 'accepted' | 'rejected') => {
-    window.localStorage.setItem(STORAGE_KEY, choice);
+    writeConsent(choice);
+    // Loads Google Analytics on accept; stays dark on "Essential only".
+    setAnalyticsConsent(choice);
     setConsent(choice);
   };
 
@@ -49,8 +44,9 @@ export const CookieBanner = () => {
             <p className="text-[12px] md:text-sm text-brand-ink leading-snug md:leading-relaxed truncate md:whitespace-normal">
               <span className="md:hidden">Cookies keep your cart &amp; login. </span>
               <span className="hidden md:inline">
-                We use cookies to remember your cart, login, and pincode. No
-                third-party advertising trackers.{' '}
+                We use cookies to remember your cart, login, and pincode. Accept
+                and we also use Google Analytics to see how the shop is used —
+                never advertising trackers.{' '}
               </span>
               <NavLink to="/privacy" className="text-brand-leaf hover:underline whitespace-nowrap">
                 Read more
