@@ -27,11 +27,11 @@ export const ORG_ADDRESS = {
  * Official social profiles: Organization.sameAs + the footer links.
  * Canonical profile URLs only — no share/tracking params, no /share/ redirect
  * links (they can expire and aren't the profile's address).
- * TODO(owner): add the Facebook page's canonical URL (facebook.com/<page> or
- * profile.php?id=…) and YouTube once live.
+ * TODO(owner): add YouTube once live.
  */
 export const SOCIAL_LINKS: readonly { label: string; url: string }[] = [
   { label: 'Instagram', url: 'https://www.instagram.com/coco36official/' },
+  { label: 'Facebook',  url: 'https://www.facebook.com/profile.php?id=61580777662218' },
 ];
 export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url);
 
