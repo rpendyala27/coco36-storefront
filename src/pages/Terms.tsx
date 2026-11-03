@@ -59,6 +59,16 @@ export const Terms = () => {
         </ul>
       </Section>
 
+      <Section id="certifications" title="Certifications and product claims">
+        <p>
+          Certification marks shown on this site, such as organic, fair trade,
+          halal or kosher, are held by the partner brands whose products we
+          sell, not by COCO36 Foods Pvt Ltd. Each product page lists the
+          certifications that apply to that product. Copies of the relevant
+          certificates are available on request.
+        </p>
+      </Section>
+
       <Section title="Liability">
         <p>
           Our liability for any order is limited to the amount you paid for
