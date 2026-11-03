@@ -1,7 +1,6 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, ChefHat, ArrowLeftRight, Scale, Wrench } from 'lucide-react';
-import { useNoindex } from '../lib/seo';
 
 /**
  * /recipes — COCO AI Recipe Consultant.
@@ -10,6 +9,10 @@ import { useNoindex } from '../lib/seo';
  * rather than a demo chat. It states what the tool will do and points people
  * back to the shop. Wire the real assistant (Gemini via a backend proxy that
  * holds the key) before turning the chat back on.
+ *
+ * SEO: deliberately `noindex, follow` (server header + meta, see
+ * src/seo/meta.ts STATIC_PAGES), out of the sitemap and out of the nav/footer
+ * until it has real content. Direct visitors still get this page.
  */
 
 const CAPABILITIES = [
@@ -20,11 +23,6 @@ const CAPABILITIES = [
 ];
 
 export const RecipeConsultant = () => {
-  // "Coming soon" stub — no real recipe content yet, so keep it out of Google's
-  // index (it was being flagged as a soft 404). Remove this line once the real
-  // consultant ships and the page has substantive content.
-  useNoindex();
-
   return (
     <div className="bg-brand-paper min-h-screen">
       <section className="pt-36 pb-24 px-6 md:px-12 lg:px-20">
@@ -64,9 +62,12 @@ export const RecipeConsultant = () => {
 
         <div className="max-w-3xl mx-auto mt-14 text-center">
           <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-5">In the meantime</p>
-          <Link to="/" className="btn-primary !px-8 !py-4">
-            Shop ingredients <ArrowRight size={14} />
-          </Link>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link to="/shop" className="btn-primary !px-8 !py-4">
+              Shop ingredients <ArrowRight size={14} />
+            </Link>
+            <Link to="/ingredients" className="btn-ghost !px-8 !py-4">Ingredient guides</Link>
+          </div>
         </div>
       </section>
     </div>

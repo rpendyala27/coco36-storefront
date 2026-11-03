@@ -122,6 +122,8 @@
   clip-path: inset(0 0 0 0);
   animation: co-paint-sweep 1100ms var(--ease-out-strong) 400ms backwards;
 }
+/* The paint layer's glyphs come from CSS, not DOM text (see ScraperReveal). */
+.choc-paint-copy::before { content: attr(data-text); }
 
 @media (prefers-reduced-motion: reduce) {
   .choc-paint { animation: none; }

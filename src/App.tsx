@@ -1,18 +1,23 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
 import { PincodePopup } from './components/PincodePopup';
-import { setMetaDescription } from './lib/seo';
+import { applyMeta, useSeo } from './lib/seo';
+import { notFoundMeta, staticPageMeta } from './seo/meta';
+import { useStoreConfig } from './lib/storeConfig';
 import { trackPageView } from './lib/analytics';
-// The Shop catalog IS the landing page (catalog-first). Eagerly imported
-// as the above-the-fold experience. The old marketing Home is retired.
-import { Shop } from './pages/Shop';
+import { GUIDES, guidePath } from './content/guides';
+// The homepage is eagerly imported as the above-the-fold experience.
+import { Home } from './pages/Home';
 
 // All other routes are code-split — they ship as separate chunks loaded
 // on first navigation, dramatically shrinking the initial JS payload.
+const Shop             = lazy(() => import('./pages/Shop').then(m => ({ default: m.Shop })));
 const ProductDetail    = lazy(() => import('./pages/ProductDetail').then(m => ({ default: m.ProductDetail })));
+const Guide            = lazy(() => import('./pages/Guide').then(m => ({ default: m.Guide })));
+const Guides           = lazy(() => import('./pages/Guide').then(m => ({ default: m.Guides })));
 const ThirtySixSteps   = lazy(() => import('./pages/ThirtySixSteps').then(m => ({ default: m.ThirtySixSteps })));
 const RecipeConsultant = lazy(() => import('./pages/RecipeConsultant').then(m => ({ default: m.RecipeConsultant })));
 const Partnerships     = lazy(() => import('./pages/Partnerships').then(m => ({ default: m.Partnerships })));
@@ -28,30 +33,28 @@ const Track              = lazy(() => import('./pages/Track').then(m => ({ defau
 const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/':             'Shop ingredients',
-  '/shop':         'Shop ingredients',
-  '/quick-order':  'Quick order',
-  '/36-steps':     '36 Steps · traceability',
-  '/recipes':      'Recipe consultant',
-  '/partnerships': 'Partnerships & innovation',
-  '/trade':        'Trade & wholesale',
-  '/impact':       'Impact',
-  '/checkout':     'Checkout',
-  '/auth':         'Sign in',
-  '/account':      'Your account',
-  '/privacy':      'Privacy',
-  '/terms':        'Terms',
-};
-
-const CANONICAL_ORIGIN = 'https://coco36.com';
-// Matches the static <meta name="description"> in index.html.
-const DEFAULT_DESCRIPTION = 'Cocoa, flours, vanilla, and rare botanicals — sourced direct from heritage farms across 12 countries. 36-step traceability, fair trade, free shipping across India.';
-
 function ScrollToTop() {
   const { pathname, hash, search } = useLocation();
+  const cfg = useStoreConfig();
 
+  // Head for static routes (content, legal, utility pages) from the shared
+  // table in src/seo/meta.ts — the same values api/render.ts sent. Pages with
+  // data (home, shop, category, product, guides, 404) call useSeo themselves.
   useEffect(() => {
+    const meta = staticPageMeta(pathname, cfg);
+    if (meta) applyMeta(meta);
+  }, [pathname, cfg]);
+
+  // Moving between shop listings (/shop ⇄ /shop/category/…) is a filter
+  // change, not a new page: the Shop scrolls itself to the grid, so don't yank
+  // the window back to the top here (this effect runs after its layout effect).
+  const prevPath = useRef(pathname);
+  useEffect(() => {
+    const isListing = (p: string) => p === '/shop' || p.startsWith('/shop/category/');
+    const withinShop = isListing(prevPath.current) && isListing(pathname);
+    prevPath.current = pathname;
+    if (withinShop && !hash) return;
+
     // Honor a #hash anchor (e.g. /36-steps#quality from the homepage journey
     // tiles). Routes are lazy-loaded, so poll briefly for the target to exist,
     // then smooth-scroll to it; otherwise fall back to top.
@@ -68,32 +71,6 @@ function ScrollToTop() {
     } else {
       window.scrollTo(0, 0);
     }
-    const base = ROUTE_TITLES[pathname];
-    if (base) {
-      document.title = `${base} · COCO36`;
-    } else if (!pathname.startsWith('/shop/') && !pathname.startsWith('/account/') && !pathname.startsWith('/track/')) {
-      // PDP / order detail / tracking set their own titles; everything else falls back.
-      document.title = 'COCO36 · From crop to craft';
-    }
-
-    // Meta description: Shop and PDPs set their own (after this effect — they
-    // mount deeper, but their data lands async); everything else resets to the
-    // base one so a product blurb never lingers on unrelated pages.
-    if (pathname !== '/' && !pathname.startsWith('/shop')) {
-      setMetaDescription(DEFAULT_DESCRIPTION);
-    }
-
-    // Canonical URL — `/` and `/shop` render the same catalog, so both point at
-    // the home URL to avoid duplicate-content. Everything else is self-canonical
-    // (path only, query/hash stripped).
-    const canonicalPath = pathname === '/shop' ? '/' : pathname;
-    let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'canonical';
-      document.head.appendChild(link);
-    }
-    link.href = CANONICAL_ORIGIN + canonicalPath;
   }, [pathname, hash]);
 
   // GA pageview per client-side navigation. Declared after the effect above so
@@ -118,18 +95,32 @@ const RouteFallback = () => (
   </div>
 );
 
-// Branded 404 for unknown URLs
+// Branded 404 for unknown URLs (the server already answered with HTTP 404).
+const NOT_FOUND_META = notFoundMeta();
 const NotFound = () => {
-  useEffect(() => { document.title = 'Page not found · COCO36'; }, []);
+  useSeo(NOT_FOUND_META);
   return (
     <div className="min-h-[70vh] pt-28 px-6 flex flex-col items-center justify-center text-center">
       <p className="eyebrow text-brand-leaf mb-3">Error 404</p>
       <h1 className="text-4xl md:text-5xl mb-5">Page not found.</h1>
       <p className="text-brand-muted mb-8 max-w-md">This page moved or never existed. Let's get you back to the good stuff.</p>
-      <a href="/" className="btn-primary !px-8 !py-4">Back to the shop</a>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <a href="/shop" className="btn-primary !px-8 !py-4">Browse the shop</a>
+        <a href="/ingredients" className="btn-ghost !px-8 !py-4">Ingredient guides</a>
+      </div>
     </div>
   );
 };
+
+// Footer category links — clean /shop/category/<slug> URLs (were ?category=
+// query strings). Slugs match the `categories` table.
+const FOOTER_CATEGORIES = [
+  { slug: 'extracts-flavors',  name: 'Extracts & Flavors' },
+  { slug: 'sugars-sweeteners', name: 'Sugars & Sweeteners' },
+  { slug: 'flours-grains',     name: 'Flours & Grains' },
+  { slug: 'spices-pantry',     name: 'Spices & Pantry' },
+  { slug: 'mixes-kits',        name: 'Mixes & Kits' },
+];
 
 export default function App() {
   return (
@@ -143,12 +134,14 @@ export default function App() {
         <main>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
-              {/* Catalog-first: the Shop is the landing page. */}
-              <Route path="/" element={<Shop />} />
+              <Route path="/" element={<Home />} />
 
               {/* Primary IA */}
               <Route path="/shop" element={<Shop />} />
+              <Route path="/shop/category/:categorySlug" element={<Shop />} />
               <Route path="/shop/:id" element={<ProductDetail />} />
+              <Route path="/ingredients" element={<Guides />} />
+              <Route path="/ingredients/:slug" element={<Guide />} />
               <Route path="/quick-order" element={<QuickOrder />} />
               <Route path="/36-steps" element={<ThirtySixSteps />} />
               <Route path="/recipes" element={<RecipeConsultant />} />
@@ -180,6 +173,7 @@ export default function App() {
               <Route path="/traceability" element={<Navigate to="/36-steps" replace />} />
               <Route path="/catalog" element={<Navigate to="/shop" replace />} />
               <Route path="/catalog/:id" element={<ProductDetail />} />
+              <Route path="/index.html" element={<Navigate to="/" replace />} />
 
               {/* 404 — unknown URLs */}
               <Route path="*" element={<NotFound />} />
@@ -190,7 +184,7 @@ export default function App() {
         {/* FOOTER */}
         <footer className="bg-brand-forest text-white px-6 md:px-12 lg:px-20 pt-16 pb-10 mt-8">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-10 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
               {/* Brand col */}
               <div className="col-span-2">
                 <div className="flex items-center gap-3 mb-5">
@@ -215,9 +209,17 @@ export default function App() {
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Shop</h4>
                 <ul className="space-y-3 text-sm text-white/70">
                   <li><a href="/shop" className="hover:text-brand-leaf-bright transition-colors">All Ingredients</a></li>
-                  <li><a href="/shop?category=Cocoa%20%26%20Chocolate" className="hover:text-brand-leaf-bright transition-colors">Cocoa & Chocolate</a></li>
-                  <li><a href="/shop?category=Flours%20%26%20Grains" className="hover:text-brand-leaf-bright transition-colors">Flours & Grains</a></li>
-                  <li><a href="/shop?category=Mixes%20%26%20Kits" className="hover:text-brand-leaf-bright transition-colors">Mixes & Kits</a></li>
+                  {FOOTER_CATEGORIES.map((c) => (
+                    <li key={c.slug}><a href={`/shop/category/${c.slug}`} className="hover:text-brand-leaf-bright transition-colors">{c.name}</a></li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Guides</h4>
+                <ul className="space-y-3 text-sm text-white/70">
+                  {GUIDES.map((g) => (
+                    <li key={g.slug}><a href={guidePath(g)} className="hover:text-brand-leaf-bright transition-colors">{g.name}</a></li>
+                  ))}
                 </ul>
               </div>
               <div>
@@ -225,7 +227,7 @@ export default function App() {
                 <ul className="space-y-3 text-sm text-white/70">
                   <li><a href="/36-steps" className="hover:text-brand-leaf-bright transition-colors">36 Steps</a></li>
                   <li><a href="/impact" className="hover:text-brand-leaf-bright transition-colors">Impact</a></li>
-                  <li><a href="/recipes" className="hover:text-brand-leaf-bright transition-colors">Recipe AI</a></li>
+                  <li><a href="/ingredients" className="hover:text-brand-leaf-bright transition-colors">Ingredient Guides</a></li>
                 </ul>
               </div>
               <div>
@@ -243,7 +245,7 @@ export default function App() {
               <div className="flex gap-6 font-medium">
                 <a href="/privacy" className="hover:text-brand-leaf-bright transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-brand-leaf-bright transition-colors">Terms</a>
-                <a href="/terms#shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping</a>
+                <a href="/terms#shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping &amp; Returns</a>
                 <a href="mailto:pendyalarohan27@gmail.com" className="hover:text-brand-leaf-bright transition-colors">Contact</a>
               </div>
             </div>

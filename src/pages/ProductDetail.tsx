@@ -1,16 +1,20 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import type * as React from 'react';
-import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, ChefHat, ArrowRight, Star } from 'lucide-react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, BookOpen, ArrowRight, Star } from 'lucide-react';
+import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
 import { CertStamp } from '../components/CertStamp';
 import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
-import { useJsonLd, useNoindex, setMetaDescription, setCanonical, stripMarkdown, productJsonLd, productBreadcrumbJsonLd } from '../lib/seo';
-import { productPath } from '../lib/productPath';
+import { useSeo } from '../lib/seo';
+import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
+import { SHIPS_FROM } from '../seo/site';
+import { GUIDES, guidePath, productsForGuide } from '../content/guides';
+import { Breadcrumbs } from '../components/Breadcrumbs';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -18,8 +22,9 @@ export const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { product, loading } = useProduct(id);
+  const { product, resolution } = useProduct(id);
   const { products } = useProducts();
+  const { tree } = useCategories();
   const cfg = useStoreConfig();
 
   const [selectedSizeId, setSelectedSizeId] = useState('');
@@ -49,37 +54,32 @@ export const ProductDetail = () => {
     return () => io.disconnect();
   }, [product]);
 
-  useEffect(() => {
-    if (!product) return;
-    document.title = `${product.name} · COCO36`;
-    // Canonicalize to the readable slug URL so the UUID and slug forms don't
-    // compete as duplicate content.
-    setCanonical(productPath(product));
-    // Per-product meta description: the description text reads better in a
-    // SERP snippet than the terse tag line, so prefer it when present.
-    const text = stripMarkdown(product.description || product.tag || '');
-    if (text) setMetaDescription(`${text.slice(0, 140)} — sourced direct from origin by COCO36.`);
-  }, [product]);
+  // Title, description, canonical, OG and Product + BreadcrumbList JSON-LD —
+  // the same PageMeta the server rendered for this URL (src/seo/meta.ts).
+  const meta = useMemo(() => {
+    if (product) return productMeta(product, tree, cfg);
+    if (resolution?.kind === 'gone') return goneMeta();
+    if (resolution?.kind === 'not-found') return notFoundMeta();
+    return null;
+  }, [product, resolution, tree, cfg]);
+  useSeo(meta);
 
-  // Product + BreadcrumbList structured data for Google rich results.
-  // Memoized so useJsonLd only rewrites the script tag when the product changes.
-  const productLd    = useMemo(() => (product ? productJsonLd(product) : null), [product]);
-  const breadcrumbLd = useMemo(() => (product ? productBreadcrumbJsonLd(product) : null), [product]);
-  useJsonLd('product', productLd);
-  useJsonLd('product-breadcrumb', breadcrumbLd);
+  // The ingredient guide this product belongs to, for the "read the guide" link.
+  const guide = useMemo(
+    () => (product ? GUIDES.find((g) => productsForGuide(g, [product], tree).length > 0) : undefined),
+    [product, tree],
+  );
 
   const related = useMemo(
     () => (product ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4) : []),
     [product, products],
   );
 
-  // The "not found" branch below still returns HTTP 200 on a static host — a
-  // soft 404. Keep crawlers from indexing it (covers every orphaned /shop/:id,
-  // e.g. pre-UUID legacy slugs like /shop/ceylon-cinnamon), and drop the tag
-  // again the instant a real product resolves.
-  useNoindex(!loading && !product);
+  // Legacy URL (/shop/<slug>-<uuid>, bare UUID, old static slug): the server
+  // already 301s these; this covers in-app links from a stale cart or bookmark.
+  if (resolution?.kind === 'redirect') return <Navigate to={resolution.to} replace />;
 
-  if (loading && !product) {
+  if (!resolution) {
     return (
       <div className="min-h-screen pt-28 px-6 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -95,11 +95,20 @@ export const ProductDetail = () => {
     );
   }
 
+  // The server answered this URL with 410 (gone) or 404 (not found).
   if (!product) {
+    const gone = resolution.kind === 'gone';
     return (
       <div className="min-h-screen pt-28 px-6 text-center">
-        <h1 className="text-4xl mb-6">Product not found.</h1>
-        <Link to="/shop" className="btn-primary inline-flex">← Back to Shop</Link>
+        <p className="eyebrow text-brand-leaf mb-3">{gone ? 'Discontinued' : 'Error 404'}</p>
+        <h1 className="text-4xl mb-4">{gone ? 'This product is no longer available.' : 'Product not found.'}</h1>
+        <p className="text-brand-muted mb-8 max-w-md mx-auto">
+          {gone ? 'We have stopped selling it. Have a look at what is in the shop now.' : 'We could not find that product. It may have moved.'}
+        </p>
+        <div className="flex flex-wrap gap-3 justify-center">
+          <Link to="/shop" className="btn-primary inline-flex">Browse the shop</Link>
+          <Link to="/ingredients" className="btn-ghost inline-flex">Ingredient guides</Link>
+        </div>
       </div>
     );
   }
@@ -118,15 +127,9 @@ export const ProductDetail = () => {
 
   return (
     <div className="bg-brand-paper pt-20 min-h-screen">
-      {/* Breadcrumb */}
+      {/* Breadcrumb — same crumbs as the BreadcrumbList JSON-LD */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-6">
-        <nav className="eyebrow flex items-center gap-2">
-          <Link to="/shop" className="text-brand-leaf hover:underline">Shop</Link>
-          <span className="opacity-40">/</span>
-          <Link to={`/shop?category=${encodeURIComponent(product.category)}`} className="hover:text-brand-leaf">{product.category}</Link>
-          <span className="opacity-40">/</span>
-          <span className="text-brand-forest">{product.name}</span>
-        </nav>
+        <Breadcrumbs crumbs={productCrumbs(product, tree)} />
       </div>
 
       {/* Main */}
@@ -145,6 +148,7 @@ export const ProductDetail = () => {
                 <button
                   key={i}
                   onClick={() => setActiveImage(i)}
+                  aria-label={`Show image ${i + 1} of ${gallery.length}`}
                   className={`size-20 rounded-xl overflow-hidden border-2 transition-colors ${i === activeImage ? 'border-brand-leaf' : 'border-brand-line'}`}
                 >
                   <img src={imageUrl(src, 160)} alt="" loading="lazy" className="w-full h-full object-cover" />
@@ -225,7 +229,7 @@ export const ProductDetail = () => {
           {/* Ship note */}
           <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
             <Truck size={15} strokeWidth={1.75} className="text-brand-leaf" />
-            Ships in <span className="text-brand-forest font-medium">2 business days</span> · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
+            Ships in <span className="text-brand-forest font-medium">2 business days</span> from {SHIPS_FROM.split(',')[0]} · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
           </p>
 
           {/* Accordions */}
@@ -288,7 +292,9 @@ export const ProductDetail = () => {
           {/* Content clustering — link adjacent resources, build buyer confidence */}
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <Link to="/36-steps" className="inline-flex items-center gap-1.5 text-brand-leaf hover:gap-2.5 transition-all"><Network size={15} /> See the 36-step trace <ArrowRight size={14} /></Link>
-            <Link to="/recipes" className="inline-flex items-center gap-1.5 text-brand-leaf hover:gap-2.5 transition-all"><ChefHat size={15} /> Recipes with this <ArrowRight size={14} /></Link>
+            {guide && (
+              <Link to={guidePath(guide)} className="inline-flex items-center gap-1.5 text-brand-leaf hover:gap-2.5 transition-all"><BookOpen size={15} /> Read the {guide.name.toLowerCase()} guide <ArrowRight size={14} /></Link>
+            )}
           </div>
         </div>
       </div>

@@ -38,7 +38,7 @@ export const Terms = () => {
         </ul>
       </Section>
 
-      <Section title="Shipping">
+      <Section id="shipping" title="Shipping">
         <p>
           We ship through Shiprocket. ETAs shown at checkout are estimates;
           delays caused by courier or weather are outside our control. Live
@@ -46,7 +46,7 @@ export const Terms = () => {
         </p>
       </Section>
 
-      <Section title="Returns and refunds">
+      <Section id="returns" title="Returns and refunds">
         <ul className="list-disc pl-6 space-y-1">
           <li>Sealed, non-perishable items can be returned within the window shown on the order page (default: 7 days from delivery).</li>
           <li>Perishables and customised items are non-returnable except where damaged or wrong.</li>
@@ -88,8 +88,8 @@ export const Terms = () => {
   );
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-8">
+const Section = ({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) => (
+  <section id={id} className="mb-8 scroll-mt-28">
     <h2 className="text-xl font-bold mb-3">{title}</h2>
     <div className="text-sm leading-relaxed text-brand-ink/90 space-y-2">{children}</div>
   </section>
