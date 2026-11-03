@@ -5,26 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0a3c33" />
 
-    <title>COCO36 — From crop to craft. Origin ingredients for makers.</title>
-    <meta name="description" content="Cocoa, flours, vanilla, and rare botanicals — sourced direct from heritage farms across 12 countries. 36-step traceability, fair trade, free shipping across India." />
-
-    <!-- Open Graph / social -->
+    <!-- seo:head — api/render.ts replaces everything between these markers
+         with the page's own title, description, canonical, robots, Open Graph
+         and JSON-LD (built in src/seo/meta.ts). The defaults below are the
+         homepage's, for `vite dev`. Keep both marker comments. -->
+    <!--seo:head-->
+    <title>COCO36 | Baking &amp; Pastry Ingredients Online in India</title>
+    <meta name="description" content="Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ₹1,200." />
+    <link rel="canonical" href="https://coco36.com/" />
     <meta property="og:site_name" content="COCO36" />
-    <meta property="og:title" content="COCO36 — Crop-to-craft marketplace" />
-    <meta property="og:description" content="Sustainable origin ingredients for craft kitchens of tomorrow — cocoa, flours, vanilla, spices, sourced direct from origin." />
-    <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_IN" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="COCO36 | Baking &amp; Pastry Ingredients Online in India" />
+    <meta property="og:description" content="Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ₹1,200." />
     <meta property="og:url" content="https://coco36.com/" />
     <meta property="og:image" content="https://coco36.com/og.png" />
+    <meta property="og:image:alt" content="COCO36 | Baking &amp; Pastry Ingredients Online in India" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="COCO36 — from crop to craft" />
-
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="COCO36 — Crop-to-craft marketplace" />
-    <meta name="twitter:description" content="Origin ingredients for makers — cocoa, flours, vanilla, spices, sourced direct from origin." />
+    <meta name="twitter:title" content="COCO36 | Baking &amp; Pastry Ingredients Online in India" />
+    <meta name="twitter:description" content="Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ₹1,200." />
     <meta name="twitter:image" content="https://coco36.com/og.png" />
+    <meta name="twitter:image:alt" content="COCO36 | Baking &amp; Pastry Ingredients Online in India" />
+    <!--/seo:head-->
 
     <!-- Preconnect to perf-critical origins -->
     <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
@@ -39,23 +43,26 @@
     <link rel="icon" type="image/png" href="/coco36-floral.png" />
     <link rel="apple-touch-icon" href="/coco36-floral.png" />
 
-    <!-- Site-wide structured data (static: readable without JS rendering).
-         Per-product JSON-LD is injected client-side on PDPs (src/lib/seo.ts). -->
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","@id":"https://coco36.com/#org","name":"COCO36","legalName":"COCO36 Foods Pvt Ltd","url":"https://coco36.com/","logo":"https://coco36.com/coco36-floral.png","description":"Crop-to-craft marketplace — origin ingredients for makers: cocoa, flours, vanilla, and rare botanicals sourced direct from heritage farms."}</script>
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","@id":"https://coco36.com/#website","name":"COCO36","url":"https://coco36.com/","publisher":{"@id":"https://coco36.com/#org"},"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://coco36.com/shop?q={search_term_string}"},"query-input":"required name=search_term_string"}}</script>
-
     <!-- Pre-React boot loader: paints instantly on direct entry / refresh so the
          SPA never shows a blank white screen while the JS bundle loads. React
          clears #root on mount, which removes it automatically. -->
     <style>
-      #app-boot{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#f3f1e8}
+      #app-boot{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;background:#f3f1e8}
+      /* Server-rendered snapshot (api/render.ts): real, crawlable content in
+         the first HTML response. It sits under the boot loader until React
+         mounts and replaces #root; with JavaScript off it is the page. */
+      .ssr{max-width:60rem;margin:0 auto;padding:2rem 1.25rem 4rem;font:16px/1.6 system-ui,sans-serif;color:#1d2a16;background:#f3f1e8}
+      .ssr a{color:#2f5d16}.ssr h1{font-size:2rem;line-height:1.15;margin:1rem 0}.ssr h2{font-size:1.35rem;margin:2rem 0 .5rem}.ssr h3{font-size:1.05rem;margin:1.25rem 0 .25rem}
+      .ssr header nav ul,.ssr footer nav ul,.ssr nav[aria-label=Breadcrumb] ol{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.25rem 1rem}
+      .ssr img{max-width:min(100%,28rem);height:auto}
       #app-boot .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(46,64,35,.16);border-top-color:#4e7d24;animation:app-boot-spin .7s linear infinite}
       @keyframes app-boot-spin{to{transform:rotate(360deg)}}
       @media (prefers-reduced-motion:reduce){#app-boot .spin{animation-duration:1.6s}}
     </style>
+    <noscript><style>#app-boot{display:none}</style></noscript>
   </head>
   <body>
-    <div id="root"><div id="app-boot" aria-hidden="true"><div class="spin"></div></div></div>
+    <div id="root"><div id="app-boot" aria-hidden="true"><div class="spin"></div></div><!--ssr--></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
