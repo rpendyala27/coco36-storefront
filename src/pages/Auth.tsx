@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
-import { supabase, API_URL } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { safeRedirectPath } from '../lib/apiAuth';
 import { useAuth } from '../context/AuthContext';
 
 /**
  * Customer auth page — login + signup + password reset, all on Supabase Auth.
- * After signup we create a matching row in `public.customers` via the
- * Next.js admin API (service role bypasses RLS).
+ * Whenever a session starts (signup without email confirmation, sign-in, or an
+ * email-confirmation link) AuthContext creates/refreshes the matching
+ * `public.customers` row via the admin API, authenticated with the session's
+ * access token. Name and phone typed at signup ride in user_metadata so they
+ * survive email confirmation.
  */
 export const AuthPage = () => {
   const { user, passwordRecovery, clearPasswordRecovery } = useAuth();
@@ -25,7 +29,7 @@ export const AuthPage = () => {
   const [params] = useSearchParams();
   // Internal-only redirect target (prevents open-redirect via the query string).
   const redirectParam = params.get('redirect');
-  const redirectTo = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/';
+  const redirectTo = safeRedirectPath(redirectParam, '/');
 
   // After email confirmation (or if an already-signed-in user opens /auth) we
   // have a session — move them along. EXCEPT mid password-recovery, where we
@@ -45,7 +49,11 @@ export const AuthPage = () => {
       } else {
         const { data, error: signUpErr } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${window.location.origin}/auth` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+            // Profile hints only (user-editable, never used for access control).
+            data: { name: name || undefined, phone: phone || undefined },
+          },
         });
         if (signUpErr) throw signUpErr;
 
@@ -60,15 +68,6 @@ export const AuthPage = () => {
           return;
         }
 
-        if (data.user) {
-          try {
-            await fetch(`${API_URL}/api/customers/signup`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ authUserId: data.user.id, name: name || email.split('@')[0], email, phone: phone || undefined }),
-            });
-          } catch { /* non-fatal */ }
-        }
         if (data.session) navigate(redirectTo);
         else setMessage('Check your email to confirm your account.');
       }

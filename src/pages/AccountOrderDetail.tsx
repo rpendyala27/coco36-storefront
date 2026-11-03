@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, API_URL } from '../lib/supabase';
+import { authHeader } from '../lib/apiAuth';
+import { RETURN_REASON_LABELS } from '../lib/order-status';
 import { formatMoney } from '../lib/currency';
 
 interface OrderDetail {
@@ -46,12 +48,14 @@ export const AccountOrderDetail = () => {
     setReturnSubmitting(true);
     setReturnError(null);
     try {
+      // The API identifies the shopper from this token (never from the body).
+      const auth = await authHeader();
+      if (!auth) throw new Error('Your session has expired. Please sign in again.');
       const res = await fetch(`${API_URL}/api/returns/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({
           orderId:      order.id,
-          customerId:   user.id,
           reasonCode:   returnReason,
           customerNote: returnNote || undefined,
         }),
@@ -284,11 +288,9 @@ export const AccountOrderDetail = () => {
                           onChange={(e) => setReturnReason(e.target.value)}
                           className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
                         >
-                          <option value="damaged">Damaged in transit</option>
-                          <option value="wrong_item">Wrong item received</option>
-                          <option value="quality">Quality issue</option>
-                          <option value="not_needed">No longer needed</option>
-                          <option value="other">Other</option>
+                          {Object.entries(RETURN_REASON_LABELS).map(([code, label]) => (
+                            <option key={code} value={code}>{label}</option>
+                          ))}
                         </select>
                       </div>
                       <div>

@@ -1,15 +1,15 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+// No `define` of server secrets: anything defined here is inlined into the
+// public JS bundle. Client code reads only VITE_* vars (import.meta.env), and
+// those must be public by design (Supabase anon key, Razorpay key id, API URL).
+// scripts/check-bundle-secrets.mjs enforces this after every build.
+export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

@@ -86,11 +86,15 @@ export const RETURN_STATUS_META: Record<ReturnStatus, { label: string; bg: strin
   rejected:   { label: 'Rejected',   bg: 'bg-red-100',    fg: 'text-red-700'    },
 };
 
+/**
+ * Reasons a customer may give for a return; the admin API rejects any other
+ * code. No change-of-mind reason: per the Terms (/terms#returns), returns
+ * are accepted only for damaged, wrong or quality-affected items.
+ */
 export const RETURN_REASON_LABELS: Record<string, string> = {
   damaged:    'Damaged in transit',
   wrong_item: 'Wrong item received',
   quality:    'Quality issue',
-  not_needed: 'No longer needed',
   other:      'Other',
 };
 
