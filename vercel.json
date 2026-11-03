@@ -5,7 +5,8 @@
   "regions": ["sin1"],
   "trailingSlash": false,
   "functions": {
-    "api/render.ts": { "includeFiles": "dist-server/index.html", "maxDuration": 10 }
+    "api/render.ts": { "includeFiles": "dist-server/index.html", "maxDuration": 10 },
+    "api/sitemap.ts": { "maxDuration": 10 }
   },
   "redirects": [
     {
@@ -20,6 +21,7 @@
     { "source": "/cms", "destination": "/", "statusCode": 301 }
   ],
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/(.*)", "destination": "/api/render?__path=$1" }
   ],
   "headers": [

@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build:sitemap": "node scripts/build-sitemap.mjs",
-    "build": "npm run build:sitemap && vite build && node scripts/stash-template.mjs",
+    "build": "vite build && node scripts/stash-template.mjs",
     "preview": "node scripts/stash-template.mjs --restore && vite preview",
     "clean": "rm -rf dist dist-server",
     "lint": "tsc --noEmit"
