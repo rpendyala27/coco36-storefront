@@ -73,13 +73,16 @@ function ScrollToTop() {
     }
   }, [pathname, hash]);
 
-  // GA pageview per client-side navigation. Declared after the effect above so
-  // it runs after it, with document.title already current. Its deps are
-  // deliberately different: a query change such as /shop?category=… is a new
-  // pageview for analytics, but must NOT re-trigger the scroll-to-top that
-  // would yank the page out from under someone changing a filter.
+  // GA pageview per client-side navigation. Pages set their own title in their
+  // own effects (useSeo), which run AFTER this sibling's effects in the same
+  // commit, so defer one task to read the new document.title rather than the
+  // previous page's. (Clearing the timer also dedupes StrictMode's dev re-run.)
+  // Its deps are deliberately different from the scroll effect: a query change
+  // such as /shop?q=… is a new pageview for analytics, but must NOT re-trigger
+  // the scroll-to-top that would yank the page out from under a filter change.
   useEffect(() => {
-    trackPageView(pathname + search);
+    const t = setTimeout(() => trackPageView(pathname + search), 0);
+    return () => clearTimeout(t);
   }, [pathname, search]);
 
   return null;
