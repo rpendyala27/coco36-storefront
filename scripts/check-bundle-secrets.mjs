@@ -50,8 +50,17 @@ const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/
 
 const SECRET_NAME = /(SECRET|SERVICE_ROLE|PASSWORD|PRIVATE|TOKEN|_KEY$)/;
 const PUBLIC_PREFIX = /^(NEXT_PUBLIC_|VITE_|VERCEL_|npm_|GITHUB_|RUNNER_|CI$)/;
+const jwtRole = (v) => {
+  const parts = v.split('.');
+  if (parts.length !== 3 || !parts[0].startsWith('eyJ')) return null;
+  try { return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')).role ?? null; } catch { return null; }
+};
+// A value that is ALSO exposed through a public var (e.g. SUPABASE_ANON_KEY ==
+// VITE_SUPABASE_ANON_KEY), or is the anon JWT itself, is public by design.
+const publicValues = new Set(Object.entries(process.env).filter(([k]) => /^(NEXT_PUBLIC_|VITE_)/.test(k)).map(([, v]) => v));
 const secretValues = Object.entries(process.env)
   .filter(([k, v]) => SECRET_NAME.test(k) && !PUBLIC_PREFIX.test(k) && typeof v === 'string' && v.length >= 12)
+  .filter(([, v]) => !publicValues.has(v) && jwtRole(v) !== 'anon')
   .map(([k, v]) => [k, v]);
 
 const findings = [];
