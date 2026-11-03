@@ -8,6 +8,7 @@ import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { productPath } from '../lib/productPath';
 import { CertStamp } from './CertStamp';
+import { isFssaiClaim } from '../lib/fssai';
 
 interface Props {
   product: Product;
@@ -63,7 +64,9 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
     : designationTags.length
       ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
       : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
-  const certTags = (product.tags ?? []).filter((t) => t.kind === 'certification' || t.kind === 'dietary').slice(0, 5);
+  const certTags = (product.tags ?? [])
+    .filter((t) => (t.kind === 'certification' || t.kind === 'dietary') && !isFssaiClaim(t.slug, t.label))
+    .slice(0, 5);
 
   const flash = () => { setAdded(true); setTimeout(() => setAdded(false), 1200); };
   const add = (size: ProductSize, e?: React.MouseEvent) => {

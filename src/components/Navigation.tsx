@@ -53,10 +53,8 @@ export const Navigation: React.FC = () => {
               <span className="hidden lg:inline text-white/50"> · built for </span>
               <span className="hidden lg:inline-block min-w-[7em] text-brand-lime font-bold">{AUDIENCES[audienceIdx]}</span>
             </span>
-            {/* Right — trust + value props (md+) */}
+            {/* Right — value props (md+) */}
             <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
-              <span>FSSAI Licensed</span>
-              <span className="text-white/25">·</span>
               <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
               <span className="hidden lg:inline text-white/25">·</span>
               <span className="hidden lg:inline">Bulk &amp; trade</span>

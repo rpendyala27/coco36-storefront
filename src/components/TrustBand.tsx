@@ -1,11 +1,13 @@
 import { CertStamp } from './CertStamp';
 import { Coco36Seal } from './Coco36Seal';
+import { isFssaiClaim } from '../lib/fssai';
 
 /**
  * Certification trust band. Marks render via CertStamp — a licensed official
  * logo when one is registered (see CERT_LOGOS in CertStamp.tsx), otherwise a
  * house-drawn GENERIC mark. The official seals are trademarks: supply the
  * certifier's artwork and only show marks your suppliers actually hold.
+ * An FSSAI slug is filtered out below so that badge cannot render.
  * Compact single band under the hero.
  */
 
@@ -36,7 +38,7 @@ export const TrustBand = () => (
         </span>
       </li>
       <li aria-hidden="true" className="shrink-0 self-center w-px h-10 bg-brand-line" />
-      {MARKS.map((m) => (
+      {MARKS.filter((m) => !isFssaiClaim(m.slug, m.label)).map((m) => (
         <li key={m.slug} className="flex flex-col items-center gap-1.5 shrink-0 w-[62px] md:w-[76px]">
           <CertStamp slug={m.slug} label={m.label} size={34} title={false} />
           <span className="font-display font-bold text-[10px] uppercase tracking-[0.07em] leading-[1.35] text-center text-brand-forest/70">

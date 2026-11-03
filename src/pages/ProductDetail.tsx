@@ -5,6 +5,7 @@ import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { ProductCard } from '../components/ProductCard';
 import { CertStamp } from '../components/CertStamp';
+import { isFssaiClaim } from '../lib/fssai';
 import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
@@ -116,8 +117,8 @@ export const ProductDetail = () => {
   const selectedSize    = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
   const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * quantity;
   // Driven by tag.kind (like Shop/ProductCard) — no hardcoded slug sets.
-  const certTags        = (product.tags ?? []).filter((t) => t.kind === 'certification');
-  const dietaryTags     = (product.tags ?? []).filter((t) => t.kind === 'dietary');
+  const certTags        = (product.tags ?? []).filter((t) => t.kind === 'certification' && !isFssaiClaim(t.slug, t.label));
+  const dietaryTags     = (product.tags ?? []).filter((t) => t.kind === 'dietary' && !isFssaiClaim(t.slug, t.label));
   const markTags        = [...certTags, ...dietaryTags];
   const gallery         = [product.image, product.imageHover].filter(Boolean) as string[];
 
