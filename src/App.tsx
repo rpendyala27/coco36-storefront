@@ -8,7 +8,7 @@ import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
 import { useStoreConfig } from './lib/storeConfig';
 import { trackPageView } from './lib/analytics';
-import { GUIDES, guidePath } from './content/guides';
+import { GUIDE_LINKS, guidePath } from './content/guideIndex';
 // The homepage is eagerly imported as the above-the-fold experience.
 import { Home } from './pages/Home';
 
@@ -217,7 +217,7 @@ export default function App() {
               <div>
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Guides</h4>
                 <ul className="space-y-3 text-sm text-white/70">
-                  {GUIDES.map((g) => (
+                  {GUIDE_LINKS.map((g) => (
                     <li key={g.slug}><a href={guidePath(g)} className="hover:text-brand-leaf-bright transition-colors">{g.name}</a></li>
                   ))}
                 </ul>

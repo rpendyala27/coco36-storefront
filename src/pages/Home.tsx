@@ -13,7 +13,7 @@ import { homeMeta } from '../seo/meta';
 import { browseCategories, featuredProducts } from '../lib/catalog';
 import { categoryPath } from '../lib/productPath';
 import { imageUrl, imageSrcSet } from '../lib/img';
-import { GUIDES, guidePath } from '../content/guides';
+import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 
 /**
  * Homepage. Hero (the page's one H1) → trust band → every live product as a
@@ -96,7 +96,7 @@ export const Home = () => {
             </Link>
           </div>
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {GUIDES.map((g) => (
+            {GUIDE_LINKS.map((g) => (
               <li key={g.slug}>
                 <Link to={guidePath(g)} className="block h-full rounded-xl border border-brand-line bg-brand-surface p-5 hover:border-brand-forest transition-colors">
                   <span className="block font-display font-bold text-lg text-brand-forest">{g.name}</span>

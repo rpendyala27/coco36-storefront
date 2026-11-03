@@ -16,10 +16,10 @@ import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { categoryPath } from '../lib/productPath';
-import { browseCategories, productsInCategory } from '../lib/catalog';
+import { browseCategories, listingIntro, productsInCategory } from '../lib/catalog';
 import { useSeo } from '../lib/seo';
 import { NOINDEX, categoryCrumbs, categoryMeta, notFoundMeta, shopMeta } from '../seo/meta';
-import { GUIDES, guidePath } from '../content/guides';
+import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 
 type SortKey = 'recommended' | 'newest' | 'price-asc' | 'price-desc' | 'name';
 const SORT_LABELS: Record<SortKey, string> = {
@@ -331,14 +331,11 @@ export const Shop = () => {
 
   const crumbs = activeCategory ? categoryCrumbs(activeCategory, tree) : [{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }];
   const emptyCategory = !!activeCategory && !loading && inCategory.length === 0;
-  const intro = activeCategory?.description
-    || (activeCategory
-      ? (loading ? `${activeCategory.name}, shipped across India from Visakhapatnam.`
-        : emptyCategory ? `Nothing from ${activeCategory.name} is in the shop right now.`
-        : `${inCategory.length} ${inCategory.length === 1 ? 'ingredient' : 'ingredients'} in ${activeCategory.name}, shipped across India from Visakhapatnam.`)
-      : 'Every COCO36 ingredient in one place. Filter by origin, certification and price; we ship across India from Visakhapatnam.');
+  const intro = activeCategory && loading && !activeCategory.description
+    ? `${activeCategory.name}, shipped across India from Visakhapatnam.`
+    : listingIntro(activeCategory, inCategory.length);
   const relatedGuides = activeCategory
-    ? GUIDES.filter((g) => g.shopCategorySlug === activeCategory.slug || g.match.categorySlugs.includes(activeCategory.slug))
+    ? GUIDE_LINKS.filter((g) => g.shopCategorySlug === activeCategory.slug || g.match.categorySlugs.includes(activeCategory.slug))
     : [];
 
   if (legacyTarget !== undefined) {

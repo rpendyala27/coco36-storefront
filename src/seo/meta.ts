@@ -2,9 +2,9 @@ import type { Product } from '../types';
 import type { Category, CategoryTree } from '../lib/categoryTree';
 import { categoryPath, productPath } from '../lib/productPath.js';
 import { imageUrl } from '../lib/img.js';
-import { GUIDES_HUB, guideFaqs, guidePath, type Guide } from '../content/guides.js';
+import { GUIDES_HUB, guidePath, type GuideLink } from '../content/guideIndex.js';
 import {
-  breadcrumbJsonLd, faqJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
+  breadcrumbJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
 } from './jsonld.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
 import { DESCRIPTION_MAX, TITLE_MAX, clip, firstThatFits, sentence, stripMarkdown } from './text.js';
@@ -36,7 +36,7 @@ export const NOINDEX = 'noindex, follow';
 const HOME: Crumb = { name: 'Home', path: '/' };
 const SHOP: Crumb = { name: 'Shop', path: '/shop' };
 
-const crumbsLd = (crumbs: Crumb[]): JsonLdBlock => ({ id: 'breadcrumb', data: breadcrumbJsonLd(crumbs) });
+export const crumbsLd = (crumbs: Crumb[]): JsonLdBlock => ({ id: 'breadcrumb', data: breadcrumbJsonLd(crumbs) });
 
 // ── Static routes ────────────────────────────────────────────────────────────
 
@@ -95,16 +95,23 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
   '/account':  { title: 'Your Account | COCO36', description: () => 'Your COCO36 orders, invoices and saved addresses.', noindex: true },
 };
 
+/** Visible + BreadcrumbList crumbs for an indexable static route, else null. */
+export function staticPageCrumbs(pathname: string): Crumb[] | null {
+  const e = STATIC_PAGES[pathname];
+  return e?.crumb && !e.noindex ? [HOME, { name: e.crumb, path: pathname }] : null;
+}
+
 /** Meta for a static route, or null when `pathname` isn't one. */
 export function staticPageMeta(pathname: string, policy: StorePolicy = DEFAULT_POLICY): PageMeta | null {
   const e = STATIC_PAGES[pathname];
   if (e) {
+    const crumbs = staticPageCrumbs(pathname);
     return {
       title: e.title,
       description: e.description(policy),
       path: pathname,
       ...(e.noindex ? { robots: NOINDEX } : {}),
-      jsonLd: e.crumb && !e.noindex ? [crumbsLd([HOME, { name: e.crumb, path: pathname }])] : [],
+      jsonLd: crumbs ? [crumbsLd(crumbs)] : [],
     };
   }
   if (pathname.startsWith('/account/')) {
@@ -154,22 +161,10 @@ export function guidesHubMeta(): PageMeta {
   };
 }
 
-export function guideCrumbs(g: Guide): Crumb[] {
+export function guideCrumbs(g: GuideLink): Crumb[] {
   return [HOME, { name: 'Ingredient guides', path: GUIDES_HUB.path }, { name: g.name, path: guidePath(g) }];
 }
-
-export function guideMeta(g: Guide, policy: StorePolicy = DEFAULT_POLICY): PageMeta {
-  return {
-    title: g.title,
-    description: g.description,
-    path: guidePath(g),
-    ogType: 'article',
-    jsonLd: [
-      { id: 'faq', data: faqJsonLd(guideFaqs(g, policy)) },
-      crumbsLd(guideCrumbs(g)),
-    ],
-  };
-}
+// guideMeta lives in ./guideMeta (it needs the full guide bodies).
 
 // ── Categories + products ────────────────────────────────────────────────────
 

@@ -1,11 +1,15 @@
-import type { Product } from '../types';
-import type { CategoryTree } from '../lib/categoryTree';
 import {
   CARRIER, DEFAULT_POLICY, HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy, rupees,
 } from '../seo/site.js';
+import { GUIDE_LINKS, type GuideLink } from './guideIndex.js';
+
+export { GUIDE_LINKS, GUIDES_HUB, guidePath, productsForGuide, type GuideLink } from './guideIndex.js';
 
 /**
- * Ingredient-family landing pages (/ingredients/<slug>). One source of truth
+ * Ingredient-family landing pages (/ingredients/<slug>): the full guide
+ * bodies. Links/cards/matching live in ./guideIndex (kept out of the main
+ * bundle's way); this module is loaded by the Guide page chunk and the server.
+ * One source of truth
  * for the React page (src/pages/Guide.tsx) AND the server-rendered snapshot +
  * FAQPage JSON-LD (api/render.ts), so crawlers and visitors read the same copy.
  *
@@ -17,36 +21,31 @@ import {
 export interface GuideSection { heading: string; paragraphs: string[] }
 export interface Faq { q: string; a: string }
 
-export interface Guide {
-  slug: string;
-  /** Short family name for nav, cards and breadcrumbs. */
-  name: string;
+export interface Guide extends GuideLink {
   /** <title> — under 60 chars including " | COCO36". */
   title: string;
   /** Meta description — under 155 chars. */
   description: string;
   eyebrow: string;
   h1: string;
-  /** One-line card blurb for the hub / homepage. */
-  blurb: string;
   intro: string[];
   sections: GuideSection[];
   faqs: Faq[];
-  /** Which live products belong here: category subtree(s) OR a name keyword. */
-  match: { categorySlugs: string[]; keywords: string[] };
-  /** Category page to send "browse all" clicks to, when it has live products. */
-  shopCategorySlug?: string;
 }
+
+const link = (slug: string): GuideLink => {
+  const l = GUIDE_LINKS.find((g) => g.slug === slug);
+  if (!l) throw new Error(`guide link missing: ${slug}`);
+  return l;
+};
 
 export const GUIDES: Guide[] = [
   {
-    slug: 'vanilla',
-    name: 'Vanilla',
+    ...link('vanilla'),
     title: 'Vanilla Beans in India: Tahitian vs Bourbon | COCO36',
     description: 'How vanilla is grown and cured, how Tahitian and Bourbon vanilla differ, and how to use and store whole beans. Vanilla beans online in India.',
     eyebrow: 'Ingredient guide · Vanilla',
     h1: 'Vanilla beans: a buyer’s guide',
-    blurb: 'Tahitian vs Bourbon, how curing builds flavour, and how to use every pod.',
     intro: [
       'Vanilla is the cured seed pod of a climbing orchid, and one of the most labour-intensive crops in the spice trade. That is why a good bean is priced the way it is. This guide covers where vanilla comes from, how it is cured, how the two main species taste, and how to get the most out of every pod you buy.',
     ],
@@ -90,17 +89,13 @@ export const GUIDES: Guide[] = [
       { q: 'Are the white crystals on my vanilla bean mould?', a: 'Usually not. Fine, glittering white crystals are vanillin that has crystallised on the surface of a well-cured bean. Mould looks fuzzy, is grey or green, and smells musty; discard any bean that shows it.' },
       { q: 'Can I reuse a vanilla pod after scraping it?', a: 'Yes. Rinse and dry the scraped pod, then bury it in a jar of sugar to make vanilla sugar, or add it to a bottle of neutral spirit to begin a homemade extract.' },
     ],
-    match: { categorySlugs: [], keywords: ['vanilla'] },
-    shopCategorySlug: 'extracts-flavors',
   },
   {
-    slug: 'cocoa-chocolate',
-    name: 'Cocoa & chocolate',
+    ...link('cocoa-chocolate'),
     title: 'Cocoa Powder & Couverture Chocolate in India | COCO36',
     description: 'From cacao pod to couverture: how cocoa is grown and made, natural vs Dutch-process cocoa, tempering and storage, for bakers and chocolatiers in India.',
     eyebrow: 'Ingredient guide · Cocoa & chocolate',
     h1: 'Cocoa and chocolate: from pod to couverture',
-    blurb: 'Natural vs Dutch-process cocoa, what couverture means, and tempering basics.',
     intro: [
       'Every chocolate bar, cocoa powder and couverture starts as the seed of one tropical tree, Theobroma cacao. What happens between the farm and your mixing bowl decides how that chocolate tastes, how it melts and how it behaves in a recipe. This guide explains the journey, and the terms you will meet when you buy cocoa ingredients.',
     ],
@@ -143,17 +138,13 @@ export const GUIDES: Guide[] = [
       { q: 'What does the percentage on dark chocolate mean?', a: 'It is the share of the chocolate’s weight that comes from the cacao bean: cocoa mass plus any added cocoa butter. Most of the rest is sugar. A higher number means less sugar and more intensity, not necessarily better chocolate.' },
       { q: 'Is cocoa grown in India?', a: 'Yes. India grows cacao mainly in Andhra Pradesh, Kerala, Karnataka and Tamil Nadu, typically as an intercrop under coconut and areca palms.' },
     ],
-    match: { categorySlugs: ['cocoa-chocolate'], keywords: ['cocoa', 'cacao', 'chocolate', 'couverture'] },
-    shopCategorySlug: 'cocoa-chocolate',
   },
   {
-    slug: 'sugars-jaggery',
-    name: 'Sugars & jaggery',
+    ...link('sugars-jaggery'),
     title: 'Jaggery, Muscovado & Unrefined Sugar in India | COCO36',
     description: 'How jaggery, muscovado and other unrefined cane sugars are made, how they taste and how to bake with them. Speciality sugars online in India from COCO36.',
     eyebrow: 'Ingredient guide · Sugars & jaggery',
     h1: 'Jaggery, muscovado and unrefined sugars',
-    blurb: 'How jaggery and muscovado are made, and where each one works best.',
     intro: [
       'White sugar is all sweetness and no character. Less refined sugars keep some of the cane’s molasses, and with it colour, moisture and flavour, from caramel and toffee to liquorice and smoke. This guide explains how the main unrefined sugars are made and where each one works best.',
     ],
@@ -195,17 +186,13 @@ export const GUIDES: Guide[] = [
       { q: 'Can I use muscovado instead of white sugar?', a: 'Often one for one by weight, but it will make bakes darker, moister and more strongly flavoured. It works best where those qualities help, as in gingerbread, brownies and fruit cakes.' },
       { q: 'How do I soften hardened muscovado or jaggery?', a: 'Seal it in a jar with a slice of bread or a piece of apple for a day, or warm it very briefly, then store it airtight.' },
     ],
-    match: { categorySlugs: ['sugars-sweeteners'], keywords: ['jaggery', 'muscovado'] },
-    shopCategorySlug: 'sugars-sweeteners',
   },
   {
-    slug: 'flours',
-    name: 'Flours',
+    ...link('flours'),
     title: 'Buckwheat & Speciality Flours in India: A Guide | COCO36',
     description: 'Buckwheat, rye, spelt and other speciality flours explained: protein, gluten, milling and storage, plus how to bake with them in Indian kitchens.',
     eyebrow: 'Ingredient guide · Flours',
     h1: 'Speciality flours: a baker’s guide',
-    blurb: 'Protein and gluten, buckwheat (kuttu), rye, spelt, and storing flour well.',
     intro: [
       'Flour decides the structure, texture and flavour of almost everything a baker makes. Beyond everyday maida and atta there is a wide world of grains and seeds, each milled for a purpose. This guide covers what to look for and how to bake with the less familiar ones.',
     ],
@@ -247,17 +234,13 @@ export const GUIDES: Guide[] = [
       { q: 'Can I replace wheat flour with buckwheat flour?', a: 'Not one for one in yeasted breads and cakes, because buckwheat cannot form gluten. Try swapping a fifth to a third of the wheat flour, or use buckwheat on its own in pancakes, galettes and blini.' },
       { q: 'How should I store speciality flours?', a: 'Airtight, in a cool, dry, dark place. Whole-grain and buckwheat flours keep for less time than refined flour because of their natural oils, so refrigerate them in hot weather and use them within a few months.' },
     ],
-    match: { categorySlugs: ['flours-grains'], keywords: ['flour', 'sourdough'] },
-    shopCategorySlug: 'flours-grains',
   },
   {
-    slug: 'spices-salt',
-    name: 'Spices & salt',
+    ...link('spices-salt'),
     title: 'Flaky Sea Salt & Whole Spices in India: A Guide | COCO36',
     description: 'Finishing salt, flaky sea salt and whole spices: how they are made, how to use them and how to keep them fresh. A practical guide for Indian kitchens.',
     eyebrow: 'Ingredient guide · Spices & salt',
     h1: 'Spices and salt: the finishing touches',
-    blurb: 'Flaky finishing salt, true cinnamon vs cassia, and keeping spices fresh.',
     intro: [
       'Salt and spices are the smallest quantities in most recipes, and often the ones you notice most. How a salt was made changes its texture and how it dissolves; how a spice was stored decides whether it still has any aroma. This guide covers both.',
     ],
@@ -299,21 +282,9 @@ export const GUIDES: Guide[] = [
       { q: 'How long do whole spices keep?', a: 'Stored airtight and away from heat and light, whole spices keep their aroma far longer than ground ones. Smell them: if the aroma is faint, the flavour will be too.' },
       { q: 'Is Ceylon cinnamon the same as dalchini?', a: 'Not always. Ceylon cinnamon (Cinnamomum verum) has thin, papery, layered quills and a mild, sweet flavour. Much of what is sold as dalchini in India is cassia, a related species with thick, hard bark and a stronger flavour.' },
     ],
-    match: { categorySlugs: [], keywords: ['salt', 'spice', 'cinnamon', 'cardamom', 'saffron', 'pepper', 'tonka', 'clove', 'nutmeg'] },
-    shopCategorySlug: 'spices-pantry',
   },
 ];
 
-export const GUIDES_HUB = {
-  path: '/ingredients',
-  title: 'Ingredient Guides for Bakers & Pastry Chefs | COCO36',
-  description: 'Practical guides to vanilla, cocoa and chocolate, sugars and jaggery, speciality flours, spices and salt: origins, uses, storage and answers to common questions.',
-  eyebrow: 'Ingredient guides',
-  h1: 'Know your ingredients',
-  intro: 'Each guide explains where an ingredient comes from, how it is made, how to use and store it, and answers the questions bakers ask us most. Every guide links to the matching products in the shop.',
-} as const;
-
-export const guidePath = (g: { slug: string }) => `/ingredients/${g.slug}`;
 export const guideBySlug = (slug: string) => GUIDES.find((g) => g.slug === slug);
 
 /** Delivery + returns answer, built from live store policy so it never drifts. */
@@ -327,16 +298,4 @@ export function deliveryFaq(policy: StorePolicy = DEFAULT_POLICY): Faq {
 /** The guide's FAQ list as rendered (guide-specific + delivery). */
 export function guideFaqs(g: Guide, policy?: StorePolicy): Faq[] {
   return [...g.faqs, deliveryFaq(policy)];
-}
-
-/** Live products that belong to a guide (category subtree OR name keyword). */
-export function productsForGuide(g: Guide, products: readonly Product[], tree: CategoryTree): Product[] {
-  const catIds = new Set<string>();
-  for (const slug of g.match.categorySlugs) {
-    const c = tree.bySlug.get(slug);
-    if (c) tree.descendantIds(c.id).forEach((id) => catIds.add(id));
-  }
-  const kw = g.match.keywords.map((k) => k.toLowerCase());
-  return products.filter((p) =>
-    (p.categoryId && catIds.has(p.categoryId)) || kw.some((k) => p.name.toLowerCase().includes(k)));
 }

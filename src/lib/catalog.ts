@@ -32,3 +32,11 @@ export function featuredProducts(products: readonly Product[], limit = 12): Prod
 
 /** Root categories shown as browse tiles (the admin gives them an image). */
 export const browseCategories = (tree: CategoryTree) => tree.roots.filter((c) => c.imageUrl);
+
+/** Intro line under a listing H1 (/shop or a category) — server + client. */
+export function listingIntro(c: Category | null, count: number): string {
+  if (!c) return 'Every COCO36 ingredient in one place. Filter by origin, certification and price; we ship across India from Visakhapatnam.';
+  if (c.description) return c.description;
+  if (count === 0) return `Nothing from ${c.name} is in the shop right now.`;
+  return `${count} ${count === 1 ? 'ingredient' : 'ingredients'} in ${c.name}, shipped across India from Visakhapatnam.`;
+}

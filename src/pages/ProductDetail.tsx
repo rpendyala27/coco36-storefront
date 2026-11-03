@@ -13,7 +13,7 @@ import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
 import { SHIPS_FROM } from '../seo/site';
-import { GUIDES, guidePath, productsForGuide } from '../content/guides';
+import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
@@ -66,7 +66,7 @@ export const ProductDetail = () => {
 
   // The ingredient guide this product belongs to, for the "read the guide" link.
   const guide = useMemo(
-    () => (product ? GUIDES.find((g) => productsForGuide(g, [product], tree).length > 0) : undefined),
+    () => (product ? GUIDE_LINKS.find((g) => productsForGuide(g, [product], tree).length > 0) : undefined),
     [product, tree],
   );
 
