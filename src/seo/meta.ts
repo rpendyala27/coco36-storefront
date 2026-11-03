@@ -133,7 +133,7 @@ export function isStaticMetaPath(pathname: string): boolean {
 export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
   return {
     title: 'COCO36 | Baking & Pastry Ingredients Online in India',
-    description: `Origin ingredients for bakers, pastry chefs and chocolatiers in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ${rupees(policy.freeShippingPaise)}.`,
+    description: `Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ${rupees(policy.freeShippingPaise)}.`,
     path: '/',
     ogType: 'website',
     jsonLd: [

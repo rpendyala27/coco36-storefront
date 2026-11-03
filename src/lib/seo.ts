@@ -55,6 +55,7 @@ export function applyMeta(m: PageMeta): void {
   upsertMeta('name', 'twitter:title', m.title);
   upsertMeta('name', 'twitter:description', m.description);
   upsertMeta('name', 'twitter:image', image);
+  upsertMeta('name', 'twitter:image:alt', m.imageAlt ?? m.title);
 
   const keep = new Set(m.jsonLd.map((b) => b.id));
   document.head.querySelectorAll<HTMLScriptElement>('script[data-seo]').forEach((el) => {

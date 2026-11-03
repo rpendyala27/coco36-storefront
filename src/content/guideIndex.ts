@@ -61,7 +61,7 @@ export const GUIDE_LINKS: GuideLink[] = [
 export const GUIDES_HUB = {
   path: '/ingredients',
   title: 'Ingredient Guides for Bakers & Pastry Chefs | COCO36',
-  description: 'Practical guides to vanilla, cocoa and chocolate, sugars and jaggery, speciality flours, spices and salt: origins, uses, storage and answers to common questions.',
+  description: 'Guides to vanilla, cocoa and chocolate, sugars and jaggery, speciality flours, spices and salt: origins, how to use and store them, and common questions.',
   eyebrow: 'Ingredient guides',
   h1: 'Know your ingredients',
   intro: 'Each guide explains where an ingredient comes from, how it is made, how to use and store it, and answers the questions bakers ask us most. Every guide links to the matching products in the shop.',
