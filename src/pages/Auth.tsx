@@ -5,6 +5,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { safeRedirectPath } from '../lib/apiAuth';
 import { useAuth } from '../context/AuthContext';
+import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
 
 /**
  * Customer auth page — login + signup + password reset, all on Supabase Auth.
@@ -14,17 +15,21 @@ import { useAuth } from '../context/AuthContext';
  * access token. Name and phone typed at signup ride in user_metadata so they
  * survive email confirmation.
  */
+const PASSWORD_HINT = 'At least 8 characters, using letters and numbers.';
+
 export const AuthPage = () => {
-  const { user, passwordRecovery, clearPasswordRecovery } = useAuth();
+  const { user, passwordRecovery, clearPasswordRecovery, authLinkError, clearAuthLinkError } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
   const [phone, setPhone]     = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [error, setError]     = useState('');
+  // A failed email link (expired, already used) lands here with its reason.
+  const [error, setError]     = useState(() => authLinkError ?? '');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordUpdated, setPasswordUpdated] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Internal-only redirect target (prevents open-redirect via the query string).
@@ -37,6 +42,16 @@ export const AuthPage = () => {
   useEffect(() => {
     if (user && !passwordRecovery) navigate(redirectTo, { replace: true });
   }, [user, passwordRecovery, navigate, redirectTo]);
+
+  // The link's message is now on screen; don't show it again on a later visit.
+  useEffect(() => {
+    if (authLinkError) clearAuthLinkError();
+  }, [authLinkError, clearAuthLinkError]);
+
+  // The set-password form needs the recovery session itself. Without one (it
+  // ended, or the link never produced one) updateUser can only fail with
+  // "Auth session missing!", so show the sign-in form instead.
+  const settingPassword = passwordRecovery && !!user;
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,21 +105,30 @@ export const AuthPage = () => {
     }
   };
 
-  // Set a new password after a recovery link landed (PASSWORD_RECOVERY gives us
-  // a short-lived authenticated session; updateUser sets the new password).
+  // Set a new password after a recovery link landed (the link gives us a
+  // short-lived authenticated session; updateUser sets the new password).
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setMessage(''); setLoading(true);
     try {
       const { error: updErr } = await supabase.auth.updateUser({ password: newPassword });
       if (updErr) throw updErr;
-      clearPasswordRecovery();
-      navigate(redirectTo, { replace: true });
+      setPasswordUpdated(true);
     } catch (err: any) {
-      setError(err?.message ?? 'Could not update your password.');
+      if (err?.name === 'AuthSessionMissingError') {
+        clearPasswordRecovery();
+        setError(EXPIRED_LINK_MESSAGE);
+      } else {
+        setError(err?.message ?? 'Could not update your password.');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const finishRecovery = () => {
+    clearPasswordRecovery();
+    navigate(redirectTo, { replace: true });
   };
 
   const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
@@ -119,19 +143,30 @@ export const AuthPage = () => {
       >
         <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={49} height={48} alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
 
-        {passwordRecovery ? (
+        {settingPassword && passwordUpdated ? (
+          /* ── Done ─────────────────────────────────────────────────────────── */
+          <>
+            <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
+            <h1 className="font-display text-4xl text-center text-brand-forest mb-1">All set</h1>
+            <p className="text-center text-brand-muted text-sm mb-8">Your password has been updated. You’re signed in.</p>
+            <button type="button" onClick={finishRecovery} className="btn-primary w-full !py-3.5">
+              Continue <ArrowRight size={15} />
+            </button>
+          </>
+        ) : settingPassword ? (
           /* ── Set a new password (lands here from the reset email link) ───── */
           <>
             <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
             <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Set a new password</h1>
-            <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for your account.</p>
+            <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for {user?.email ?? 'your account'}.</p>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-widest font-bold text-brand-muted block">New password</label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" size={16} />
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} autoComplete="new-password" className={`${inputClass} pl-10`} required />
+                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} autoComplete="new-password" aria-describedby="new-password-hint" className={`${inputClass} pl-10`} required />
                 </div>
+                <p id="new-password-hint" className="text-xs text-brand-muted">{PASSWORD_HINT}</p>
               </div>
               {error && <p className="text-red-600 text-sm">{error}</p>}
               {message && <p className="text-brand-leaf text-sm">{message}</p>}
@@ -176,8 +211,9 @@ export const AuthPage = () => {
             <label className="text-[10px] uppercase tracking-widest font-bold text-brand-muted block">Password</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" size={16} />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} autoComplete={isLogin ? 'current-password' : 'new-password'} className={`${inputClass} pl-10`} required />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} autoComplete={isLogin ? 'current-password' : 'new-password'} aria-describedby={isLogin ? undefined : 'password-hint'} className={`${inputClass} pl-10`} required />
             </div>
+            {!isLogin && <p id="password-hint" className="text-xs text-brand-muted">{PASSWORD_HINT}</p>}
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}

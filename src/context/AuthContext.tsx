@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { initialAuthLink, supabase } from '../lib/supabase';
 import { syncCustomerProfile } from '../lib/apiAuth';
 
 interface CustomerProfile {
@@ -16,11 +16,15 @@ interface AuthContextType {
   profile: CustomerProfile | null;
   loading: boolean;
   isAdmin: boolean;
-  /** True once a password-recovery link has been opened (Supabase fires the
-   *  PASSWORD_RECOVERY event after the reset link lands). The /auth page uses
-   *  this to show a "set a new password" form. */
+  /** True while a password-recovery link's session is in use: from the first
+   *  render after the reset link lands (read from the URL, see
+   *  src/lib/authLink.ts) until the new password is set or the shopper signs
+   *  out. The /auth page uses this to show the "set a new password" form. */
   passwordRecovery: boolean;
   clearPasswordRecovery: () => void;
+  /** Why an email link that landed here didn't work (expired, already used). */
+  authLinkError: string | null;
+  clearAuthLinkError: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -31,6 +35,8 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   passwordRecovery: false,
   clearPasswordRecovery: () => {},
+  authLinkError: null,
+  clearAuthLinkError: () => {},
   signOut: async () => {},
 });
 
@@ -45,7 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser]       = useState<User | null>(null);
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [passwordRecovery, setPasswordRecovery] = useState(false);
+  // Known on the first render: waiting for the PASSWORD_RECOVERY event let
+  // /auth see a signed-in user first and send them to the home page.
+  const [passwordRecovery, setPasswordRecovery] = useState(initialAuthLink.recovery);
+  const [authLinkError, setAuthLinkError] = useState<string | null>(initialAuthLink.error);
 
   useEffect(() => {
     let active = true;
@@ -75,6 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: { session } } = await supabase.auth.getSession();
       if (!active) return;
       setUser(session?.user ?? null);
+      // No session after all (link already consumed in another tab, storage
+      // blocked): there is nothing to set a password on.
+      if (!session) setPasswordRecovery(false);
       setLoading(false);
       clearTimeout(safety);
       void loadProfile(session?.user ?? null);
@@ -94,10 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const u = session.user;
         void syncCustomerProfile(session.access_token).then(() => { if (active) void loadProfile(u); });
       }
-      // A reset link landing on the site fires PASSWORD_RECOVERY before any
-      // navigation; flag it so /auth can show the set-new-password form instead
-      // of bouncing the (now session-bearing) user away.
+      // Normally already set from the URL on the first render; kept as a
+      // backstop for links the URL check doesn't recognise.
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      // Signing out ends the recovery session; a stale flag here showed a
+      // set-password form with no session behind it ("Auth session missing!").
+      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
       setUser(session?.user ?? null);
       void loadProfile(session?.user ?? null);
     });
@@ -119,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = false;
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signOut }}>
       {!loading && children}
     </AuthContext.Provider>
   );
