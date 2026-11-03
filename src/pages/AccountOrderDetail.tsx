@@ -4,6 +4,7 @@ import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw, FileText } fr
 import { useAuth } from '../context/AuthContext';
 import { supabase, API_URL } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
+import { RETURN_REASON_LABELS } from '../lib/order-status';
 import { formatMoney } from '../lib/currency';
 
 interface OrderDetail {
@@ -287,11 +288,9 @@ export const AccountOrderDetail = () => {
                           onChange={(e) => setReturnReason(e.target.value)}
                           className="w-full border border-brand-ink/20 bg-transparent px-3 py-2 text-sm focus:outline-none focus:border-brand-leaf"
                         >
-                          <option value="damaged">Damaged in transit</option>
-                          <option value="wrong_item">Wrong item received</option>
-                          <option value="quality">Quality issue</option>
-                          <option value="not_needed">No longer needed</option>
-                          <option value="other">Other</option>
+                          {Object.entries(RETURN_REASON_LABELS).map(([code, label]) => (
+                            <option key={code} value={code}>{label}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
