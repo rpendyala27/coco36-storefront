@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckDelivery } from './CheckDelivery';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -161,6 +162,7 @@ export const CartDrawer: React.FC = () => {
               const pct = freeShippingProgress(subtotal, cfg);
               return (
                 <footer className="border-t border-brand-line px-6 py-5 space-y-4 bg-white">
+                  <CheckDelivery compact variantIds={items.map((it) => it.sizeId)} />
                   {/* Endowed progress toward free shipping */}
                   <div>
                     {remaining > 0 ? (
