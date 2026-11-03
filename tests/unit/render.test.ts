@@ -120,3 +120,52 @@ describe('server-rendered pages', () => {
     expect(r.headers['Retry-After']).toBe('120');
   });
 });
+
+describe('traceability on the server', () => {
+  const mockDb = (extra: Record<string, unknown>) =>
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      const hit = Object.keys(extra).find((k) => url.includes(k));
+      const body = hit ? extra[hit]
+        : url.includes('/rest/v1/products') ? [{ ...product, product_tags: [
+            { tag: { slug: 'usda-organic', label: 'USDA Organic', kind: 'certification' } },
+            { tag: { slug: 'vegan', label: 'Vegan', kind: 'dietary' } },
+          ] }]
+        : url.includes('/rest/v1/categories') ? [category]
+        : [];
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+
+  it('a certification badge is served only with a valid certificate (product_claims)', async () => {
+    const { loadCatalog } = await import('../../server/catalog');
+    mockDb({ 'rpc/product_claims': [] });
+    expect((await loadCatalog()).products[0].tags!.map((t) => t.slug)).toEqual(['vegan']);
+    resetCatalogCache();
+    mockDb({ 'rpc/product_claims': [{ product_id: PRODUCT_ID, claim: 'usda-organic' }] });
+    expect((await loadCatalog()).products[0].tags!.map((t) => t.slug)).toEqual(['usda-organic', 'vegan']);
+    resetCatalogCache();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      if (String(input).includes('rpc/product_claims')) return new Response('{"message":"boom"}', { status: 500 });
+      const url = String(input);
+      const body = url.includes('/rest/v1/products') ? [{ ...product, product_tags: [{ tag: { slug: 'brcgs', label: 'BRCGS', kind: 'certification' } }] }] : url.includes('/rest/v1/categories') ? [category] : [];
+      return new Response(JSON.stringify(body), { status: 200 });
+    });
+    expect((await loadCatalog()).products[0].tags).toEqual([]);
+  });
+
+  it('/lot/<lot> is 404 while SHOW_LOT_PASSPORT is off (the database returns nothing)', async () => {
+    mockDb({ 'rpc/lot_passport': null });
+    const r = await render('/lot/C36-VAN100-2611-01', '', 'coco36.com');
+    expect(r.status).toBe(404);
+    expect(robots(r.body)).toBe('noindex');
+  });
+
+  it('/lot/<lot> with the flag on: 200 and never indexed', async () => {
+    const f = mockDb({ 'rpc/lot_passport': { lot_number: 'C36-VAN100-2611-01', product: { id: PRODUCT_ID, name: 'Vanilla', size: '100 g' }, origin: { country: 'India', region: 'Kerala' }, supplier: null, expiry_date: null, best_before: null, recalled: false, coa_url: null, certificates: [] } });
+    const r = await render('/lot/C36-VAN100-2611-01', '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(robots(r.body)).toBe('noindex, follow');
+    expect(title(r.body)).toBe('Lot C36-VAN100-2611-01 · Vanilla | COCO36');
+    expect(f.mock.calls.map(([u]) => String(u)).find((u) => u.includes('lot_passport'))).toContain('p_lot=C36-VAN100-2611-01');
+  });
+});

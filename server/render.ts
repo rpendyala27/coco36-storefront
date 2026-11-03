@@ -12,7 +12,7 @@ import { guideMeta } from '../src/seo/guideMeta.js';
 import { DEFAULT_POLICY, SITE_HOST, SITE_ORIGIN } from '../src/seo/site.js';
 import { buildTree } from '../src/lib/categoryTree.js';
 import { inject, isTemplate, renderHead } from './html.js';
-import { loadCatalog, type Catalog } from './catalog.js';
+import { loadCatalog, loadLotPassport, type Catalog } from './catalog.js';
 import {
   categorySnapshot, errorSnapshot, guideSnapshot, guidesHubSnapshot, homeSnapshot,
   productSnapshot, shopSnapshot, staticSnapshot, type SnapshotCtx,
@@ -156,6 +156,17 @@ export async function render(pathname: string, search: string, host: string): Pr
     }
     if (r.kind === 'gone') return withHost(page(410, goneMeta(), errorSnapshot(ctx, 'gone')));
     return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+  }
+
+  // ── /lot/:lot (lot passport): never indexed; 404 while SHOW_LOT_PASSPORT is off
+  if (segs[0] === 'lot' && segs.length === 2) {
+    const passport = await loadLotPassport(decodeURIComponent(segs[1]));
+    if (!passport) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    return withHost(page(200, {
+      title: `Lot ${passport.lot_number} · ${passport.product.name} | COCO36`,
+      description: `Where lot ${passport.lot_number} of ${passport.product.name} came from, and its certificates.`,
+      robots: NOINDEX, jsonLd: [],
+    }, ''));
   }
 
   // ── /ingredients and /ingredients/:slug

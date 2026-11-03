@@ -4,6 +4,8 @@ import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
 } from '../src/lib/categoryTree.js';
 import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
+import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
+import type { LotPassport } from '../src/lib/lotPassport.js';
 
 /**
  * Live catalogue for the render + sitemap functions, read straight from
@@ -70,7 +72,7 @@ function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
 
 async function fetchCatalog(): Promise<Catalog> {
   const keys = Object.values(SETTINGS_KEYS).map((k) => `"${k}"`).join(',');
-  const [rows, cats, settings] = await Promise.all([
+  const [rows, cats, settings, claimRows] = await Promise.all([
     // order=name,id mirrors productService.list(): slug collisions resolve the same way.
     rest<unknown[]>(`products?select=${compact(PRODUCT_SELECT)}&status=eq.active&deleted_at=is.null&order=name.asc,id.asc`),
     rest<CategoryRow[]>(`categories?select=${compact(CATEGORY_SELECT)}&deleted_at=is.null&order=sort_order.asc,name.asc`),
@@ -79,9 +81,15 @@ async function fetchCatalog(): Promise<Catalog> {
       console.error(e);
       return [];
     }),
+    // Certification badges only where a certificate is valid today; if this
+    // fails, no claim is shown (null).
+    rest<{ product_id: string; claim: string }[]>('rpc/product_claims').catch((e) => {
+      console.error(e);
+      return null;
+    }),
   ]);
   return {
-    products: rows.map(mapSupabaseProduct),
+    products: applyClaims(rows.map(mapSupabaseProduct), claimRows ? claimsFromRows(claimRows) : null),
     tree: buildTree(cats.map(mapCategoryRow)),
     policy: policyFrom(settings),
   };
@@ -101,4 +109,19 @@ export async function loadCatalog(): Promise<Catalog> {
 /** Test hook: forget the cached catalogue. */
 export function resetCatalogCache(): void {
   cached = null;
+}
+
+/**
+ * The public lot page's data, or null (unknown lot, or SHOW_LOT_PASSPORT off:
+ * public.lot_passport() returns nothing while the flag is off).
+ */
+export async function loadLotPassport(lot: string): Promise<LotPassport | null> {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$/.test(lot)) return null;
+  try {
+    const p = await rest<LotPassport | null>(`rpc/lot_passport?p_lot=${encodeURIComponent(lot)}`);
+    return p && typeof p === 'object' && !Array.isArray(p) && typeof p.lot_number === 'string' ? p : null;
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
 }

@@ -1,6 +1,18 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product } from '../types';
 import { PRODUCT_SELECT, mapSupabaseProduct } from './productMapper';
+import { applyClaims, claimsFromRows, type Claims } from '../lib/claims';
+
+/** Which certification badges are backed by a valid certificate today; null if unknown (badges are then hidden). */
+async function loadClaims(): Promise<Claims | null> {
+  const { data, error } = await supabase.rpc('product_claims');
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[productService.claims]', error);
+    return null;
+  }
+  return claimsFromRows(data as { product_id: string; claim: string }[]);
+}
 
 /**
  * Supabase product reader for the storefront.
@@ -96,13 +108,16 @@ export const productService = {
   /** One-shot fetch — used by SSR-like flows or manual refresh. */
   async list(): Promise<Product[]> {
     if (!isSupabaseConfigured) return [];
-    const { data, error } = await supabase
-      .from('products')
-      .select(PRODUCT_SELECT)
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .order('name')
-      .order('id');
+    const [{ data, error }, claims] = await Promise.all([
+      supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('status', 'active')
+        .is('deleted_at', null)
+        .order('name')
+        .order('id'),
+      loadClaims(),
+    ]);
 
     if (error) {
       // eslint-disable-next-line no-console
@@ -110,7 +125,7 @@ export const productService = {
       return [];
     }
 
-    return (data ?? []).map(mapSupabaseProduct);
+    return applyClaims((data ?? []).map(mapSupabaseProduct), claims);
   },
 
   /** Lean one-shot fetch for the header search index (see SearchProduct).
@@ -166,15 +181,18 @@ export const productService = {
   /** Lookup a single product by id (UUID). */
   async get(id: string): Promise<Product | null> {
     if (!isSupabaseConfigured) return null;
-    const { data, error } = await supabase
-      .from('products')
-      .select(PRODUCT_SELECT)
-      .eq('id', id)
-      .eq('status', 'active')
-      .is('deleted_at', null)
-      .maybeSingle();
+    const [{ data, error }, claims] = await Promise.all([
+      supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .eq('id', id)
+        .eq('status', 'active')
+        .is('deleted_at', null)
+        .maybeSingle(),
+      loadClaims(),
+    ]);
 
     if (error || !data) return null;
-    return mapSupabaseProduct(data);
+    return applyClaims([mapSupabaseProduct(data)], claims)[0];
   },
 };
