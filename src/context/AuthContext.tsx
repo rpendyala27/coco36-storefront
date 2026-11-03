@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { syncCustomerProfile } from '../lib/apiAuth';
 
 interface CustomerProfile {
   id: string;
@@ -79,9 +80,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       void loadProfile(session?.user ?? null);
     })();
 
+    // Create/refresh the customers row once per signed-in user per tab: on
+    // sign-in, on signup without email confirmation, and when an email
+    // confirmation link lands with a fresh session. The admin API takes the
+    // user id + email from the access token; name/phone come from user_metadata.
+    let syncedFor: string | null = null;
+
     // Future changes — profile loads in the background, never blocks render.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
+        syncedFor = session.user.id;
+        const u = session.user;
+        void syncCustomerProfile(session.access_token).then(() => { if (active) void loadProfile(u); });
+      }
       // A reset link landing on the site fires PASSWORD_RECOVERY before any
       // navigation; flag it so /auth can show the set-new-password form instead
       // of bouncing the (now session-bearing) user away.

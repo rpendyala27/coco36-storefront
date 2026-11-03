@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase, API_URL } from '../lib/supabase';
+import { authHeader } from '../lib/apiAuth';
 import { formatMoney } from '../lib/currency';
 
 interface OrderDetail {
@@ -46,12 +47,14 @@ export const AccountOrderDetail = () => {
     setReturnSubmitting(true);
     setReturnError(null);
     try {
+      // The API identifies the shopper from this token (never from the body).
+      const auth = await authHeader();
+      if (!auth) throw new Error('Your session has expired. Please sign in again.');
       const res = await fetch(`${API_URL}/api/returns/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({
           orderId:      order.id,
-          customerId:   user.id,
           reasonCode:   returnReason,
           customerNote: returnNote || undefined,
         }),

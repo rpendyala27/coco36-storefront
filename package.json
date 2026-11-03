@@ -9,7 +9,8 @@
     "preview": "node scripts/stash-template.mjs --restore && vite preview",
     "clean": "rm -rf dist dist-server",
     "lint": "tsc --noEmit",
-    "seo:audit": "node scripts/seo-audit.mjs"
+    "seo:audit": "node scripts/seo-audit.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -35,6 +36,7 @@
     "schema-dts": "^2.1.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.7"
   }
 }

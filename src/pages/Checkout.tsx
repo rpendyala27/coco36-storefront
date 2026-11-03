@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
+import { authHeader } from '../lib/apiAuth';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
@@ -194,23 +195,26 @@ export const Checkout = () => {
       return;
     }
 
+    // The API identifies the shopper from this token (never from the body).
+    const auth = await authHeader();
+    if (!auth) {
+      setError('Your session has expired. Please sign in again to place the order.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
       const orderRes = await fetch(`${API_URL}/api/orders/create`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({
-          // Pin the order to the auth user so /account history + the address
-          // book (both keyed on auth.uid()) resolve. Checkout is login-gated.
-          customerId: user?.id,
           items: items.map((it) => ({ variantId: it.sizeId, qty: it.quantity })),
           // Reusable book rows — no per-order duplication. "Same as shipping"
           // points both at the one row. GSTIN rides on the billing address.
           shipAddressId: selectedShipId,
           billAddressId,
           customerName:  form.name,
-          customerEmail: form.email,
           customerPhone: form.phone,
           paymentMethod: form.paymentMethod,
         }),
