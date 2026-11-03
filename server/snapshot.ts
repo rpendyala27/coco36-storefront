@@ -81,7 +81,7 @@ const guideList = (guides: readonly Guide[]) =>
   `<ul>${guides.map((g) => `<li>${a(guidePath(g), g.name)}: ${esc(g.blurb)}</li>`).join('')}</ul>`;
 
 const deliveryLine = (policy: StorePolicy) =>
-  `Ships within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM} via ${CARRIER}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged or wrong items can be reported within ${policy.returnWindowDays} days of delivery.`;
+  `Ships within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM} via ${CARRIER}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong or expired items can be reported within ${policy.returnWindowDays} days of delivery.`;
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 

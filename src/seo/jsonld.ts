@@ -26,7 +26,8 @@ const paiseToRupees = (paise: number) => (paise / 100).toFixed(2);
 /** One crumb: name + canonical path. */
 export interface Crumb { name: string; path: string }
 
-/** Returns are accepted within the window for damaged or wrong items. */
+/** Returns are accepted within the window for damaged, wrong or expired items only
+ *  (see /terms#returns). No change-of-mind returns on food. */
 export function returnPolicyJsonLd(policy: StorePolicy = DEFAULT_POLICY): MerchantReturnPolicy {
   return {
     '@type': 'MerchantReturnPolicy',

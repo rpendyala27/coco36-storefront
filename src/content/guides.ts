@@ -291,7 +291,7 @@ export const guideBySlug = (slug: string) => GUIDES.find((g) => g.slug === slug)
 export function deliveryFaq(policy: StorePolicy = DEFAULT_POLICY): Faq {
   return {
     q: 'Do you deliver across India?',
-    a: `Yes. Orders are usually dispatched within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM}, through ${CARRIER}, to serviceable pincodes across India. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged or wrong, tell us within ${policy.returnWindowDays} days of delivery.`,
+    a: `Yes. Orders are usually dispatched within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM}, through ${CARRIER}, to serviceable pincodes across India. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged, wrong or expired, tell us within ${policy.returnWindowDays} days of delivery.`,
   };
 }
 

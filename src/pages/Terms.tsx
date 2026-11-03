@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useStoreConfig } from '../lib/storeConfig';
 
 /**
  * Soft-launch terms of sale. Covers the basics: who is selling, returns,
@@ -6,7 +7,8 @@ import type React from 'react';
  * scaling beyond friends-and-family orders.
  */
 export const Terms = () => {
-  const lastUpdated = '15 June 2026';
+  const lastUpdated = '3 November 2026';
+  const { returnWindowDays } = useStoreConfig();
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-3xl mx-auto text-brand-ink">
       <h1 className="text-4xl font-bold mb-3">Terms of sale</h1>
@@ -48,8 +50,10 @@ export const Terms = () => {
 
       <Section id="returns" title="Returns and refunds">
         <ul className="list-disc pl-6 space-y-1">
-          <li>Sealed, non-perishable items can be returned within the window shown on the order page (default: 7 days from delivery).</li>
-          <li>Perishables and customised items are non-returnable except where damaged or wrong.</li>
+          <li>We accept returns only for items that arrive damaged, wrong (not what you ordered) or past their best-before date.</li>
+          <li>Tell us within {returnWindowDays} days of delivery, with your order number and photos of the item and its packaging. We will then refund or replace the affected item.</li>
+          <li>We can't take back items that arrive in good condition, for example a change of mind. Food can't be resold once it has left us.</li>
+          <li>If we need the item back to check it, we will tell you how to send it.</li>
           <li>Approved refunds for prepaid orders are issued to the original payment method within 5–7 business days.</li>
           <li>COD refunds are issued by bank transfer once we confirm bank details.</li>
         </ul>
