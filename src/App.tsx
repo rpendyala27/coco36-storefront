@@ -11,6 +11,7 @@ import { useStoreConfig } from './lib/storeConfig';
 import { trackPageView } from './lib/analytics';
 import { GUIDE_LINKS, guidePath } from './content/guideIndex';
 import { SOCIAL_LINKS } from './seo/site';
+import { SupportContactLink } from './components/SupportContact';
 // The homepage is eagerly imported as the above-the-fold experience.
 import { Home } from './pages/Home';
 
@@ -260,7 +261,7 @@ export default function App() {
                 <a href="/privacy" className="hover:text-brand-leaf-bright transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-brand-leaf-bright transition-colors">Terms</a>
                 <a href="/terms#shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping &amp; Returns</a>
-                <a href="mailto:pendyalarohan27@gmail.com" className="hover:text-brand-leaf-bright transition-colors">Contact</a>
+                <SupportContactLink className="hover:text-brand-leaf-bright transition-colors" />
               </div>
             </div>
           </div>

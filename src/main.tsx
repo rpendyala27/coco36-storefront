@@ -8,6 +8,7 @@ import { initSentry, Sentry } from './lib/sentry';
 import { initAnalytics } from './lib/analytics';
 import { readConsent } from './lib/consent';
 import { isSupabaseConfigured } from './lib/supabase';
+import { SUPPORT_EMAIL } from './lib/supportContact';
 
 initSentry();
 // Returning visitors who already accepted get GA straight away; everyone else
@@ -61,7 +62,7 @@ function ConfigErrorFallback() {
         your connection — please try again shortly.
       </p>
       <a
-        href="mailto:pendyalarohan27@gmail.com"
+        href={`mailto:${SUPPORT_EMAIL}`}
         style={{
           padding: '0.875rem 2rem', background: '#4e7d24', color: '#ffffff',
           textDecoration: 'none', fontSize: '0.75rem', fontWeight: 'bold',

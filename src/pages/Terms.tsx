@@ -1,4 +1,5 @@
 import type React from 'react';
+import { SupportContactLink } from '../components/SupportContact';
 import { useStoreConfig } from '../lib/storeConfig';
 
 /**
@@ -17,8 +18,8 @@ export const Terms = () => {
       <Section title="The seller">
         <p>
           COCO36 is a brand operated by COCO36 Foods Pvt Ltd, India. Our
-          full seller details, legal name, registered address, FSSAI licence,
-          and (once registered) GSTIN, appear on the tax invoice for every order.
+          legal name, registered address and, once registered, GSTIN appear
+          on the tax invoice for every order.
           By placing an order you agree to these terms and to our{' '}
           <a href="/privacy" className="text-brand-leaf hover:underline">privacy notice</a>.
         </p>
@@ -88,9 +89,7 @@ export const Terms = () => {
       <Section title="Contact">
         <p>
           Questions or disputes:{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">
-            pendyalarohan27@gmail.com
-          </a>.
+          <SupportContactLink className="text-brand-leaf hover:underline" />.
         </p>
       </Section>
 

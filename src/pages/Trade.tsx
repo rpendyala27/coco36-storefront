@@ -28,7 +28,7 @@ const VALUE_PROPS = [
   {
     icon: FileCheck2,
     title: 'Full documentation',
-    description: 'Certificate of Analysis, spec sheets, FSSAI and origin provenance for every lot, before you commit.',
+    description: 'Certificate of Analysis, spec sheets and origin provenance for every lot, before you commit.',
   },
   {
     icon: CalendarClock,

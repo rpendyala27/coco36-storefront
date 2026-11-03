@@ -3,6 +3,7 @@ import type * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Package, Truck, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { SupportContactLink } from '../components/SupportContact';
 
 interface Shipment {
   awb:        string;
@@ -118,9 +119,7 @@ export const Track = () => {
 
             <p className="text-xs text-brand-muted text-center">
               Need help?{' '}
-              <a href="mailto:support@coco36.com" className="text-brand-leaf hover:underline font-bold">
-                support@coco36.com
-              </a>
+              <SupportContactLink className="text-brand-leaf hover:underline font-bold" />
             </p>
           </>
         )}

@@ -90,7 +90,7 @@ export const PHASES: Phase[] = [
       { number: 25, title: 'Provenance record',       description: 'The origin-to-craft history of the lot is compiled into one record.' },
       { number: 26, title: 'Certification mapping',    description: 'Applicable certifications and documents are attached to the lot.' },
       { number: 27, title: 'Protective packing',       description: 'Packed in food-grade materials chosen to protect freshness.' },
-      { number: 28, title: 'Labelling & compliance',   description: 'Labelled with FSSAI, batch and statutory details.' },
+      { number: 28, title: 'Labelling',                 description: 'Each pack is labelled with its batch and the details printed on it.' },
       { number: 29, title: 'Correct storage',          description: 'Held in dry or cool conditions suited to the ingredient.' },
       { number: 30, title: 'Dispatch',                 description: 'Released and shipped with the lot details carried through.' },
     ],

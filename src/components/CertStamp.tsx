@@ -2,8 +2,9 @@ import type * as React from 'react';
 import { useId, useState } from 'react';
 import {
   CandyOff, FileCheck, HandCoins, Leaf, MapPin, MoonStar,
-  ShieldCheck, Sprout,
+  Sprout,
 } from 'lucide-react';
+import { isFssaiClaim } from '../lib/fssai';
 
 /**
  * Certification / dietary stamp iconography — one mark per tag slug, used in
@@ -55,7 +56,6 @@ const MARKS: Record<string, MarkDef> = {
   'halal':                  { icon: MoonStar },
   'kosher':                 { letters: 'K' },
   'coa':                    { icon: FileCheck },
-  'fssai':                  { icon: ShieldCheck },
   'non-gmo':                { split: ['NON', 'GMO'] },
   'certified-vegan':        { letters: 'V' },
   'certified-gluten-free':  { letters: 'GF' },
@@ -97,6 +97,8 @@ export interface CertStampProps {
 export const CertStamp: React.FC<CertStampProps> = ({ slug, label, size = 22, className = '', title = true }) => {
   const uid = useId();
   const [logoFailed, setLogoFailed] = useState(false);
+  // No FSSAI mark, including a letter fallback or a logo dropped into CERT_LOGOS.
+  if (isFssaiClaim(slug, label)) return null;
   const logoSrc = CERT_LOGOS[slug];
   const def: MarkDef = MARKS[slug] ?? { letters: label.charAt(0).toUpperCase() };
   const iconPx = Math.round(size * 0.52);

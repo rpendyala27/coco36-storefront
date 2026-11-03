@@ -1,4 +1,5 @@
 import type React from 'react';
+import { SupportContactLink } from '../components/SupportContact';
 
 /**
  * Soft-launch privacy notice. Plain-language summary written for India DPDP
@@ -59,9 +60,7 @@ export const Privacy = () => {
           You can request access, correction, or deletion of your personal
           data, and you can withdraw consent for marketing at any time. Write
           to{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">
-            pendyalarohan27@gmail.com
-          </a>{' '}
+          <SupportContactLink className="text-brand-leaf hover:underline" />{' '}
           and we will respond within 30 days.
         </p>
       </Section>
@@ -79,7 +78,7 @@ export const Privacy = () => {
         <p>
           For any question, complaint, or request about your personal data,
           contact our Grievance Officer at{' '}
-          <a href="mailto:pendyalarohan27@gmail.com" className="text-brand-leaf hover:underline">pendyalarohan27@gmail.com</a>.
+          <SupportContactLink className="text-brand-leaf hover:underline" />.
           We acknowledge within 48 hours and aim to resolve within 30 days.
         </p>
       </Section>

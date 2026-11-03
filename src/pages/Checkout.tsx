@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, RotateCcw, Plus, MapPin } from 'lucide-react';
+import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, RotateCcw, Plus, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
@@ -594,7 +594,6 @@ export const Checkout = () => {
               <div className="flex items-center justify-center gap-4 text-[10px] uppercase tracking-wide text-brand-muted font-medium">
                 <span className="inline-flex items-center gap-1"><Lock size={11} /> Secure</span>
                 <span className="inline-flex items-center gap-1"><RotateCcw size={11} /> 7-day returns</span>
-                <span className="inline-flex items-center gap-1"><ShieldCheck size={11} /> FSSAI licensed</span>
               </div>
 
               <p className="text-[11px] text-brand-muted text-center opacity-70">
