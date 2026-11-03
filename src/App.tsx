@@ -3,7 +3,6 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
-import { PincodePopup } from './components/PincodePopup';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
 import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
@@ -137,7 +136,6 @@ export default function App() {
         <Navigation />
         <CartDrawer />
         <CookieBanner />
-        <PincodePopup />
         <main>
           <Suspense fallback={<RouteFallback />}>
             <Routes>

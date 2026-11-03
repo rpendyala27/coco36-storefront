@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { CheckDelivery } from '../components/CheckDelivery';
 import type * as React from 'react';
 import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, BookOpen, ArrowRight, Star } from 'lucide-react';
 import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
@@ -225,6 +226,10 @@ export const ProductDetail = () => {
               <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
             </button>
             <button onClick={handleBuyNow} disabled={!selectedSize?.inStock} className="btn-ghost !py-3.5 px-7 disabled:opacity-30">Buy now</button>
+          </div>
+
+          <div className="mt-5">
+            <CheckDelivery variantIds={selectedSize ? [selectedSize.id] : []} />
           </div>
 
           {/* Ship note */}

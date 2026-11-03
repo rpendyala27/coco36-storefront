@@ -12,6 +12,8 @@ import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
 import { AddressForm } from '../components/AddressForm';
+import { DeliveryAnswer } from '../components/CheckDelivery';
+import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/delivery';
 
 const DRAFT_KEY = 'coco36.checkout-draft';
 
@@ -83,6 +85,29 @@ export const Checkout = () => {
       phone: f.phone || profile?.phone || '',
     }));
   }, [user, profile]);
+
+  // ── Delivery to the chosen address (Phase 2A) ─────────────────────────────
+  // The server refuses an undeliverable address anyway; this tells the shopper
+  // before they press Place order, and stops COD where the zone doesn't take it.
+  const shipAddr = addresses.find((a) => a.id === selectedShipId) ?? null;
+  const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const itemIds = items.map((it) => it.sizeId).join(',');
+  useEffect(() => {
+    if (!shipAddr) { setDelivery(null); setDeliveryError(null); return; }
+    let live = true;
+    checkDelivery(shipAddr.pincode, { variantIds: itemIds ? itemIds.split(',') : [], cod: form.paymentMethod === 'cod' })
+      .then((r) => { if (!live) return; setDelivery(r); setDeliveryError(null); rememberPincode(shipAddr.pincode); })
+      .catch((e: Error) => { if (live) { setDelivery(null); setDeliveryError(e.message); } });
+    return () => { live = false; };
+  }, [shipAddr?.pincode, itemIds, form.paymentMethod]);
+  const deliveryBlock: string | null = !delivery
+    ? null
+    : !delivery.deliverable
+      ? (delivery.message ?? "We can't deliver to this address yet.")
+      : form.paymentMethod === 'cod' && !delivery.codAllowed
+        ? "Cash on delivery isn't available for this PIN code. Please pay online."
+        : null;
 
   // ── Login required ──────────────────────────────────────────────────────────
   // Checkout is gated so orders attach to the customer profile and the saved
@@ -188,6 +213,10 @@ export const Checkout = () => {
 
     if (!selectedShipId) {
       setError('Please select or add a shipping address.');
+      return;
+    }
+    if (deliveryBlock) {
+      setError(deliveryBlock);
       return;
     }
     const billAddressId = billSameAsShip ? selectedShipId : selectedBillId;
@@ -418,6 +447,16 @@ export const Checkout = () => {
                 </div>
               )}
 
+              {shipAddr && !addingShip && (delivery || deliveryError) && (
+                <div className="mb-3 text-sm" data-testid="checkout-delivery">
+                  {delivery && <DeliveryAnswer pin={shipAddr.pincode} result={delivery} />}
+                  {deliveryError && <p className="text-brand-muted">{deliveryError}</p>}
+                  {delivery?.deliverable && form.paymentMethod === 'cod' && !delivery.codAllowed && (
+                    <p role="alert" className="mt-1 text-red-700">Cash on delivery isn&apos;t available for this PIN code. Please pay online.</p>
+                  )}
+                </div>
+              )}
+
               {(addingShip || addresses.length === 0) && (
                 <div className="border border-brand-line rounded-xl p-5 bg-brand-surface">
                   <h3 className="text-sm font-bold mb-4">{addresses.length === 0 ? 'Add a shipping address' : 'New address'}</h3>
@@ -584,7 +623,7 @@ export const Checkout = () => {
               <button
                 type="button"
                 onClick={() => handleSubmit()}
-                disabled={submitting}
+                disabled={submitting || Boolean(deliveryBlock)}
                 className="btn-primary w-full !py-5 disabled:opacity-50"
               >
                 <Lock size={14} /> {submitting ? 'Processing…' : `Place order — ${formatMoney(totals.total_paise)}`}
