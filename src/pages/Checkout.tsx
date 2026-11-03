@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, ShieldCheck, RotateCcw, Plus, MapPin } from 'lucide-react';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
+import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checkout';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig } from '../lib/storeConfig';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
@@ -40,6 +41,11 @@ export const Checkout = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  // One idempotency key per checkout attempt: a double-click or a retry after
+  // a network error returns the same order instead of a second one. A new key
+  // once the cart changes or the attempt ended (paid, cancelled, failed).
+  const attempt = useRef<{ key: string; cart: string }>({ key: newIdempotencyKey(), cart: '' });
+  const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), cart: '' }; };
 
   // ── Address book ──────────────────────────────────────────────────────────
   const [addresses, setAddresses]       = useState<BookAddress[]>([]);
@@ -204,6 +210,10 @@ export const Checkout = () => {
 
     setSubmitting(true);
 
+    const sig = cartSignature(items);
+    if (attempt.current.cart && attempt.current.cart !== sig) freshAttempt();
+    attempt.current.cart = sig;
+
     try {
       const orderRes = await fetch(`${API_URL}/api/orders/create`, {
         method: 'POST',
@@ -217,15 +227,23 @@ export const Checkout = () => {
           customerName:  form.name,
           customerPhone: form.phone,
           paymentMethod: form.paymentMethod,
+          idempotencyKey: attempt.current.key,
         }),
       });
 
       const payload = await orderRes.json();
-      if (!orderRes.ok) throw new Error(payload.error ?? 'Order creation failed');
+      if (!orderRes.ok) {
+        // The server answered: the order was refused, or cancelled after a
+        // gateway error. The next try is a new attempt. (A network failure
+        // throws before this and keeps the key, so a retry can't double-order.)
+        freshAttempt();
+        throw new Error(payload.error ?? 'Order creation failed');
+      }
 
       const { orderId, orderNumber, razorpayOrderId, amount } = payload;
 
       if (form.paymentMethod === 'cod') {
+        freshAttempt();
         setConfirmedOrder({ orderNumber, total_paise: amount });
         setStep('confirmed');
         try { window.sessionStorage.removeItem(DRAFT_KEY); } catch {}
@@ -250,12 +268,20 @@ export const Checkout = () => {
           // Razorpay JS handler fires on successful authorisation.
           // The webhook on the server is the real source of truth — but for
           // the user we show confirmation immediately.
+          freshAttempt();
           setConfirmedOrder({ orderNumber, total_paise: amount });
           setStep('confirmed');
           setTimeout(() => clear(), 300);
         },
         modal: {
-          ondismiss: () => setSubmitting(false),
+          // Closed without paying: release the stock this order holds (the
+          // API checks with Razorpay first) and start a new attempt next time.
+          ondismiss: () => {
+            freshAttempt();
+            void abandonCheckout(orderId);
+            setError('Payment cancelled. Your bag is unchanged; place the order again when you are ready.');
+            setSubmitting(false);
+          },
         },
       });
 

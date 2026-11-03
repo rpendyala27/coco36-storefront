@@ -87,7 +87,7 @@ export function InvoiceTemplate({
             {ship.city}, {ship.state} — {ship.pincode}
           </p>
           <p className="text-xs text-gray-500 mt-2">
-            Place of Supply: <span className="font-bold">{ship.state}</span>
+            Place of Supply: <span className="font-bold">{ship.state}{breakup.buyerStateCode ? ` (${breakup.buyerStateCode})` : ''}</span>
             {' · '}
             {breakup.isIntraState ? 'Intra-state (CGST+SGST)' : 'Inter-state (IGST)'}
           </p>
@@ -148,6 +148,9 @@ export function InvoiceTemplate({
         <table className="text-[12px] w-72">
           <tbody>
             <tr><td className="py-1 text-gray-600">Subtotal (Net)</td><td className="py-1 text-right font-mono">{inr(breakup.subtotalNetPaise)}</td></tr>
+            {breakup.shippingTax && (
+              <tr><td className="py-1 text-gray-600">Delivery charges (Net, GST {breakup.shippingTax.ratePct}%)</td><td className="py-1 text-right font-mono">{inr(breakup.shippingTax.netPaise)}</td></tr>
+            )}
             {breakup.isIntraState ? (
               <>
                 <tr><td className="py-1 text-gray-600">CGST</td><td className="py-1 text-right font-mono">{inr(breakup.totalCgstPaise)}</td></tr>
@@ -156,7 +159,9 @@ export function InvoiceTemplate({
             ) : (
               <tr><td className="py-1 text-gray-600">IGST</td><td className="py-1 text-right font-mono">{inr(breakup.totalIgstPaise)}</td></tr>
             )}
-            <tr><td className="py-1 text-gray-600">Shipping</td><td className="py-1 text-right font-mono">{inr(breakup.totalShippingPaise)}</td></tr>
+            {!breakup.shippingTax && (
+              <tr><td className="py-1 text-gray-600">Shipping</td><td className="py-1 text-right font-mono">{inr(breakup.totalShippingPaise)}</td></tr>
+            )}
             <tr className="border-t-2 border-gray-900"><td className="pt-2 font-bold uppercase tracking-widest text-xs">Total Payable</td><td className="pt-2 text-right font-mono font-bold text-lg">{inr(breakup.totalAmountPaise)}</td></tr>
             <tr><td colSpan={2} className="text-right text-[10px] uppercase tracking-widest text-gray-500 font-bold pt-1">{paymentMethod === 'cod' ? 'Cash on Delivery' : 'Paid online'}</td></tr>
           </tbody>

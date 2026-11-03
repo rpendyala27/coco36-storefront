@@ -25,16 +25,31 @@ export interface GstLine {
   lineTotalPaise:   number;
 }
 
+/** GST on the delivery charges (incl. COD fee). Invoices since Phase 1. */
+export interface ShippingTax {
+  ratePct:   number;
+  netPaise:  number;
+  cgstPaise: number;
+  sgstPaise: number;
+  igstPaise: number;
+}
+
 export interface InvoiceBreakup {
   isIntraState:        boolean;
   sellerState:         string;
   buyerState:          string;
+  /** GST state codes (place of supply = buyer). Invoices since Phase 1. */
+  sellerStateCode?:    string;
+  buyerStateCode?:     string;
   lines:               GstLine[];
-  subtotalNetPaise:    number;
+  subtotalNetPaise:    number;     // goods only
+  /** Totals include the tax on delivery charges when shippingTax is present. */
   totalCgstPaise:      number;
   totalSgstPaise:      number;
   totalIgstPaise:      number;
-  totalShippingPaise:  number;
+  totalShippingPaise:  number;     // delivery charges, GST-inclusive
+  /** Absent on invoices issued before Phase 1 (shipping was not taxed then). */
+  shippingTax?:        ShippingTax;
   totalAmountPaise:    number;
 }
 
