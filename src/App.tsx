@@ -4,6 +4,7 @@ import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
 import { PincodePopup } from './components/PincodePopup';
+import { AuthLinkRedirect } from './components/AuthLinkRedirect';
 import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
 import { useStoreConfig } from './lib/storeConfig';
@@ -130,6 +131,7 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
+      <AuthLinkRedirect />
       <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper">
         <Navigation />
         <CartDrawer />

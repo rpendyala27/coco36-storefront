@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { readAuthLink, type AuthLinkState } from './authLink';
 
 /**
  * Browser Supabase client for the COCO36 storefront (Vite/Netlify).
@@ -47,6 +48,14 @@ if (!isSupabaseConfigured) {
  * enough for the fallbacks that already exist downstream to do their job.
  */
 const PLACEHOLDER_URL = 'https://unconfigured.invalid';
+
+/**
+ * A reset / confirmation email link's result, read from the URL BEFORE the
+ * client below is created (it strips the tokens, and announces a recovery
+ * session only after a tick). See src/lib/authLink.ts.
+ */
+export const initialAuthLink: AuthLinkState =
+  typeof window === 'undefined' ? { recovery: false, error: null } : readAuthLink(window.location.href);
 
 export const supabase = createClient(
   supabaseUrl || PLACEHOLDER_URL,
