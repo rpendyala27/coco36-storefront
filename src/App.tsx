@@ -9,6 +9,7 @@ import { notFoundMeta, staticPageMeta } from './seo/meta';
 import { useStoreConfig } from './lib/storeConfig';
 import { trackPageView } from './lib/analytics';
 import { GUIDE_LINKS, guidePath } from './content/guideIndex';
+import { SOCIAL_LINKS } from './seo/site';
 // The homepage is eagerly imported as the above-the-fold experience.
 import { Home } from './pages/Home';
 
@@ -202,9 +203,17 @@ export default function App() {
                 <p className="text-sm text-white/70 leading-relaxed max-w-xs mb-6">
                   Origin ingredients, crafted for the kitchens of tomorrow. Direct from heritage farms and estates at origin.
                 </p>
-                {/* Social chips removed until real profiles exist — placeholder
-                    href="#" links with cryptic two-letter text fail SEO link-text
-                    checks and lead nowhere. Restore as real <a> links when live. */}
+                {/* Real profile links only (src/seo/site.ts SOCIAL_LINKS — the same
+                    list feeds Organization.sameAs). rel="me" ties them to the site. */}
+                {SOCIAL_LINKS.length > 0 && (
+                  <ul className="flex gap-4 text-sm text-white/70">
+                    {SOCIAL_LINKS.map((s) => (
+                      <li key={s.url}>
+                        <a href={s.url} target="_blank" rel="me noopener noreferrer" className="hover:text-brand-leaf-bright transition-colors">{s.label}</a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
               {/* Nav columns */}

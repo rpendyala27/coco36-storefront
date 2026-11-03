@@ -24,12 +24,16 @@ export const ORG_ADDRESS = {
 } as const;
 
 /**
- * Official social profile URLs for Organization.sameAs.
- * TODO(owner): paste the real Instagram, Facebook and YouTube page URLs here,
- * e.g. 'https://www.instagram.com/<handle>/'. Left empty on purpose: a wrong
- * sameAs link is worse than none. JSON-LD omits sameAs while this is empty.
+ * Official social profiles: Organization.sameAs + the footer links.
+ * Canonical profile URLs only — no share/tracking params, no /share/ redirect
+ * links (they can expire and aren't the profile's address).
+ * TODO(owner): add the Facebook page's canonical URL (facebook.com/<page> or
+ * profile.php?id=…) and YouTube once live.
  */
-export const SOCIAL_PROFILES: readonly string[] = [];
+export const SOCIAL_LINKS: readonly { label: string; url: string }[] = [
+  { label: 'Instagram', url: 'https://www.instagram.com/coco36official/' },
+];
+export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url);
 
 /** Shipping carrier + dispatch point, used in visible copy. */
 export const SHIPS_FROM    = 'Visakhapatnam, Andhra Pradesh';
