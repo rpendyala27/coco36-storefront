@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build:sitemap": "node scripts/build-sitemap.mjs",
-    "build": "npm run build:sitemap && vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "build": "vite build && node scripts/stash-template.mjs",
+    "preview": "node scripts/stash-template.mjs --restore && vite preview",
+    "clean": "rm -rf dist dist-server",
+    "lint": "tsc --noEmit",
+    "seo:audit": "node scripts/seo-audit.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -32,6 +32,7 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
+    "schema-dts": "^2.1.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2"

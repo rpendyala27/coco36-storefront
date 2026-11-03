@@ -9,10 +9,12 @@ import { useSearchIndex } from '../hooks/useProducts';
 import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
 
+// /recipes is a noindex "coming soon" stub, so it's out of the nav until it
+// has real content; the ingredient guides take its slot.
 const NAV_LINKS = [
   { to: '/shop',         label: 'Shop' },
+  { to: '/ingredients',  label: 'Guides' },
   { to: '/36-steps',     label: '36 Steps' },
-  { to: '/recipes',      label: 'Recipes' },
   { to: '/partnerships', label: 'Partnerships' },
   { to: '/impact',       label: 'Impact' },
 ];

@@ -43,9 +43,13 @@ export interface Product {
   name: string;
   brand: string;          // maker/estate label — Supplier → Brand → Product
   origin: string;
+  /** `products.origin_country` on its own (e.g. "French Polynesia"). */
+  originCountry?: string;
   tag: string;
   image: string;
   imageHover?: string;
+  /** All images, primary first. */
+  images?: { url: string; alt: string | null }[];
   /** Display name of the product's category. Hierarchical filtering uses
    *  `categoryId` (rolled up over the subtree), not this string. */
   category: ProductCategory;
@@ -60,6 +64,8 @@ export interface Product {
    *  (certification / dietary / use_case) and renders designation tags as badges. */
   tags?: ProductTag[];
   sizes: ProductSize[];
+  /** ISO timestamp of the last edit — sitemap <lastmod>. */
+  updatedAt?: string;
   rating?: number;
   reviewCount?: number;
 }

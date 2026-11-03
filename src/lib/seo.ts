@@ -1,143 +1,88 @@
 import { useEffect } from 'react';
-import type { Product } from '../types';
-import { imageUrl } from './img';
-import { productPath } from './productPath';
+import { ogImageFor, serializeJsonLd, type PageMeta } from '../seo/meta';
+import { SITE_ORIGIN } from '../seo/site';
 
 /**
- * Structured-data + meta helpers for the SPA.
+ * Client-side <head> manager. The server (api/render.ts) already sends the
+ * right head for the first URL; this keeps it right as the SPA navigates.
+ * Both sides build from the same PageMeta (src/seo/meta.ts).
  *
- * Googlebot renders JavaScript, so JSON-LD injected client-side IS picked up
- * for rich results (unlike og: tags, which social scrapers read without
- * running JS — those stay static in index.html). Each script tag is keyed by
- * id so route changes replace rather than accumulate.
+ * JSON-LD scripts are keyed by `data-seo="<id>"` on both sides, so the
+ * server-rendered blocks are replaced in place, never duplicated.
  */
 
-const ORIGIN = 'https://coco36.com';
+function upsertMeta(attr: 'name' | 'property', key: string, content: string | null): void {
+  let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
+  if (content == null) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attr, key);
+    document.head.appendChild(el);
+  }
+  el.content = content;
+}
 
-/** Upsert (or with `data: null`, remove) a JSON-LD script tag keyed by id. */
-export function useJsonLd(id: string, data: object | null): void {
-  useEffect(() => {
-    const attr = `seo-${id}`;
-    let el = document.head.querySelector<HTMLScriptElement>(`script[data-seo="${attr}"]`);
-    if (!data) {
-      el?.remove();
-      return;
-    }
+function upsertCanonical(href: string | null): void {
+  let el = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (href == null) { el?.remove(); return; }
+  if (!el) {
+    el = document.createElement('link');
+    el.rel = 'canonical';
+    document.head.appendChild(el);
+  }
+  el.href = href;
+}
+
+export function applyMeta(m: PageMeta): void {
+  const url = m.path ? SITE_ORIGIN + m.path : null;
+  const image = ogImageFor(m);
+
+  document.title = m.title;
+  upsertMeta('name', 'description', m.description);
+  upsertMeta('name', 'robots', m.robots ?? null);
+  upsertCanonical(url);
+
+  upsertMeta('property', 'og:title', m.title);
+  upsertMeta('property', 'og:description', m.description);
+  upsertMeta('property', 'og:type', m.ogType ?? 'website');
+  upsertMeta('property', 'og:url', url);
+  upsertMeta('property', 'og:image', image);
+  upsertMeta('property', 'og:image:alt', m.imageAlt ?? m.title);
+  // Dimensions are only known for the default 1200×630 card.
+  const isDefault = !m.image;
+  upsertMeta('property', 'og:image:width', isDefault ? '1200' : null);
+  upsertMeta('property', 'og:image:height', isDefault ? '630' : null);
+  upsertMeta('name', 'twitter:title', m.title);
+  upsertMeta('name', 'twitter:description', m.description);
+  upsertMeta('name', 'twitter:image', image);
+  upsertMeta('name', 'twitter:image:alt', m.imageAlt ?? m.title);
+
+  const keep = new Set(m.jsonLd.map((b) => b.id));
+  document.head.querySelectorAll<HTMLScriptElement>('script[data-seo]').forEach((el) => {
+    if (!keep.has(el.dataset.seo ?? '')) el.remove();
+  });
+  for (const block of m.jsonLd) {
+    let el = document.head.querySelector<HTMLScriptElement>(`script[data-seo="${block.id}"]`);
     if (!el) {
       el = document.createElement('script');
       el.type = 'application/ld+json';
-      el.dataset.seo = attr;
+      el.dataset.seo = block.id;
       document.head.appendChild(el);
     }
-    el.textContent = JSON.stringify(data);
-    return () => { el?.remove(); };
-  }, [id, data]);
-}
-
-/** Upsert <meta name="description">. Pass ~150–160 chars. */
-export function setMetaDescription(text: string): void {
-  let meta = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
-  if (!meta) {
-    meta = document.createElement('meta');
-    meta.name = 'description';
-    document.head.appendChild(meta);
+    const text = serializeJsonLd(block.data);
+    if (el.textContent !== text) el.textContent = text;
   }
-  meta.content = text;
 }
 
 /**
- * Applies <meta name="robots" content="noindex, follow"> while `active`, then
- * removes it when `active` flips false or the caller unmounts.
- *
- * For SPA states that must not be indexed but can't emit an HTTP status from a
- * static host — the PDP "product not found" soft-404 branch, and "coming soon"
- * stubs. Googlebot renders JS, so a client-injected robots meta is honored (the
- * same reason the JSON-LD above works). `follow` still lets crawlers walk the
- * on-page links (e.g. "back to shop") out to real pages.
+ * Apply `meta` whenever its content changes. Pass null while data is loading
+ * to leave the current head alone (avoids flashing a placeholder title).
  */
-export function useNoindex(active = true): void {
+export function useSeo(meta: PageMeta | null): void {
+  const key = meta ? JSON.stringify(meta) : '';
   useEffect(() => {
-    if (!active) return;
-    const meta = document.createElement('meta');
-    meta.name = 'robots';
-    meta.content = 'noindex, follow';
-    document.head.appendChild(meta);
-    return () => { meta.remove(); };
-  }, [active]);
-}
-
-/** Markdown → plain text, roughly — good enough for meta/JSON-LD strings. */
-export function stripMarkdown(md: string): string {
-  return md
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')      // images
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')   // links → label
-    .replace(/[#>*_`~]/g, '')                  // md punctuation
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const paiseToRupees = (paise: number) => (paise / 100).toFixed(2);
-
-/** Upsert <link rel="canonical"> to an absolute URL for the given path. */
-export function setCanonical(path: string): void {
-  let link = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-  if (!link) {
-    link = document.createElement('link');
-    link.rel = 'canonical';
-    document.head.appendChild(link);
-  }
-  link.href = ORIGIN + path;
-}
-
-/** schema.org Product with Offer/AggregateOffer built from the variants. */
-export function productJsonLd(p: Product): object {
-  const url = `${ORIGIN}${productPath(p)}`;
-  const inStock = p.sizes.some((s) => s.inStock);
-  const availability = inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
-  const prices = p.sizes.map((s) => s.priceInPaise);
-
-  const offers = p.sizes.length > 1
-    ? {
-        '@type': 'AggregateOffer',
-        priceCurrency: 'INR',
-        lowPrice: paiseToRupees(Math.min(...prices)),
-        highPrice: paiseToRupees(Math.max(...prices)),
-        offerCount: p.sizes.length,
-        availability,
-        url,
-      }
-    : {
-        '@type': 'Offer',
-        priceCurrency: 'INR',
-        price: paiseToRupees(prices[0] ?? 0),
-        availability,
-        url,
-      };
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    '@id': url,
-    name: p.name,
-    url,
-    ...(p.sku ? { sku: p.sku } : {}),
-    ...(p.image ? { image: [imageUrl(p.image, 800)] } : {}),
-    description: stripMarkdown(p.description || p.tag || '').slice(0, 500),
-    brand: { '@type': 'Brand', name: p.brand || 'COCO36' },
-    ...(p.category ? { category: p.category } : {}),
-    offers,
-  };
-}
-
-/** schema.org BreadcrumbList mirroring the PDP breadcrumb nav. */
-export function productBreadcrumbJsonLd(p: Product): object {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Shop', item: `${ORIGIN}/shop` },
-      { '@type': 'ListItem', position: 2, name: p.category, item: `${ORIGIN}/shop?category=${encodeURIComponent(p.category)}` },
-      { '@type': 'ListItem', position: 3, name: p.name, item: `${ORIGIN}${productPath(p)}` },
-    ],
-  };
+    if (meta) applyMeta(meta);
+    // `key` captures every field of meta; the object identity doesn't matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 }

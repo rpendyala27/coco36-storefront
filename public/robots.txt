@@ -1,10 +1,14 @@
+# coco36.com storefront. (admin.coco36.com is a separate Vercel project with
+# its own robots.txt that disallows everything — see coco36-next app/robots.ts.)
 User-agent: *
 Allow: /
 Disallow: /account
 Disallow: /checkout
-# /auth is intentionally crawlable so Google sees its `X-Robots-Tag: noindex`
-# (set in vercel.json) and drops it from the index. Blocking it here would only
-# hide the noindex and leave the stale URL indexed. Re-add a Disallow once the
-# URL is gone from search results if you want to save crawl budget.
+Disallow: /track/
+Disallow: /api/
+
+# /auth, /quick-order and /recipes are deliberately NOT disallowed: they answer
+# with `noindex` (X-Robots-Tag header + meta tag), and Google can only drop them
+# from the index if it is allowed to fetch them and see that.
 
 Sitemap: https://coco36.com/sitemap.xml
