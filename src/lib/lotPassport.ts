@@ -1,13 +1,15 @@
 import { supabase } from './supabase';
+import { parseLotCode } from './lotCode';
 
 /**
- * The public lot page (/lot/<lot number>). public.lot_passport() returns
+ * The public lot page (/lot/<COCO36 lot code>, e.g. /lot/C36-MUSL-20261203-01,
+ * as printed on the pack label). public.lot_passport() returns
  * nothing unless the SHOW_LOT_PASSPORT flag (settings.features.show_lot_passport)
  * is on, so while it is off every lot page is "not found". The data holds no
  * customer details, costs, quantities or internal notes.
  */
 export type LotPassport = {
-  lot_number: string;
+  lot_code: string;
   product: { id: string; name: string; size: string | null };
   origin: { country: string | null; region: string | null };
   supplier: { name: string; country: string | null; region: string | null; story_md: string | null } | null;
@@ -18,11 +20,10 @@ export type LotPassport = {
   certificates: { type: string; issuer: string | null; scope: string | null; valid_until: string }[];
 };
 
-export const LOT_RE = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$/;
-
 export async function fetchLotPassport(lot: string): Promise<LotPassport | null> {
-  if (!LOT_RE.test(lot)) return null;
-  const { data, error } = await supabase.rpc('lot_passport', { p_lot: lot });
+  const code = parseLotCode(lot);
+  if (!code) return null;
+  const { data, error } = await supabase.rpc('lot_passport', { p_lot: code });
   if (error || !data) return null;
   return data as LotPassport;
 }

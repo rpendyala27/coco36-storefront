@@ -15,6 +15,8 @@ export interface ProductSize {
   /** Canonical price in INR paise. 1 INR = 100 paise. */
   priceInPaise: number;
   inStock: boolean;
+  /** The pack's SKU, <CAT3>-<PROD4>-<PACK>, e.g. SGR-MUSD-1KG (product_variants.sku_code). Absent on static catalogue items. */
+  sku?: string;
 }
 
 /** Display label for a designation badge. Sourced from `designation`-kind tags
@@ -39,7 +41,6 @@ export interface ProductTag {
 
 export interface Product {
   id: string;
-  sku: string;
   name: string;
   brand: string;          // maker/estate label — Supplier → Brand → Product
   origin: string;

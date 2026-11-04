@@ -6,7 +6,7 @@ import { useSeo } from '../lib/seo';
 import { notFoundMeta } from '../seo/meta';
 
 /**
- * /lot/<lot number>: the lot's passport: product, origin, supplier story,
+ * /lot/<lot code>: the lot's passport: product, origin, supplier story,
  * dates, valid certificates, the COA when it is public, and the 36 steps.
  * Off until SHOW_LOT_PASSPORT is turned on (the database returns nothing
  * while it is off, and the page reads as "not found"). Never indexed.
@@ -16,18 +16,18 @@ const fmt = (d: string | null) =>
   d ? new Date(`${d}T00:00:00+05:30`).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }) : null;
 
 export const LotPassport = () => {
-  const { lotNumber = '' } = useParams();
+  const { lotCode = '' } = useParams();
   const [state, setState] = useState<{ loading: boolean; data: Passport | null }>({ loading: true, data: null });
 
   useEffect(() => {
     let live = true;
-    fetchLotPassport(decodeURIComponent(lotNumber)).then((data) => { if (live) setState({ loading: false, data }); });
+    fetchLotPassport(decodeURIComponent(lotCode)).then((data) => { if (live) setState({ loading: false, data }); });
     return () => { live = false; };
-  }, [lotNumber]);
+  }, [lotCode]);
 
   const p = state.data;
   useSeo(p
-    ? { title: `Lot ${p.lot_number} · ${p.product.name} | COCO36`, description: `Where lot ${p.lot_number} of ${p.product.name} came from, and its certificates.`, robots: 'noindex', jsonLd: [] }
+    ? { title: `Lot ${p.lot_code} · ${p.product.name} | COCO36`, description: `Where lot ${p.lot_code} of ${p.product.name} came from, and its certificates.`, robots: 'noindex', jsonLd: [] }
     : notFoundMeta());
 
   if (state.loading) return <div className="min-h-[60vh] pt-32 px-6 text-center text-brand-muted" aria-busy="true">Loading…</div>;
@@ -48,7 +48,7 @@ export const LotPassport = () => {
       <div className="max-w-3xl mx-auto">
         <p className="text-[11px] uppercase tracking-[0.4em] text-brand-leaf font-bold mb-3">Lot passport</p>
         <h1 className="text-4xl md:text-5xl mb-2">{p.product.name}{p.product.size ? <span className="text-brand-muted text-2xl"> · {p.product.size}</span> : null}</h1>
-        <p className="font-mono text-sm text-brand-ink/70 mb-8">Lot {p.lot_number}</p>
+        <p className="font-mono text-sm text-brand-ink/70 mb-8">Lot {p.lot_code}</p>
 
         {p.recalled && (
           <div role="alert" className="mb-8 border border-red-300 bg-red-50 text-red-900 px-4 py-3 text-sm">

@@ -144,6 +144,7 @@ export function productJsonLd(
   const offers: Offer[] = p.sizes.map((s) => ({
     '@type': 'Offer',
     name: s.label,
+    ...(s.sku ? { sku: s.sku } : {}),
     url,
     price: paiseToRupees(s.priceInPaise),
     priceCurrency: 'INR',
@@ -164,7 +165,6 @@ export function productJsonLd(
     url,
     ...(imgs.length ? { image: imgs.map((u) => imageUrl(u, 1200)) } : {}),
     description,
-    ...(p.sku ? { sku: p.sku } : {}),
     brand: { '@type': 'Brand', name: p.brand || BRAND },
     ...(p.category ? { category: p.category } : {}),
     ...(p.originCountry ? { countryOfOrigin: { '@type': 'Country', name: p.originCountry } } : {}),

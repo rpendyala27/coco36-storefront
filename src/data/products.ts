@@ -9,14 +9,12 @@ export const PRODUCT_CATEGORIES: { id: ProductCategory; image: string; descripti
   { id: 'Mixes & Kits',         description: 'Pre-measured craft kits, bean-to-bar, sourdough.',   image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=80&w=600' },
 ];
 
-// Helper: build sku from category + index for consistency
-const sku = (cat: string, n: number) => `CO-${cat}-${String(n).padStart(3, '0')}`;
 
 export const PRODUCTS: Product[] = [
   // ─── Cocoa & Chocolate ─────────────────────────────────────────────────────
   {
     id: 'criollo-cacao-nibs',
-    sku: sku('CAO', 1), brand: 'Chuao Cacao Estates',
+    brand: 'Chuao Cacao Estates',
     name: 'Criollo Cacao Nibs',
     origin: 'Chuao, Venezuela',
     tag: 'Single Origin · 75% cacao',
@@ -28,7 +26,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'india-trinitario-couverture',
-    sku: sku('CAO', 2), brand: 'Anamalai Origin Co.',
+    brand: 'Anamalai Origin Co.',
     name: 'India Trinitario Couverture 70%',
     origin: 'Anamalai, Tamil Nadu',
     tag: 'Single Origin · Couverture',
@@ -40,7 +38,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'natural-cocoa-powder',
-    sku: sku('CAO', 3), brand: 'Sulawesi Pure',
+    brand: 'Sulawesi Pure',
     name: 'Natural Cocoa Powder',
     origin: 'Sulawesi, Indonesia',
     tag: '22-24% Fat · Unalkalized',
@@ -52,7 +50,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'dutch-process-cocoa',
-    sku: sku('CAO', 4), brand: 'Holland Dutch Mill',
+    brand: 'Holland Dutch Mill',
     name: 'Black Dutch Process Cocoa',
     origin: 'Holland (Ghana beans)',
     tag: 'Heavy Alkalized · 22-24%',
@@ -64,7 +62,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'milk-couverture-38',
-    sku: sku('CAO', 5), brand: 'Anamalai Origin Co.',
+    brand: 'Anamalai Origin Co.',
     name: 'Milk Couverture 38%',
     origin: 'Anamalai, Tamil Nadu',
     tag: 'Single Origin · Milk',
@@ -76,7 +74,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'white-couverture-32',
-    sku: sku('CAO', 6), brand: 'Anamalai Origin Co.',
+    brand: 'Anamalai Origin Co.',
     name: 'White Couverture 32%',
     origin: 'Anamalai (cocoa butter base)',
     tag: 'Pure Cocoa Butter',
@@ -88,7 +86,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'cocoa-butter-deodorized',
-    sku: sku('CAO', 7), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Deodorized Cocoa Butter',
     origin: 'West Africa blend',
     tag: 'Food Grade · Pure',
@@ -102,7 +100,7 @@ export const PRODUCTS: Product[] = [
   // ─── Flours & Grains ───────────────────────────────────────────────────────
   {
     id: 'einkorn-flour',
-    sku: sku('FLR', 1), brand: 'Provence Heritage Mills',
+    brand: 'Provence Heritage Mills',
     name: 'Einkorn Heritage Flour',
     origin: 'Provence, France',
     tag: 'Heritage Grain · Stone-Milled',
@@ -114,7 +112,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'type-00-pizza-flour',
-    sku: sku('FLR', 2), brand: 'Caputo Mill',
+    brand: 'Caputo Mill',
     name: 'Type "00" Pizza Flour',
     origin: 'Caputo Mill, Naples',
     tag: 'High Protein · Soft Wheat',
@@ -126,7 +124,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'whole-rye-flour',
-    sku: sku('FLR', 3), brand: 'Bavarian Stoneground',
+    brand: 'Bavarian Stoneground',
     name: 'Whole Dark Rye Flour',
     origin: 'Bavaria, Germany',
     tag: 'Stone-Milled · 100% Whole',
@@ -138,7 +136,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'spelt-flour',
-    sku: sku('FLR', 4), brand: 'Provence Heritage Mills',
+    brand: 'Provence Heritage Mills',
     name: 'Wholemeal Spelt Flour',
     origin: 'Provence, France',
     tag: 'Ancient Grain',
@@ -150,7 +148,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'almond-flour-blanched',
-    sku: sku('FLR', 5), brand: 'Andalusia Blanchers',
+    brand: 'Andalusia Blanchers',
     name: 'Blanched Almond Flour',
     origin: 'Andalusia, Spain',
     tag: 'Super-Fine · Gluten-Free',
@@ -162,7 +160,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'buckwheat-flour',
-    sku: sku('FLR', 6), brand: 'Brittany Buckwheat Co.',
+    brand: 'Brittany Buckwheat Co.',
     name: 'Dark Buckwheat Flour',
     origin: 'Brittany, France',
     tag: 'Gluten-Free · Stone-Milled',
@@ -176,7 +174,7 @@ export const PRODUCTS: Product[] = [
   // ─── Sugars & Sweeteners ───────────────────────────────────────────────────
   {
     id: 'muscovado-sugar',
-    sku: sku('SGR', 1), brand: 'Mauritius Sugar Estate',
+    brand: 'Mauritius Sugar Estate',
     name: 'Muscovado Cane Sugar',
     origin: 'Mauritius',
     tag: 'Unrefined · Stone-Ground',
@@ -188,7 +186,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'manuka-honey-15',
-    sku: sku('SGR', 2), brand: 'Mānuka Apiaries NZ',
+    brand: 'Mānuka Apiaries NZ',
     name: 'Mānuka Honey UMF 15+',
     origin: 'East Cape, New Zealand',
     tag: 'Single-Source · Raw',
@@ -200,7 +198,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'maple-syrup-grade-a',
-    sku: sku('SGR', 3), brand: 'Vermont Sugarbush',
+    brand: 'Vermont Sugarbush',
     name: 'Grade A Dark Maple Syrup',
     origin: 'Vermont, USA',
     tag: 'Robust Taste · Pure',
@@ -212,7 +210,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'palm-sugar-jaggery',
-    sku: sku('SGR', 4), brand: 'Kerala Coconut Co-op',
+    brand: 'Kerala Coconut Co-op',
     name: 'Palm Sugar Jaggery',
     origin: 'Kerala, India',
     tag: 'Low GI · Unrefined',
@@ -224,7 +222,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'demerara-sugar',
-    sku: sku('SGR', 5), brand: 'Mauritius Sugar Estate',
+    brand: 'Mauritius Sugar Estate',
     name: 'Demerara Sugar Crystals',
     origin: 'Mauritius',
     tag: 'Large Crystal · Light Molasses',
@@ -238,7 +236,7 @@ export const PRODUCTS: Product[] = [
   // ─── Extracts & Flavors ────────────────────────────────────────────────────
   {
     id: 'madagascar-vanilla',
-    sku: sku('EXT', 1), brand: 'Sava Vanilla Collective',
+    brand: 'Sava Vanilla Collective',
     name: 'Madagascar Bourbon Vanilla Beans',
     origin: 'Sava Region, Madagascar',
     tag: 'Fair Trade · Grade A',
@@ -250,7 +248,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'tahitian-vanilla',
-    sku: sku('EXT', 2), brand: 'Tahaa Vanilla Atelier',
+    brand: 'Tahaa Vanilla Atelier',
     name: 'Tahitian Vanilla Beans',
     origin: 'Tahaa, French Polynesia',
     tag: 'Single Origin · Tahitensis',
@@ -262,7 +260,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'bourbon-vanilla-extract',
-    sku: sku('EXT', 3), brand: 'Sava Vanilla Collective',
+    brand: 'Sava Vanilla Collective',
     name: 'Pure Bourbon Vanilla Extract',
     origin: 'Madagascar',
     tag: 'Double Fold',
@@ -274,7 +272,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'almond-extract',
-    sku: sku('EXT', 4), brand: 'Sicily Bitter Almond',
+    brand: 'Sicily Bitter Almond',
     name: 'Pure Almond Extract',
     origin: 'Sicily, Italy',
     tag: 'Bitter Almond Oil',
@@ -286,7 +284,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'orange-blossom-water',
-    sku: sku('EXT', 5), brand: 'Atlas Bitters Co.',
+    brand: 'Atlas Bitters Co.',
     name: 'Orange Blossom Water',
     origin: 'Tunisia',
     tag: 'Steam-Distilled',
@@ -298,7 +296,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'lemon-paste',
-    sku: sku('EXT', 6), brand: 'Amalfi Citrus Co.',
+    brand: 'Amalfi Citrus Co.',
     name: 'Sicilian Lemon Paste',
     origin: 'Sicily, Italy',
     tag: 'Cold-Processed Zest',
@@ -310,7 +308,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'rose-water',
-    sku: sku('EXT', 7), brand: 'Damascus Rose Co.',
+    brand: 'Damascus Rose Co.',
     name: 'Damascus Rose Water',
     origin: 'Damascus, Syria',
     tag: 'Steam-Distilled',
@@ -324,7 +322,7 @@ export const PRODUCTS: Product[] = [
   // ─── Spices & Pantry ───────────────────────────────────────────────────────
   {
     id: 'ceylon-cinnamon',
-    sku: sku('SPC', 1), brand: 'Matale Spice Garden',
+    brand: 'Matale Spice Garden',
     name: 'Ceylon Cinnamon Quills',
     origin: 'Matale, Sri Lanka',
     tag: 'True Cinnamon · Hand-Rolled',
@@ -336,7 +334,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'pink-himalayan-salt',
-    sku: sku('SPC', 2), brand: 'Khewra Salt Co.',
+    brand: 'Khewra Salt Co.',
     name: 'Pink Himalayan Salt',
     origin: 'Khewra, Pakistan',
     tag: 'Artisan Mined · 84 Minerals',
@@ -348,7 +346,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'maldon-flake-salt',
-    sku: sku('SPC', 3), brand: 'Maldon Salt Co.',
+    brand: 'Maldon Salt Co.',
     name: 'Maldon Flaky Sea Salt',
     origin: 'Essex, England',
     tag: 'Pyramid Crystals · Finishing',
@@ -360,7 +358,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'madagascar-cardamom',
-    sku: sku('SPC', 4), brand: 'Madagascar Spice Co.',
+    brand: 'Madagascar Spice Co.',
     name: 'Green Cardamom Pods',
     origin: 'Madagascar',
     tag: 'Hand-Sorted · Whole Pods',
@@ -372,7 +370,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'iranian-saffron',
-    sku: sku('SPC', 5), brand: 'Khorasan Saffron Co-op',
+    brand: 'Khorasan Saffron Co-op',
     name: 'Pure Iranian Saffron Threads',
     origin: 'Khorasan, Iran',
     tag: 'Sargol Grade · Hand-Picked',
@@ -384,7 +382,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'tonka-beans',
-    sku: sku('SPC', 6), brand: 'Amazon Botanicals',
+    brand: 'Amazon Botanicals',
     name: 'Whole Tonka Beans',
     origin: 'Venezuela',
     tag: 'Wild Harvest',
@@ -396,7 +394,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'dried-mediterranean-figs',
-    sku: sku('SPC', 7), brand: 'Aegean Harvest',
+    brand: 'Aegean Harvest',
     name: 'Dried Mediterranean Figs',
     origin: 'Aydın, Turkey',
     tag: 'Sun-Dried · Smyrna',
@@ -408,7 +406,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'sicilian-pistachio',
-    sku: sku('SPC', 8), brand: 'Bronte Pistacchio',
+    brand: 'Bronte Pistacchio',
     name: 'Bronte Pistachio Paste',
     origin: 'Bronte, Sicily',
     tag: '100% Pure · DOP',
@@ -422,7 +420,7 @@ export const PRODUCTS: Product[] = [
   // ─── Mixes & Kits ──────────────────────────────────────────────────────────
   {
     id: 'bean-to-bar-kit',
-    sku: sku('KIT', 1), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Bean-to-Bar Craft Kit',
     origin: 'COCO36 Atelier',
     tag: 'Complete Kit · Makes 6 bars',
@@ -434,7 +432,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'sourdough-starter-kit',
-    sku: sku('KIT', 2), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Heritage Sourdough Kit',
     origin: 'COCO36 Atelier',
     tag: '100-year starter culture',
@@ -446,7 +444,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'croissant-lamination-kit',
-    sku: sku('KIT', 3), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Croissant Lamination Kit',
     origin: 'COCO36 Atelier',
     tag: 'Pro Kit · Makes 16 croissants',
@@ -458,7 +456,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'ganache-mastery-kit',
-    sku: sku('KIT', 4), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Ganache Mastery Kit',
     origin: 'COCO36 Atelier',
     tag: '4 Couvertures + Frame Mold',
@@ -470,7 +468,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     id: 'spice-explorer-trio',
-    sku: sku('KIT', 5), brand: 'COCO36 House',
+    brand: 'COCO36 House',
     name: 'Spice Explorer Trio',
     origin: 'Multi-origin',
     tag: 'Cardamom · Saffron · Cinnamon',

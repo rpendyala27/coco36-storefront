@@ -6,6 +6,7 @@ import {
 import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
+import { parseLotCode } from '../src/lib/lotCode.js';
 
 /**
  * Live catalogue for the render + sitemap functions, read straight from
@@ -116,10 +117,11 @@ export function resetCatalogCache(): void {
  * public.lot_passport() returns nothing while the flag is off).
  */
 export async function loadLotPassport(lot: string): Promise<LotPassport | null> {
-  if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{0,79}$/.test(lot)) return null;
+  const code = parseLotCode(lot);
+  if (!code) return null;
   try {
-    const p = await rest<LotPassport | null>(`rpc/lot_passport?p_lot=${encodeURIComponent(lot)}`);
-    return p && typeof p === 'object' && !Array.isArray(p) && typeof p.lot_number === 'string' ? p : null;
+    const p = await rest<LotPassport | null>(`rpc/lot_passport?p_lot=${encodeURIComponent(code)}`);
+    return p && typeof p === 'object' && !Array.isArray(p) && typeof p.lot_code === 'string' ? p : null;
   } catch (e) {
     console.error(e);
     return null;
