@@ -20,10 +20,15 @@ export const LOW_STOCK = 5;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Sellable units for a pack, or undefined when not known (not fetched, legacy id). */
+/**
+ * The cap for a pack: exact sellable units, or undefined when there is no cap
+ * to apply — not fetched, a legacy id, or at least `maxShown` (which means
+ * "that many or more", not an exact count).
+ */
 export function availableFor(stock: Stock | null, sizeId: string): number | undefined {
   const n = stock?.available[sizeId];
-  return typeof n === 'number' ? n : undefined;
+  if (typeof n !== 'number') return undefined;
+  return n >= stock!.maxShown ? undefined : n;
 }
 
 /** Quantity the cart may hold. Unknown stock leaves it alone. */

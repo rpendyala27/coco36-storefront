@@ -37,6 +37,15 @@ describe('cart stock cap', () => {
     expect(freeShippingRemaining(sub)).toBe(20000);
   });
 
+  it('20 means "20 or more": a 25-unit line is not cut to 20 and its subtotal counts all 25', () => {
+    expect(availableFor(stock, V9)).toBeUndefined();
+    expect(sellableQty(line(V9, 25), stock)).toBe(25);
+    expect(sellableSubtotal([line(V9, 25, 10000)], stock)).toBe(250000);
+    expect(stockNote(stock, V9, 25)).toBeNull();
+    // 19 is an exact count and still caps.
+    expect(sellableQty(line(V9, 25), { available: { [V9]: 19 }, maxShown: 20 })).toBe(19);
+  });
+
   it('sold-out lines count for nothing and are listed', () => {
     const items = [line(V0, 2), line(V9, 1)];
     expect(sellableSubtotal(items, stock)).toBe(50000);

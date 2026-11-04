@@ -216,9 +216,15 @@ export const CartDrawer: React.FC = () => {
                       {ORDERING_CLOSED_MESSAGE}
                     </p>
                   )}
-                  <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
-                    Checkout <ArrowRight size={14} />
-                  </Link>
+                  {cfg.orderingOpen === false ? (
+                    <button type="button" disabled className="btn-primary w-full !py-4 opacity-50 cursor-not-allowed">
+                      Checkout <ArrowRight size={14} />
+                    </button>
+                  ) : (
+                    <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
+                      Checkout <ArrowRight size={14} />
+                    </Link>
+                  )}
                   <button
                     onClick={closeCart}
                     className="w-full text-center text-xs font-semibold text-brand-muted hover:text-brand-leaf transition-colors py-1"
