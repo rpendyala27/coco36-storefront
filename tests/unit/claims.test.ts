@@ -9,7 +9,8 @@ import type { ProductTag } from '../../src/types';
 vi.mock('../../src/lib/supabase', () => ({ API_URL: 'https://admin.example.test', supabase: { rpc: vi.fn() }, isSupabaseConfigured: true }));
 
 const { applyClaims, backedTags, claimsFromRows, isClaimTag } = await import('../../src/lib/claims');
-const { certLabel, fetchLotPassport, LOT_RE } = await import('../../src/lib/lotPassport');
+const { certLabel, fetchLotPassport } = await import('../../src/lib/lotPassport');
+const { parseLotCode } = await import('../../src/lib/lotCode');
 const { supabase } = await import('../../src/lib/supabase');
 
 const tag = (slug: string, kind: ProductTag['kind']): ProductTag => ({ slug, label: slug, kind });
@@ -45,16 +46,23 @@ describe('product claims', () => {
 });
 
 describe('lot passport', () => {
-  it('asks the database for a well-formed lot number only; nothing comes back while the flag is off', async () => {
+  it('asks the database for a COCO36 lot code only; nothing comes back while the flag is off', async () => {
     const rpc = vi.mocked(supabase.rpc);
     rpc.mockResolvedValueOnce({ data: null, error: null } as never);
-    expect(await fetchLotPassport('C36-VAN100-2611-01')).toBeNull();
-    expect(rpc).toHaveBeenCalledWith('lot_passport', { p_lot: 'C36-VAN100-2611-01' });
+    expect(await fetchLotPassport('c36-musc-20261203-01')).toBeNull();
+    expect(rpc).toHaveBeenCalledWith('lot_passport', { p_lot: 'C36-MUSC-20261203-01' });
     rpc.mockClear();
-    expect(await fetchLotPassport("x'; drop table")).toBeNull();
-    expect(await fetchLotPassport('')).toBeNull();
+    for (const notACode of ["x'; drop table", '', 'C36-VAN100-2611-01', 'VB-77', 'C36-MUSC-20261203-01/2', 'C36-MOSC-20261203-01']) {
+      expect(await fetchLotPassport(notACode)).toBeNull();
+    }
     expect(rpc).not.toHaveBeenCalled();
-    expect(LOT_RE.test('VAN/2611-03')).toBe(true);
+  });
+
+  it('parses lot codes: C36-<PROD4>-<YYYYMMDD>-<nn>, no I, O or Q in the product code', () => {
+    expect(parseLotCode(' c36-musc-20261203-01 ')).toBe('C36-MUSC-20261203-01');
+    expect(parseLotCode('C36-MUSC-20261203-100')).toBe('C36-MUSC-20261203-100');
+    expect(parseLotCode('C36-SGR001-2611-01')).toBeNull();
+    expect(parseLotCode('C36-MOSC-20261203-01')).toBeNull();
   });
 
   it('labels certificate types for people', () => {

@@ -163,8 +163,8 @@ export async function render(pathname: string, search: string, host: string): Pr
     const passport = await loadLotPassport(decodeURIComponent(segs[1]));
     if (!passport) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
     return withHost(page(200, {
-      title: `Lot ${passport.lot_number} · ${passport.product.name} | COCO36`,
-      description: `Where lot ${passport.lot_number} of ${passport.product.name} came from, and its certificates.`,
+      title: `Lot ${passport.lot_code} · ${passport.product.name} | COCO36`,
+      description: `Where lot ${passport.lot_code} of ${passport.product.name} came from, and its certificates.`,
       robots: NOINDEX, jsonLd: [],
     }, ''));
   }

@@ -249,7 +249,7 @@ export const ProductDetail = () => {
                   ['Brand', product.brand],
                   ['Origin', product.origin],
                   ['Category', product.category],
-                  ['SKU', product.sku],
+                  ['SKU', selectedSize?.sku],
                   ['Sizes', product.sizes.map((s) => s.label).join(', ')],
                 ].filter(([, v]) => v).map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-4 py-3 border-b border-brand-line/60">

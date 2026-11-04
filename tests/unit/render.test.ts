@@ -14,7 +14,7 @@ const PRODUCT_ID = '6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01';
 const CATEGORY_ID = '0b6a3c43-5c47-4b1e-9c38-2a7f2d1a9b01';
 
 const product = {
-  id: PRODUCT_ID, sku: 'VAN-001', name: 'Madagascar Bourbon Vanilla Beans', brand: 'COCO36',
+  id: PRODUCT_ID, name: 'Madagascar Bourbon Vanilla Beans', brand: 'COCO36',
   origin_country: 'Madagascar', origin_region: 'SAVA', tag_line: 'Grade A beans',
   description_md: 'Plump, oily Grade A vanilla beans from the SAVA region.', updated_at: '2026-10-01T00:00:00Z',
   variants: [{ id: 'v1', size_label: '5 beans', selling_price_paise: 89900, mrp_paise: 99900, in_stock: true, sort_order: 0 }],
@@ -155,17 +155,17 @@ describe('traceability on the server', () => {
 
   it('/lot/<lot> is 404 while SHOW_LOT_PASSPORT is off (the database returns nothing)', async () => {
     mockDb({ 'rpc/lot_passport': null });
-    const r = await render('/lot/C36-VAN100-2611-01', '', 'coco36.com');
+    const r = await render('/lot/C36-VANL-20261203-01', '', 'coco36.com');
     expect(r.status).toBe(404);
     expect(robots(r.body)).toBe('noindex');
   });
 
   it('/lot/<lot> with the flag on: 200 and never indexed', async () => {
-    const f = mockDb({ 'rpc/lot_passport': { lot_number: 'C36-VAN100-2611-01', product: { id: PRODUCT_ID, name: 'Vanilla', size: '100 g' }, origin: { country: 'India', region: 'Kerala' }, supplier: null, expiry_date: null, best_before: null, recalled: false, coa_url: null, certificates: [] } });
-    const r = await render('/lot/C36-VAN100-2611-01', '', 'coco36.com');
+    const f = mockDb({ 'rpc/lot_passport': { lot_code: 'C36-VANL-20261203-01', product: { id: PRODUCT_ID, name: 'Vanilla', size: '100 g' }, origin: { country: 'India', region: 'Kerala' }, supplier: null, expiry_date: null, best_before: null, recalled: false, coa_url: null, certificates: [] } });
+    const r = await render('/lot/c36-vanl-20261203-01', '', 'coco36.com');
     expect(r.status).toBe(200);
     expect(robots(r.body)).toBe('noindex, follow');
-    expect(title(r.body)).toBe('Lot C36-VAN100-2611-01 · Vanilla | COCO36');
-    expect(f.mock.calls.map(([u]) => String(u)).find((u) => u.includes('lot_passport'))).toContain('p_lot=C36-VAN100-2611-01');
+    expect(title(r.body)).toBe('Lot C36-VANL-20261203-01 · Vanilla | COCO36');
+    expect(f.mock.calls.map(([u]) => String(u)).find((u) => u.includes('lot_passport'))).toContain('p_lot=C36-VANL-20261203-01');
   });
 });

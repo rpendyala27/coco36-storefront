@@ -12,8 +12,8 @@ import type { Product, ProductTag } from '../types';
 /** Columns + embeds for a full product. PostgREST select syntax (same string
  *  works for supabase-js `.select()` and a raw `?select=` query). */
 export const PRODUCT_SELECT = `
-  id, sku, name, brand, origin_country, origin_region, tag_line, description_md, updated_at,
-  variants:product_variants(id, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
+  id, name, brand, origin_country, origin_region, tag_line, description_md, updated_at,
+  variants:product_variants(id, sku_code, size_label, selling_price_paise, mrp_paise, in_stock, sort_order),
   images:product_images(id, url, is_primary, sort_order, alt_text),
   category:categories(id, name, slug, parent_id),
   product_tags(tag:tags(slug, label, kind))
@@ -42,7 +42,6 @@ export function mapSupabaseProduct(row: any): Product {
 
   return {
     id:       row.id,
-    sku:      row.sku ?? '',
     name:     row.name,
     brand:    row.brand ?? '',
     origin:   [row.origin_country, row.origin_region].filter(Boolean).join(' · '),
@@ -62,6 +61,7 @@ export function mapSupabaseProduct(row: any): Product {
       label:        v.size_label,
       priceInPaise: v.selling_price_paise, // canonical money type
       inStock:      v.in_stock ?? true,
+      ...(v.sku_code ? { sku: v.sku_code as string } : {}),
     })),
     updatedAt:   row.updated_at ?? undefined,
     // No reviews table exists yet. Never derive these from anything but real

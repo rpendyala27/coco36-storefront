@@ -151,7 +151,7 @@ export default function App() {
               <Route path="/quick-order" element={<QuickOrder />} />
               <Route path="/36-steps" element={<ThirtySixSteps />} />
               {/* Lot passport: answers "not found" until SHOW_LOT_PASSPORT is on (database-side). */}
-              <Route path="/lot/:lotNumber" element={<LotPassport />} />
+              <Route path="/lot/:lotCode" element={<LotPassport />} />
               <Route path="/recipes" element={<RecipeConsultant />} />
               <Route path="/partnerships" element={<Partnerships />} />
               <Route path="/trade" element={<Trade />} />

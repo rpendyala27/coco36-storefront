@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Upload, Plus, Trash2, Check, AlertTriangle, ShoppingBag } from 'lucide-react';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
+import { findPackBySku } from '../lib/findPack';
 
 type Row = { sku: string; qty: number };
 type Result = { sku: string; qty: number; status: 'added' | 'notfound' | 'oos'; name?: string };
@@ -18,17 +19,16 @@ export const QuickOrder = () => {
   const addRow = () => setRows((rs) => [...rs, { sku: '', qty: 1 }]);
   const removeRow = (i: number) => setRows((rs) => (rs.length > 1 ? rs.filter((_, j) => j !== i) : rs));
 
-  const findBySku = (sku: string) => products.find((p) => p.sku.toLowerCase() === sku.trim().toLowerCase());
 
   const submit = (entries: Row[]) => {
     const res: Result[] = [];
     entries.filter((r) => r.sku.trim()).forEach((r) => {
-      const p = findBySku(r.sku);
-      if (!p) { res.push({ sku: r.sku, qty: r.qty, status: 'notfound' }); return; }
-      const variant = p.sizes.find((s) => s.inStock) ?? p.sizes[0];
-      if (!variant) { res.push({ sku: r.sku, qty: r.qty, status: 'oos', name: p.name }); return; }
-      addItem(p, variant, Math.max(1, r.qty || 1));
-      res.push({ sku: r.sku, qty: r.qty, status: 'added', name: p.name });
+      const hit = findPackBySku(products, r.sku);
+      if (!hit) { res.push({ sku: r.sku, qty: r.qty, status: 'notfound' }); return; }
+      const { product: p, size } = hit;
+      if (!size.inStock) { res.push({ sku: r.sku, qty: r.qty, status: 'oos', name: `${p.name} · ${size.label}` }); return; }
+      addItem(p, size, Math.max(1, r.qty || 1));
+      res.push({ sku: r.sku, qty: r.qty, status: 'added', name: `${p.name} · ${size.label}` });
     });
     setResults(res);
     if (res.some((r) => r.status === 'added')) openCart();
@@ -72,7 +72,7 @@ export const QuickOrder = () => {
             </div>
             {rows.map((r, i) => (
               <div key={i} className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 items-center">
-                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-CAO-001" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-leaf font-mono" />
+                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-SUG-MUSC-1KG" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-leaf font-mono" />
                 <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="w-full min-w-0 border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-leaf tabular-nums" />
                 <button onClick={() => removeRow(i)} className="text-brand-muted hover:text-brand-leaf flex justify-center" aria-label="Remove row"><Trash2 size={16} /></button>
               </div>
