@@ -7,15 +7,17 @@ import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 import { productPath } from '../lib/productPath';
 import { shippingFor, freeShippingRemaining, freeShippingProgress } from '../lib/shipping';
-import { useStoreConfig } from '../lib/storeConfig';
+import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
+import { availableFor, soldOutItems, stockNote } from '../lib/stock';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
 
 export const CartDrawer: React.FC = () => {
-  const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, itemCount } = useCart();
+  const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, itemCount, stock } = useCart();
   const cfg = useStoreConfig();
   const legacyCount = items.filter(it => isLegacy(it.sizeId)).length;
+  const soldOutCount = soldOutItems(items, stock).length;
   const removeAllLegacy = () => {
     items.filter(it => isLegacy(it.sizeId)).forEach(it => removeItem(it.productId, it.sizeId));
   };
@@ -124,7 +126,15 @@ export const CartDrawer: React.FC = () => {
                             <X size={14} />
                           </button>
                         </div>
-                        <p className="text-xs text-brand-muted mb-3">{item.sizeLabel}</p>
+                        <p className="text-xs text-brand-muted mb-3">
+                          {item.sizeLabel}
+                          {(() => {
+                            const note = stockNote(stock, item.sizeId, item.quantity);
+                            return note ? (
+                              <span className={`ml-2 font-bold ${note === 'Sold out' ? 'text-red-600' : 'text-amber-700'}`}>{note}</span>
+                            ) : null;
+                          })()}
+                        </p>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center bg-brand-surface rounded-lg">
@@ -138,13 +148,14 @@ export const CartDrawer: React.FC = () => {
                             <span className="px-3 text-sm font-bold tabular-nums text-brand-ink">{item.quantity}</span>
                             <button
                               onClick={() => updateQuantity(item.productId, item.sizeId, item.quantity + 1)}
-                              className="p-2 hover:text-brand-leaf transition-colors"
+                              disabled={(availableFor(stock, item.sizeId) ?? Infinity) <= item.quantity}
+                              className="p-2 hover:text-brand-leaf transition-colors disabled:opacity-30 disabled:hover:text-current"
                               aria-label="Increase quantity"
                             >
                               <Plus size={12} strokeWidth={2.5} />
                             </button>
                           </div>
-                          <span className="font-bold text-brand-ink">
+                          <span className={`font-bold ${availableFor(stock, item.sizeId) === 0 ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
                             {formatMoney(item.unitPriceInPaise * item.quantity)}
                           </span>
                         </div>
@@ -195,9 +206,25 @@ export const CartDrawer: React.FC = () => {
                     </div>
                   </div>
 
-                  <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
-                    Checkout <ArrowRight size={14} />
-                  </Link>
+                  {soldOutCount > 0 && (
+                    <p className="text-xs font-semibold text-red-600">
+                      {soldOutCount === 1 ? 'One item is' : `${soldOutCount} items are`} sold out. Remove {soldOutCount === 1 ? 'it' : 'them'} to check out.
+                    </p>
+                  )}
+                  {cfg.orderingOpen === false && (
+                    <p className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      {ORDERING_CLOSED_MESSAGE}
+                    </p>
+                  )}
+                  {cfg.orderingOpen === false ? (
+                    <button type="button" disabled className="btn-primary w-full !py-4 opacity-50 cursor-not-allowed">
+                      Checkout <ArrowRight size={14} />
+                    </button>
+                  ) : (
+                    <Link to="/checkout" onClick={closeCart} className="btn-primary w-full !py-4">
+                      Checkout <ArrowRight size={14} />
+                    </Link>
+                  )}
                   <button
                     onClick={closeCart}
                     className="w-full text-center text-xs font-semibold text-brand-muted hover:text-brand-leaf transition-colors py-1"

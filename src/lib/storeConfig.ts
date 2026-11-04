@@ -8,7 +8,17 @@ import { DEFAULT_POLICY, type StorePolicy } from '../seo/site';
  * what the server actually charges (`/api/orders/create` reads the same
  * `settings`). All money in paise.
  */
-export type StoreConfig = StorePolicy;
+export type StoreConfig = StorePolicy & {
+  /**
+   * settings.ordering.enabled as the admin reports it. Undefined until the
+   * config loads (or if it can't): checkout then shows the form and the server
+   * answers with ordering_closed if it is shut. Display only; the server decides.
+   */
+  orderingOpen?: boolean;
+};
+
+/** Shown when ordering.enabled is off. Same sentence the admin API returns with code ordering_closed. */
+export const ORDERING_CLOSED_MESSAGE = "We're not taking orders just yet. Please check back soon.";
 
 /**
  * Fallback = the live seeded `settings` values, so the storefront matches the
