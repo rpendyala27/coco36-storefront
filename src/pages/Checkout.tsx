@@ -9,7 +9,8 @@ import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
 import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checkout';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
-import { useStoreConfig } from '../lib/storeConfig';
+import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
+import { availableFor, soldOutItems, stockNote } from '../lib/stock';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
 import { AddressForm } from '../components/AddressForm';
 import { DeliveryAnswer } from '../components/CheckDelivery';
@@ -26,10 +27,19 @@ declare global {
 type PaymentMethod = 'prepaid' | 'cod';
 
 export const Checkout = () => {
-  const { items, clear } = useCart();
+  const { items, clear, subtotal, stock, refreshStock } = useCart();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const cfg = useStoreConfig();
+
+  // Fresh stock on arrival: the cart caps lines and flags sold-out packs.
+  useEffect(() => { refreshStock(); }, [refreshStock]);
+  const soldOut = soldOutItems(items, stock);
+
+  // ordering.enabled: closed per the store config (before the form), or the
+  // server refused with code ordering_closed (switch flipped since load).
+  const [serverClosed, setServerClosed] = useState(false);
+  const orderingClosed = cfg.orderingOpen === false || serverClosed;
 
   // Detect legacy items (static-catalogue sizeIds aren't valid variant UUIDs).
   // We DO NOT auto-remove them — earlier we did and it caused phantom
@@ -156,7 +166,8 @@ export const Checkout = () => {
   // ── Totals ──────────────────────────────────────────────────────────────────
   // Paise end-to-end — Supabase, cart, checkout, payment gateway all agree.
   const totals = useMemo(() => {
-    const subtotal_paise = items.reduce((sum, it) => sum + it.unitPriceInPaise * it.quantity, 0);
+    // Sellable units only (the cart caps lines at stock; sold-out lines count 0).
+    const subtotal_paise = subtotal;
     const shipping_paise = shippingFor(subtotal_paise, cfg);
     const cod_paise      = form.paymentMethod === 'cod' ? cfg.codSurchargePaise : 0;
     return {
@@ -165,7 +176,7 @@ export const Checkout = () => {
       cod_paise,
       total_paise: subtotal_paise + shipping_paise + cod_paise,
     };
-  }, [items, form.paymentMethod, cfg]);
+  }, [subtotal, form.paymentMethod, cfg]);
 
   // ── Address-book helpers ────────────────────────────────────────────────────
   const addShipAddress = async (input: AddressInput) => {
@@ -208,6 +219,11 @@ export const Checkout = () => {
         `${invalidItems.length} item${invalidItems.length === 1 ? '' : 's'} in your cart can't be checked out (${invalidItems.map((it) => it.name).join(', ')}). ` +
         `Please remove them from the cart drawer and re-add from the shop.`,
       );
+      return;
+    }
+
+    if (soldOut.length > 0) {
+      setError(`${soldOut.map((it) => `${it.name} (${it.sizeLabel})`).join(', ')} ${soldOut.length === 1 ? 'is' : 'are'} sold out. Please remove ${soldOut.length === 1 ? 'it' : 'them'} from your cart to continue.`);
       return;
     }
 
@@ -266,6 +282,13 @@ export const Checkout = () => {
         // gateway error. The next try is a new attempt. (A network failure
         // throws before this and keeps the key, so a retry can't double-order.)
         freshAttempt();
+        if (payload.code === 'ordering_closed') {
+          setServerClosed(true);
+          setSubmitting(false);
+          return;
+        }
+        // Stock may have moved since the cart last checked; re-read it.
+        if (orderRes.status === 409) refreshStock();
         throw new Error(payload.error ?? 'Order creation failed');
       }
 
@@ -371,6 +394,25 @@ export const Checkout = () => {
             Back to home
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // ── Ordering closed (ordering.enabled off) ─────────────────────────────────
+  // Shown before the form so nobody fills in details for nothing. The cart is
+  // kept; adding to cart stays open.
+  if (orderingClosed) {
+    return (
+      <div className="min-h-screen pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
+        <div className="w-20 h-20 rounded-full bg-brand-leaf/10 text-brand-leaf flex items-center justify-center mb-10">
+          <Lock size={32} strokeWidth={1.5} />
+        </div>
+        <h1 className="text-4xl md:text-5xl mb-6">Checkout is closed.</h1>
+        <p className="text-lg text-brand-muted mb-12 leading-relaxed">{ORDERING_CLOSED_MESSAGE}</p>
+        <p className="text-sm text-brand-muted mb-12">Your cart is saved.</p>
+        <Link to="/shop" className="btn-primary !px-8 !py-4">
+          Continue shopping
+        </Link>
       </div>
     );
   }
@@ -568,8 +610,14 @@ export const Checkout = () => {
                     <div className="flex-1 min-w-0">
                       <p className="font-display italic text-base leading-tight">{item.name}</p>
                       <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{item.sizeLabel}</p>
+                      {(() => {
+                        const note = stockNote(stock, item.sizeId, item.quantity);
+                        return note ? (
+                          <p className={`text-[11px] font-bold mt-1 ${note === 'Sold out' ? 'text-red-600' : 'text-amber-700'}`}>{note}</p>
+                        ) : null;
+                      })()}
                     </div>
-                    <span className="font-bold text-base shrink-0 text-brand-ink">
+                    <span className={`font-bold text-base shrink-0 ${availableFor(stock, item.sizeId) === 0 ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
                       {formatMoney(item.unitPriceInPaise * item.quantity)}
                     </span>
                   </li>
@@ -623,7 +671,7 @@ export const Checkout = () => {
               <button
                 type="button"
                 onClick={() => handleSubmit()}
-                disabled={submitting || Boolean(deliveryBlock)}
+                disabled={submitting || Boolean(deliveryBlock) || soldOut.length > 0}
                 className="btn-primary w-full !py-5 disabled:opacity-50"
               >
                 <Lock size={14} /> {submitting ? 'Processing…' : `Place order — ${formatMoney(totals.total_paise)}`}
