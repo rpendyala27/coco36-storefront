@@ -21,6 +21,7 @@ const ProductDetail    = lazy(() => import('./pages/ProductDetail').then(m => ({
 const Guide            = lazy(() => import('./pages/Guide').then(m => ({ default: m.Guide })));
 const Guides           = lazy(() => import('./pages/Guide').then(m => ({ default: m.Guides })));
 const ThirtySixSteps   = lazy(() => import('./pages/ThirtySixSteps').then(m => ({ default: m.ThirtySixSteps })));
+const LotPassport      = lazy(() => import('./pages/LotPassport').then(m => ({ default: m.LotPassport })));
 const RecipeConsultant = lazy(() => import('./pages/RecipeConsultant').then(m => ({ default: m.RecipeConsultant })));
 const Partnerships     = lazy(() => import('./pages/Partnerships').then(m => ({ default: m.Partnerships })));
 const Trade            = lazy(() => import('./pages/Trade').then(m => ({ default: m.Trade })));
@@ -149,6 +150,8 @@ export default function App() {
               <Route path="/ingredients/:slug" element={<Guide />} />
               <Route path="/quick-order" element={<QuickOrder />} />
               <Route path="/36-steps" element={<ThirtySixSteps />} />
+              {/* Lot passport: answers "not found" until SHOW_LOT_PASSPORT is on (database-side). */}
+              <Route path="/lot/:lotNumber" element={<LotPassport />} />
               <Route path="/recipes" element={<RecipeConsultant />} />
               <Route path="/partnerships" element={<Partnerships />} />
               <Route path="/trade" element={<Trade />} />
