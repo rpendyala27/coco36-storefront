@@ -72,7 +72,7 @@ export const QuickOrder = () => {
             </div>
             {rows.map((r, i) => (
               <div key={i} className="grid grid-cols-[minmax(0,1fr)_90px_40px] gap-3 items-center">
-                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. CO-SUG-MUSC-1KG" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-leaf font-mono" />
+                <input value={r.sku} onChange={(e) => setRow(i, { sku: e.target.value })} placeholder="e.g. SGR-MUSL-250G" className="w-full min-w-0 border border-brand-line rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-leaf font-mono" />
                 <input type="number" min={1} value={r.qty} onChange={(e) => setRow(i, { qty: parseInt(e.target.value, 10) || 1 })} className="w-full min-w-0 border border-brand-line rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-brand-leaf tabular-nums" />
                 <button onClick={() => removeRow(i)} className="text-brand-muted hover:text-brand-leaf flex justify-center" aria-label="Remove row"><Trash2 size={16} /></button>
               </div>

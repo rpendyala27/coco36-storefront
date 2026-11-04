@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { parseLotCode } from './lotCode';
 
 /**
- * The public lot page (/lot/<COCO36 lot code>, e.g. /lot/C36-MUSC-20261203-01,
+ * The public lot page (/lot/<COCO36 lot code>, e.g. /lot/C36-MUSL-20261203-01,
  * as printed on the pack label). public.lot_passport() returns
  * nothing unless the SHOW_LOT_PASSPORT flag (settings.features.show_lot_passport)
  * is on, so while it is off every lot page is "not found". The data holds no

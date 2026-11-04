@@ -1,7 +1,7 @@
 import type { Product, ProductSize } from '../types';
 
 /**
- * Quick Order: a SKU is one pack (CO-<CAT3>-<PROD4>-<PACK>), so it names both
+ * Quick Order: a SKU is one pack (<CAT3>-<PROD4>-<PACK>, e.g. SGR-MUSD-1KG), so it names both
  * the product and the size. Case and spaces around it don't matter.
  */
 export function findPackBySku(products: readonly Product[], sku: string): { product: Product; size: ProductSize } | null {

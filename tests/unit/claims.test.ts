@@ -49,20 +49,21 @@ describe('lot passport', () => {
   it('asks the database for a COCO36 lot code only; nothing comes back while the flag is off', async () => {
     const rpc = vi.mocked(supabase.rpc);
     rpc.mockResolvedValueOnce({ data: null, error: null } as never);
-    expect(await fetchLotPassport('c36-musc-20261203-01')).toBeNull();
-    expect(rpc).toHaveBeenCalledWith('lot_passport', { p_lot: 'C36-MUSC-20261203-01' });
+    expect(await fetchLotPassport('c36-musl-20261203-01')).toBeNull();
+    expect(rpc).toHaveBeenCalledWith('lot_passport', { p_lot: 'C36-MUSL-20261203-01' });
     rpc.mockClear();
-    for (const notACode of ["x'; drop table", '', 'C36-VAN100-2611-01', 'VB-77', 'C36-MUSC-20261203-01/2', 'C36-MOSC-20261203-01']) {
+    for (const notACode of ["x'; drop table", '', 'C36-VAN100-2611-01', 'VB-77', 'C36-MUSL-20261203-01/2', 'C36-MUS1-20261203-01']) {
       expect(await fetchLotPassport(notACode)).toBeNull();
     }
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it('parses lot codes: C36-<PROD4>-<YYYYMMDD>-<nn>, no I, O or Q in the product code', () => {
-    expect(parseLotCode(' c36-musc-20261203-01 ')).toBe('C36-MUSC-20261203-01');
-    expect(parseLotCode('C36-MUSC-20261203-100')).toBe('C36-MUSC-20261203-100');
+  it('parses lot codes: C36-<PROD4>-<YYYYMMDD>-<nn>, the product code being 4 letters', () => {
+    expect(parseLotCode(' c36-musl-20261203-01 ')).toBe('C36-MUSL-20261203-01');
+    expect(parseLotCode('C36-MUSL-20261203-100')).toBe('C36-MUSL-20261203-100');
     expect(parseLotCode('C36-SGR001-2611-01')).toBeNull();
-    expect(parseLotCode('C36-MOSC-20261203-01')).toBeNull();
+    expect(parseLotCode('C36-MOSC-20261203-01')).toBe('C36-MOSC-20261203-01');
+    expect(parseLotCode('C36-MUS-20261203-01')).toBeNull();
   });
 
   it('labels certificate types for people', () => {
