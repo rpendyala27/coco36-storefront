@@ -7,8 +7,8 @@ Disallow: /checkout
 Disallow: /track/
 Disallow: /api/
 
-# /auth, /quick-order and /recipes are deliberately NOT disallowed: they answer
-# with `noindex` (X-Robots-Tag header + meta tag), and Google can only drop them
-# from the index if it is allowed to fetch them and see that.
+# /auth, /quick-order, /recipes and /cart are deliberately NOT disallowed: they
+# answer with `noindex` (X-Robots-Tag header + meta tag), and Google can only
+# drop them from the index if it is allowed to fetch them and see that.
 
 Sitemap: https://coco36.com/sitemap.xml

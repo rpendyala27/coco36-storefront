@@ -4,6 +4,11 @@ import type { Crumb } from '../src/seo/jsonld';
 import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
+import { categoryPage } from '../src/content/categoryPages.js';
+import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
+import { linkifyHtml } from '../src/content/linkify.js';
+import { shopIntro } from '../src/content/shopIntro.js';
+import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../src/lib/supportContact.js';
 import {
   GUIDES, GUIDES_HUB, guideFaqs, guidePath, productsForGuide, type Guide,
 } from '../src/content/guides.js';
@@ -43,7 +48,8 @@ function layout(ctx: SnapshotCtx, main: string): string {
     ...stockedCategories(ctx).map((c) => a(categoryPath(c), c.name)),
     ...GUIDES.map((g) => a(guidePath(g), `${g.name} guide`)),
     a('/36-steps', '36 Steps'), a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'),
-    a('/impact', 'Impact'), a('/privacy', 'Privacy'), a('/terms', 'Terms of sale'),
+    a('/impact', 'Impact'), a('/about', 'About'), a('/contact', 'Contact'), a('/faq', 'FAQ'),
+    a('/shipping', 'Shipping'), a('/returns', 'Returns'), a('/privacy', 'Privacy'), a('/terms', 'Terms of sale'),
   ];
   return [
     '<div class="ssr">',
@@ -104,7 +110,7 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
   return layout(ctx, [
     breadcrumbs([{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }]),
     '<h1>Shop all ingredients</h1>',
-    `<p>${esc(listingIntro(null, ctx.products.length))}</p>`,
+    ...shopIntro(ctx.policy).map((p) => `<p>${esc(p)}</p>`),
     productList(ctx.products) || '<p>New lots are on their way.</p>',
     '<h2>Categories</h2>',
     `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
@@ -116,13 +122,21 @@ export function categorySnapshot(ctx: SnapshotCtx, c: Category, crumbs: Crumb[])
   const items = productsInCategory(c, ctx.tree, ctx.products);
   const children = ctx.tree.childrenOf(c.id);
   const guides = GUIDES.filter((g) => g.shopCategorySlug === c.slug || g.match.categorySlugs.includes(c.slug));
+  const editorial = categoryPage(c.slug);
+  const intro = editorial
+    ? editorial.intro.map((p) => `<p>${esc(p)}</p>`).join('\n')
+    : `<p>${esc(listingIntro(c, items.length))}</p>`;
+  const faq = editorial
+    ? `<h2>Frequently asked questions</h2>\n${editorial.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${linkifyHtml(f.a, esc)}</p>`).join('\n')}`
+    : '';
   return layout(ctx, [
     breadcrumbs(crumbs),
     `<h1>${esc(c.name)}</h1>`,
-    `<p>${esc(listingIntro(c, items.length))}</p>`,
+    intro,
     items.length ? productList(items) : `<p>${a('/shop', 'Browse everything in the shop')}</p>`,
     children.length ? `<h2>In ${esc(c.name)}</h2><ul>${children.map((ch) => `<li>${a(categoryPath(ch), ch.name)}</li>`).join('')}</ul>` : '',
     guides.length ? `<h2>Buying guides</h2>${guideList(guides)}` : '',
+    faq,
   ].join('\n'));
 }
 
@@ -190,18 +204,59 @@ const STATIC_COPY: Record<string, { h1: string; lede: string }> = {
   '/auth':         { h1: 'Sign in', lede: 'Sign in or create a COCO36 account.' },
   '/checkout':     { h1: 'Checkout', lede: 'Review your bag and place your order.' },
   '/account':      { h1: 'Your account', lede: 'Orders, invoices and saved addresses.' },
+  '/cart':         { h1: 'Your cart', lede: 'Your cart is empty. Browse the shop to add ingredients.' },
 };
 
+function renderInfoSection(section: InfoSection): string {
+  const parts = [
+    section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
+    ...(section.paragraphs ?? []).map((p) => `<p>${linkifyHtml(p, esc)}</p>`),
+    section.bullets?.length
+      ? `<ul>${section.bullets.map((b) => `<li>${linkifyHtml(b, esc)}</li>`).join('')}</ul>`
+      : '',
+    section.todo
+      ? `<aside><p>TODO for the owner</p><p>${esc(section.todo)}</p></aside>`
+      : '',
+  ];
+  return parts.filter(Boolean).join('\n');
+}
+
+function renderInfoPage(page: InfoPage, policy: SnapshotCtx['policy'], crumbs: Crumb[] | null): string {
+  const sections = page.sections(policy);
+  const faqs = page.faqs?.(policy) ?? [];
+  return [
+    crumbs ? breadcrumbs(crumbs) : '',
+    `<p>${esc(page.eyebrow)}</p>`,
+    `<h1>${esc(page.h1)}</h1>`,
+    page.showContactList
+      ? `<ul><li>Email: <a href="mailto:${SUPPORT_EMAIL}">${esc(SUPPORT_EMAIL)}</a></li><li>Phone: <a href="${SUPPORT_PHONE_TEL}">${esc(SUPPORT_PHONE_DISPLAY)}</a></li></ul>`
+      : '',
+    ...sections.map(renderInfoSection),
+    faqs.length
+      ? `<h2>Frequently asked questions</h2>\n${faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${linkifyHtml(f.a, esc)}</p>`).join('\n')}`
+      : '',
+    `<nav aria-label="Related pages"><ul>${page.related.map((l) => `<li>${a(l.href, l.label)}</li>`).join('')}</ul></nav>`,
+  ].join('\n');
+}
+
 export function staticSnapshot(ctx: SnapshotCtx, pathname: string, crumbs: Crumb[] | null): string {
+  const page = infoPage(pathname);
+  if (page) return layout(ctx, renderInfoPage(page, ctx.policy, crumbs));
+
   const copy = STATIC_COPY[pathname]
     ?? (pathname.startsWith('/track/') ? { h1: 'Track your shipment', lede: 'Live courier tracking for your COCO36 order.' }
       : pathname.startsWith('/account/') ? { h1: 'Your order', lede: 'Order details and invoice.' }
       : { h1: 'COCO36', lede: '' });
   const extra = pathname === '/36-steps'
     ? PHASES.map((ph) => `<h2>Phase ${esc(ph.number)}: ${esc(ph.title)}</h2><p>${esc(ph.description)}</p><ol>${ph.steps.map((s) => `<li>${esc(s.title)}: ${esc(s.description)}</li>`).join('')}</ol>`).join('\n')
-    : pathname === '/terms' ? `<h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>` : '';
+    : pathname === '/terms' ? `<h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>`
+    : pathname === '/cart' ? `<p>${a('/shop', 'Browse the shop')}</p>`
+    : '';
+  const trail = pathname === '/cart'
+    ? breadcrumbs([{ name: 'Home', path: '/' }, { name: 'Cart', path: '/cart' }])
+    : (crumbs ? breadcrumbs(crumbs) : '');
   return layout(ctx, [
-    crumbs ? breadcrumbs(crumbs) : '',
+    trail,
     `<h1>${esc(copy.h1)}</h1>`,
     copy.lede ? `<p>${esc(copy.lede)}</p>` : '',
     extra,

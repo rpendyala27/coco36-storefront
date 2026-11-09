@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { categoryPath, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { guideBySlug } from '../src/content/guides.js';
+import { categoryListingMeta } from '../src/content/categoryPages.js';
 import {
-  NOINDEX, categoryCrumbs, categoryMeta, goneMeta, guideCrumbs, guidesHubMeta,
+  NOINDEX, categoryCrumbs, goneMeta, guideCrumbs, guidesHubMeta,
   homeMeta, notFoundMeta, productCrumbs, productMeta, shopMeta, staticPageCrumbs, staticPageMeta,
   type PageMeta,
 } from '../src/seo/meta.js';
@@ -91,7 +92,12 @@ const emptyCtx = (): SnapshotCtx => ({ products: [], tree: buildTree([]), policy
  * `search` the query string without "?"; `host` the request host.
  */
 export async function render(pathname: string, search: string, host: string): Promise<RenderResult> {
-  // One canonical host. vercel.json redirects www first; this is the backstop.
+  // One canonical host, and one spelling of the path. vercel.json redirects www
+  // and strips trailing slashes first; this is the backstop so /shop/ cannot
+  // be a second URL beside /shop.
+  if (pathname.length > 1 && pathname.endsWith('/')) {
+    return redirect(`https://${SITE_HOST}${pathname.replace(/\/+$/, '')}${search ? `?${search}` : ''}`);
+  }
   if (/^www\./i.test(host)) return redirect(`https://${SITE_HOST}${pathname}${search ? `?${search}` : ''}`);
 
   const params = new URLSearchParams(search);
@@ -133,8 +139,16 @@ export async function render(pathname: string, search: string, host: string): Pr
       const c = (legacySlug && cat.tree.bySlug.get(legacySlug)) || cat.tree.all.find((x) => x.name === legacyName);
       return redirect(c ? categoryPath(c) : '/shop');
     }
+    // `?q=` with nothing in it is the same document as /shop. Don't leave an
+    // indexable twin. A real query stays noindex and canonicalises to /shop.
+    const q = params.get('q');
+    if (q !== null && !q.trim()) {
+      params.delete('q');
+      const rest = params.toString();
+      return redirect(`/shop${rest ? `?${rest}` : ''}`);
+    }
     const meta = shopMeta();
-    return withHost(page(200, params.get('q') ? { ...meta, robots: NOINDEX } : meta, shopSnapshot(ctx)));
+    return withHost(page(200, q && q.trim() ? { ...meta, robots: NOINDEX } : meta, shopSnapshot(ctx)));
   }
 
   // ── /shop/category/:slug
@@ -142,7 +156,7 @@ export async function render(pathname: string, search: string, host: string): Pr
     const c = cat.tree.bySlug.get(segs[2]);
     if (!c) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
     const items = productsInCategory(c, cat.tree, cat.products);
-    return withHost(page(200, categoryMeta(c, cat.tree, items), categorySnapshot(ctx, c, categoryCrumbs(c, cat.tree))));
+    return withHost(page(200, categoryListingMeta(c, cat.tree, items), categorySnapshot(ctx, c, categoryCrumbs(c, cat.tree))));
   }
 
   // ── /shop/:product and legacy /catalog/:product

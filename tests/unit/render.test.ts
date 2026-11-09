@@ -119,6 +119,89 @@ describe('server-rendered pages', () => {
     expect(r.status).toBe(503);
     expect(r.headers['Retry-After']).toBe('120');
   });
+
+  it('/shop is self-canonical, including when a tracking param is present', async () => {
+    const plain = await render('/shop', '', 'coco36.com');
+    expect(plain.status).toBe(200);
+    expect(canonical(plain.body)).toBe('https://coco36.com/shop');
+    expect(robots(plain.body)).toBeNull();
+    expect(plain.body).toContain('sourced direct from origin');
+    const tracked = await render('/shop', 'utm_source=google', 'coco36.com');
+    expect(tracked.status).toBe(200);
+    expect(canonical(tracked.body)).toBe('https://coco36.com/shop');
+  });
+
+  it('empty /shop?q= and a trailing slash redirect to the bare shop URL', async () => {
+    const empty = await render('/shop', 'q=', 'coco36.com');
+    expect(empty.status).toBe(301);
+    expect(empty.headers.Location).toBe('https://coco36.com/shop');
+    const slash = await render('/shop/', '', 'coco36.com');
+    expect(slash.status).toBe(301);
+    expect(slash.headers.Location).toBe('https://coco36.com/shop');
+  });
+
+  it('a real shop search stays noindex and still canonicalises to /shop', async () => {
+    const r = await render('/shop', 'q=vanilla', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(robots(r.body)).toMatch(/noindex/);
+    expect(canonical(r.body)).toBe('https://coco36.com/shop');
+  });
+
+  it('info pages: 200, self-canonical, breadcrumb, footer links', async () => {
+    for (const p of ['/about', '/contact', '/faq', '/shipping', '/returns']) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.status, p).toBe(200);
+      expect(canonical(r.body), p).toBe(`https://coco36.com${p}`);
+      expect(robots(r.body), p).toBeNull();
+      expect(ldTypes(r.body), p).toContain('BreadcrumbList');
+      expect(r.body, p).toContain(`href="${p}"`);
+      expect(r.body, p).toContain('href="/contact"');
+    }
+  });
+
+  it('/contact publishes email and phone as links and has no form', async () => {
+    const r = await render('/contact', '', 'coco36.com');
+    expect(r.body).toContain('href="mailto:support@coco36.com"');
+    expect(r.body).toContain('href="tel:+919944213233"');
+    expect(r.body).toContain('9944213233');
+    expect(r.body).not.toContain('<form');
+  });
+
+  it('/faq JSON-LD lists only the policy questions, and the body repeats them', async () => {
+    const r = await render('/faq', '', 'coco36.com');
+    expect(ldTypes(r.body)).toContain('FAQPage');
+    const faq = [...r.body.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
+      .map((m) => JSON.parse(m[1]))
+      .find((b) => b['@type'] === 'FAQPage');
+    const questions = faq.mainEntity.map((q: { name: string }) => q.name);
+    expect(questions).toHaveLength(4);
+    for (const q of questions) expect(r.body).toContain(q);
+  });
+
+  it('/shipping and /returns keep owner TODOs in the HTML', async () => {
+    for (const p of ['/shipping', '/returns', '/about', '/contact']) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.body, p).toContain('TODO for the owner');
+    }
+    const faq = await render('/faq', '', 'coco36.com');
+    expect(faq.body).not.toContain('TODO for the owner');
+  });
+
+  it('/cart is a real noindex page, not a 404', async () => {
+    const r = await render('/cart', '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(robots(r.body)).toMatch(/noindex/);
+    expect(canonical(r.body)).toBe('https://coco36.com/cart');
+    expect(r.body).toContain('Your cart is empty');
+    expect(r.body).toContain('href="/shop"');
+  });
+
+  it('privacy title is in the 50–59 character band', async () => {
+    const r = await render('/privacy', '', 'coco36.com');
+    expect(title(r.body)).toBe('How COCO36 Foods Protects Your Personal Data | COCO36');
+    expect(title(r.body).length).toBeGreaterThanOrEqual(50);
+    expect(title(r.body).length).toBeLessThanOrEqual(59);
+  });
 });
 
 describe('traceability on the server', () => {
