@@ -5,7 +5,8 @@ import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
 import { categoryPage } from '../src/content/categoryPages.js';
-import type { BakingNote, NoteBlock } from '../src/content/bakingNotes.js';
+import { productPage } from '../src/content/productPages.js';
+import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/content/bakingNotes.js';
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
 import { richHtml } from '../src/content/richText.js';
@@ -147,22 +148,38 @@ export function categorySnapshot(ctx: SnapshotCtx, c: Category, crumbs: Crumb[])
 export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): string {
   const cat = p.categoryId ? ctx.tree.byId.get(p.categoryId) : undefined;
   const guide = GUIDES.find((g) => productsForGuide(g, [p], ctx.tree).length > 0);
+  const editorial = productPage(p);
   const others = ctx.products.filter((o) => o.id !== p.id);
   // Same src/srcset/sizes as the PDP's main <img>, so the browser reuses it.
   const img = p.image
     ? `<img src="${esc(imageUrl(p.image, 900))}"${imageSrcSet(p.image, [600, 900, 1200]) ? ` srcset="${esc(imageSrcSet(p.image, [600, 900, 1200]))}" sizes="(min-width: 1024px) 45vw, 100vw"` : ''} alt="${esc(p.name)}" width="900" height="900" />`
     : '';
+  const paras = (lines: string[]) => lines.map((line) => `<p>${richHtml(line, esc)}</p>`).join('\n');
+  const body = editorial
+    ? [
+      paras(editorial.intro),
+      ...editorial.sections.map((s) => `<h2>${esc(s.heading)}</h2>\n${paras(s.paragraphs)}`),
+    ].join('\n')
+    : (p.description ? `<p>${esc(stripMarkdown(p.description))}</p>` : '');
+  const related = editorial?.related.length
+    ? `<nav aria-label="Related pages"><ul>${editorial.related.map((l) => `<li>${a(l.href, l.label)}</li>`).join('')}</ul></nav>`
+    : '';
+  const faqs = editorial?.faqs.length
+    ? `<h2>Frequently asked questions</h2>\n${editorial.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${richHtml(f.a, esc)}</p>`).join('\n')}`
+    : '';
   return layout(ctx, [
     breadcrumbs(crumbs),
     '<article>',
-    `<h1>${esc(p.name)}</h1>`,
+    `<h1>${esc(editorial?.h1 ?? p.name)}</h1>`,
     img,
     `<p>${[p.brand && `By ${esc(p.brand)}`, p.origin && `Origin: ${esc(p.origin)}`].filter(Boolean).join(' · ')}</p>`,
-    p.description ? `<p>${esc(stripMarkdown(p.description))}</p>` : '',
+    body,
     p.sizes.length ? `<h2>Sizes and prices</h2><ul>${p.sizes.map((s) => `<li>${esc(s.label)}${s.sku ? ` (SKU ${esc(s.sku)})` : ''}: ${esc(rupees(s.priceInPaise))} — ${s.inStock ? 'in stock' : 'out of stock'}</li>`).join('')}</ul>` : '',
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
     cat ? `<p>More in ${a(categoryPath(cat), cat.name)}</p>` : '',
     guide ? `<p>Buying guide: ${a(guidePath(guide), guide.h1)}</p>` : '',
+    related,
+    faqs,
     '</article>',
     others.length ? `<h2>More from the shop</h2>${productList(others)}` : '',
   ].join('\n'));
@@ -223,6 +240,7 @@ export function bakingNoteSnapshot(_ctx: SnapshotCtx, note: BakingNote): string 
     '<article>',
     '<p>Ingredient notes</p>',
     `<h1>${esc(note.h1)}</h1>`,
+    note.published ? `<p>Published <time datetime="${esc(note.published)}">${esc(formatPublishDate(note.published))}</time></p>` : '',
     ...note.sections.map((section) => [
       section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
       ...section.blocks.map(renderNoteBlock),

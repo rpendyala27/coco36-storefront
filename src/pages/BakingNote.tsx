@@ -1,7 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { bakingNoteByPath, type NoteBlock } from '../content/bakingNotes';
+import { bakingNoteByPath, formatPublishDate, type NoteBlock } from '../content/bakingNotes';
 import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 import { parseRich, type RichNode } from '../content/richText';
 import { useSeo } from '../lib/seo';
@@ -35,6 +35,9 @@ export function BakingNote() {
         <Breadcrumbs crumbs={bakingNoteCrumbs(note)} />
         <p className="eyebrow text-brand-leaf mt-8 mb-3">Ingredient notes</p>
         <h1 className="font-display text-4xl md:text-5xl leading-[1.05] text-brand-forest">{note.h1}</h1>
+        {note.published && (
+          <p className="mt-4 text-sm text-brand-muted">Published <time dateTime={note.published}>{formatPublishDate(note.published)}</time></p>
+        )}
 
         {note.sections.map((section, i) => (
           <section key={section.heading ?? i} className={section.heading ? 'mt-10' : 'mt-5'}>

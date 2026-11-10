@@ -45,6 +45,16 @@ export function parseRich(input: string): RichNode[] {
   return nodes;
 }
 
+/** Visible words of a rich string: link URLs dropped, labels kept. */
+export function richPlain(input: string): string {
+  const walk = (nodes: RichNode[]): string => nodes.map((n) => {
+    if (n.type === 'text') return n.text;
+    if (n.type === 'bold') return walk(n.children);
+    return n.text;
+  }).join('');
+  return walk(parseRich(input)).replace(/\s+/g, ' ').trim();
+}
+
 export function richHtml(text: string, esc: (s: string) => string): string {
   const render = (node: RichNode): string => {
     if (node.type === 'text') return esc(node.text).replace(/\n/g, '<br>');
