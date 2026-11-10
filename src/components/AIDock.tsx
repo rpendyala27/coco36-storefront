@@ -4,12 +4,13 @@ import { motion } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 
 /**
- * Floating COCO AI button — persists across most pages,
- * hidden on the dedicated /recipes page (where the full chat lives).
+ * Floating COCO AI button. Not mounted: the consultant is not live, and
+ * /recipes is the recipe index. Hidden on recipe pages, checkout and auth
+ * if it is mounted later.
  */
 export const AIDock: React.FC = () => {
   const { pathname } = useLocation();
-  if (pathname === '/recipes' || pathname.startsWith('/checkout') || pathname.startsWith('/auth')) {
+  if (pathname === '/recipes' || pathname.startsWith('/recipes/') || pathname.startsWith('/checkout') || pathname.startsWith('/auth')) {
     return null;
   }
 

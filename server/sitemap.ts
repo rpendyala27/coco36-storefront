@@ -1,6 +1,7 @@
 import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { BAKING_NOTES } from '../src/content/bakingNotes.js';
+import { RECIPES, RECIPES_HUB, RECIPES_PUBLISH_DATE } from '../src/content/recipes.js';
 import { GUIDES, GUIDES_HUB, guidePath } from '../src/content/guides.js';
 import { SITE_ORIGIN } from '../src/seo/site.js';
 import { esc } from './html.js';
@@ -13,15 +14,14 @@ import type { Catalog } from './catalog.js';
  *   - every live product (status='active', deleted_at null) at its clean URL
  *   - ingredient guides + hub (/ingredients), the Ingredient Notes (/guides),
  *     and the real content pages
- * Left out on purpose: archived/deleted products, empty categories, /recipes
- * (noindex stub), /cart (real page, noindex — the bag is not a landing page),
- * and utility pages (/auth, /quick-order, /checkout, /account, /track).
- * /privacy, /terms and the info pages (/about, /contact, /faq, /shipping,
- * /returns) are included.
+ * Left out on purpose: archived/deleted products, empty categories, /cart
+ * (real page, noindex — the bag is not a landing page), and utility pages
+ * (/auth, /quick-order, /checkout, /account, /track).
+ * /recipes and each recipe are included. /privacy, /terms and the info pages
+ * (/about, /contact, /faq, /shipping, /returns) are included.
  *
- * SITEMAP_DENY is the hard stop. /recipes stays noindex and is not a landing
- * page. /shop/bean-to-bar-kit 301s to /shop. Neither may come back if a
- * content page or a catalogue row would otherwise emit that path.
+ * SITEMAP_DENY is the hard stop. /shop/bean-to-bar-kit 301s to /shop and must
+ * not come back if a catalogue row would otherwise emit that path.
  */
 
 interface Entry { path: string; changefreq: string; priority: number; lastmod?: string }
@@ -41,7 +41,6 @@ const CONTENT_PAGES: Entry[] = [
 ];
 
 const SITEMAP_DENY = new Set<string>([
-  '/recipes',
   '/shop/bean-to-bar-kit',
 ]);
 
@@ -65,6 +64,13 @@ export function sitemapEntries(cat: Catalog): Entry[] {
       changefreq: 'monthly',
       priority: n.path === '/guides' ? 0.6 : 0.7,
       lastmod: n.updated,
+    })),
+    { path: RECIPES_HUB.path, changefreq: 'monthly', priority: 0.6, lastmod: RECIPES_PUBLISH_DATE },
+    ...RECIPES.map((recipe) => ({
+      path: recipe.path,
+      changefreq: 'monthly' as const,
+      priority: 0.7,
+      lastmod: RECIPES_PUBLISH_DATE,
     })),
     ...CONTENT_PAGES,
   ].filter(unique).filter((e) => !SITEMAP_DENY.has(e.path));

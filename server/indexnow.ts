@@ -20,8 +20,12 @@ const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 const RETRY_MS = 1500;
 const PLAIN = 'text/plain; charset=utf-8';
 
-/** Paths the sitemap already refuses, plus /cart (noindex, not a landing page). */
-const BLOCKED_PATHS = ['/cart', '/recipes', '/shop/bean-to-bar-kit'] as const;
+/**
+ * Paths IndexNow must not submit even if a sitemap lists them.
+ * /cart is noindex. /shop/bean-to-bar-kit redirects to /shop.
+ * /recipes is an indexable hub, so it and its children are submitted.
+ */
+const BLOCKED_PATHS = ['/cart', '/shop/bean-to-bar-kit'] as const;
 
 const OIDC_ISS = 'https://token.actions.githubusercontent.com';
 const OIDC_AUD = 'https://coco36.com';
@@ -137,7 +141,7 @@ export function handleKeyRequest(rawUrl: string | undefined, method: string | un
 /**
  * Keep https://coco36.com URLs that are safe to submit.
  * Drops www, any other host (including preview deployments), http, /cart,
- * /recipes, and the sitemap deny-list paths.
+ * and the sitemap deny-list paths. /recipes is allowed.
  */
 export function filterIndexNowUrls(urls: readonly string[]): string[] {
   const out: string[] = [];

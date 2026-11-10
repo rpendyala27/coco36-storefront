@@ -92,11 +92,11 @@ describe('SEO copy bounds', () => {
     expect(paths).toContain('/privacy');
     expect(paths).toContain('/terms');
     expect(paths).not.toContain('/cart');
-    expect(paths).not.toContain('/recipes');
+    expect(paths).toContain('/recipes');
     expect(paths).not.toContain('/shop/bean-to-bar-kit');
   });
 
-  it('sitemap denies /recipes and /shop/bean-to-bar-kit even if a product would emit that slug', () => {
+  it('sitemap denies /shop/bean-to-bar-kit even if a product would emit that slug, and lists /recipes', () => {
     const kit = {
       id: 'bean-to-bar-kit',
       name: 'Bean-to-Bar Kit',
@@ -106,7 +106,7 @@ describe('SEO copy bounds', () => {
     const paths = sitemapEntries({
       products: [kit], tree: buildTree([]), policy: DEFAULT_POLICY,
     }).map((e) => e.path);
-    expect(paths).not.toContain('/recipes');
+    expect(paths).toContain('/recipes');
     expect(paths).not.toContain('/shop/bean-to-bar-kit');
     expect(paths).toContain('/shop');
     expect(paths).toContain('/');
