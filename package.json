@@ -10,6 +10,7 @@
     "clean": "rm -rf dist dist-server",
     "lint": "tsc --noEmit",
     "seo:audit": "node scripts/seo-audit.mjs",
+    "indexnow": "tsx scripts/indexnow.ts",
     "test": "vitest run"
   },
   "dependencies": {
