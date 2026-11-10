@@ -5,7 +5,7 @@ import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
 import { categoryPage } from '../src/content/categoryPages.js';
-import type { BakingNote, NoteBlock } from '../src/content/bakingNotes.js';
+import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/content/bakingNotes.js';
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
 import { richHtml } from '../src/content/richText.js';
@@ -223,6 +223,7 @@ export function bakingNoteSnapshot(_ctx: SnapshotCtx, note: BakingNote): string 
     '<article>',
     '<p>Ingredient notes</p>',
     `<h1>${esc(note.h1)}</h1>`,
+    note.published ? `<p>Published <time datetime="${esc(note.published)}">${esc(formatPublishDate(note.published))}</time></p>` : '',
     ...note.sections.map((section) => [
       section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
       ...section.blocks.map(renderNoteBlock),
