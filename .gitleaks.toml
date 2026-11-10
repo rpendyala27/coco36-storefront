@@ -1,0 +1,8 @@
+title = "coco36-storefront"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Shared catalogue fixture id in unit tests"
+regexes = ['''6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01''']

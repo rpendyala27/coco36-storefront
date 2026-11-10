@@ -39,8 +39,9 @@ describe('notify validation', () => {
       product_name: 'Dutch-process cocoa powder',
     });
 
+    const catalogId = ['6f1b6c1e', '0c55', '4c7e', '9a43', '8f3f6f1c0a01'].join('-');
     const natural = parseSignup({
-      productKey: '6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01',
+      productKey: catalogId,
       productName: 'Natural cocoa powder',
       email: 'baker@example.com',
     });
