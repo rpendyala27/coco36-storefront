@@ -23,14 +23,12 @@ const RETARGETED = [
 
 /**
  * Linked from the Christmas guide on purpose.
- * The three recipe URLs are built in a parallel PR and 404 on this branch.
  * Dark muscovado has a product page, but this suite's catalogue is empty, so
- * /shop/<slug> is not 200 here. Neither case should be rewritten to /shop.
+ * /shop/<slug> is not 200 here. Do not rewrite that link to /shop.
+ * The three recipe URLs are published on this branch and are checked with the
+ * other internal links.
  */
 const LINKED_AHEAD = new Set([
-  '/recipes/fudgy-dutch-cocoa-brownies',
-  '/recipes/dark-couverture-ganache',
-  '/recipes/pistachio-frangipane',
   '/shop/dark-muscovado-cane-sugar',
 ]);
 
