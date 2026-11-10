@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { CARRIER, HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy, rupees } from '../seo/site.js';
+import { CARRIER, HANDLING_DAYS_MAX, SHIPS_FROM, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, rupees } from '../seo/site.js';
 
 /**
  * Order facts for public pages. The courier is never named; use CARRIER
@@ -30,7 +30,7 @@ export function cutoffLine(): string {
 }
 
 export function deliveryEstimateLine(): string {
-  return 'Typical delivery after dispatch is an estimate, not a guarantee: 3 to 5 business days to metro cities, 5 to 8 business days to the rest of India, and up to 10 business days for remote areas, including the North-East, J&K, and the Andaman & Nicobar and Lakshadweep islands.';
+  return `Typical delivery after dispatch is an estimate, not a guarantee: ${TRANSIT_DAYS_MIN} to 5 business days to metro cities, 5 to 8 business days to the rest of India, and up to ${TRANSIT_DAYS_MAX} business days for remote areas, including the North-East, J&K, and the Andaman & Nicobar and Lakshadweep islands.`;
 }
 
 export function serviceabilityLine(): string {

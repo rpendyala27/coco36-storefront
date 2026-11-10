@@ -7,8 +7,10 @@ import {
   breadcrumbJsonLd, faqJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
 } from './jsonld.js';
 import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
+import { productPage } from '../content/productPages.js';
+import { richPlain } from '../content/richText.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
-import { DESCRIPTION_MAX, TITLE_MAX, clip, firstThatFits, sentence, stripMarkdown } from './text.js';
+import { DESCRIPTION_MAX, TITLE_MAX, clip, composeProductDescription, firstThatFits, fitWithin, stripMarkdown } from './text.js';
 
 /**
  * Per-page <head> metadata. Every route's title, description, canonical,
@@ -225,27 +227,44 @@ export function productCrumbs(p: Product, tree: CategoryTree): Crumb[] {
   return [HOME, SHOP, ...cats.map((a) => ({ name: a.name, path: categoryPath(a) })), { name: p.name, path: productPath(p) }];
 }
 
-export function productMeta(p: Product, tree: CategoryTree, policy: StorePolicy = DEFAULT_POLICY): PageMeta {
+/**
+ * Catalogue meta. composeProductDescription drops whole sentences until the
+ * price line fits, so a long description is never cut mid-sentence.
+ */
+function catalogueProductDescription(p: Product): string {
   const prices = p.sizes.map((s) => s.priceInPaise);
-  const from = prices.length ? `${prices.length > 1 ? 'From ' : ''}${rupees(Math.min(...prices))}, shipped across India.` : 'Shipped across India.';
-  const base = sentence(stripMarkdown(p.description || p.tag || p.name));
-  const origin = p.originCountry ? ` Origin: ${p.originCountry}.` : '';
-  // Longest version that fits: with origin → without → description clipped.
-  const withOrigin = `${base}${origin} ${from}`;
-  const plain = `${base} ${from}`;
-  const description = withOrigin.length <= DESCRIPTION_MAX ? withOrigin
-    : plain.length <= DESCRIPTION_MAX ? plain
-    : `${clip(base, DESCRIPTION_MAX - from.length - 1)} ${from}`;
+  const from = prices.length
+    ? `${prices.length > 1 ? 'From ' : ''}${rupees(Math.min(...prices))}, shipped across India.`
+    : 'Shipped across India.';
+  const base = stripMarkdown(p.description || p.tag || p.name);
+  const origin = p.originCountry ? `Origin: ${p.originCountry}.` : '';
+  return composeProductDescription(base, origin, from);
+}
+
+export function productMeta(p: Product, tree: CategoryTree, policy: StorePolicy = DEFAULT_POLICY, now: Date = new Date()): PageMeta {
+  const page = productPage(p);
+  const raw = page ? page.metaDescription : catalogueProductDescription(p);
+  // Editorial metas are written as complete strings. If a price change pushes
+  // one over the limit, drop a trailing sentence — do not insert an ellipsis.
+  const description = raw.length <= DESCRIPTION_MAX ? raw : fitWithin(raw, DESCRIPTION_MAX);
+  const faqs = page?.faqs.map((f) => ({ q: f.q, a: richPlain(f.a) })) ?? [];
+  const intro = page ? richPlain(page.intro.join(' ')) : '';
 
   return {
-    title: buyTitle(p.name),
+    title: page && page.title.length <= TITLE_MAX ? page.title : buyTitle(p.name),
     description,
     path: productPath(p),
     ogType: 'product',
     ...(p.image ? { image: imageUrl(p.image, 1200), imageAlt: p.name } : {}),
     jsonLd: [
-      { id: 'product', data: productJsonLd(p, { policy }) },
+      { id: 'product', data: productJsonLd(p, {
+        policy,
+        now,
+        ...(intro ? { description: intro } : {}),
+        ...(page && page.properties.length ? { additionalProperty: page.properties } : {}),
+      }) },
       crumbsLd(productCrumbs(p, tree)),
+      ...(faqs.length ? [{ id: 'faq', data: faqJsonLd(faqs) }] : []),
     ],
   };
 }
