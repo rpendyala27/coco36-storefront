@@ -13,7 +13,7 @@
  * Rohan replaces this single value at preview. It is both the visible date
  * and Article datePublished. Format: YYYY-MM-DD.
  */
-export const COUVERTURE_BUYING_GUIDE_PUBLISH_DATE = '2027-01-01';
+export const COUVERTURE_BUYING_GUIDE_PUBLISH_DATE = '2026-11-10';
 
 const PUBLISH_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
 
