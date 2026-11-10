@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BAKING_NOTES } from '../../src/content/bakingNotes';
-import { stripMarkdown } from '../../src/seo/text';
+import { BAKING_NOTES, COUVERTURE_BUYING_GUIDE_PUBLISH_DATE, formatPublishDate } from '../../src/content/bakingNotes';
+import { DESCRIPTION_MAX, TITLE_MAX, stripMarkdown } from '../../src/seo/text';
 import { render, setTemplate } from '../../server/render';
 import { resetCatalogCache } from '../../server/catalog';
 import { sitemapEntries } from '../../server/sitemap';
@@ -122,17 +122,25 @@ describe('ingredient notes', () => {
     }
   });
 
-  it('published HTML has no FSSAI repack, hero SKU, or India-stock', async () => {
+  it('published HTML has no FSSAI licence, repack, hero SKU, or India-stock claims', async () => {
     for (const note of BAKING_NOTES) {
       const r = await render(note.path, '', 'coco36.com');
       expect(r.body, note.path).not.toContain('FSSAI repack');
+      expect(r.body, note.path).not.toMatch(/FSSAI licen[cs]e/i);
       expect(r.body, note.path).not.toContain('hero SKU');
       expect(r.body, note.path).not.toContain('India-stock');
-      expect(r.body, note.path).not.toMatch(/FSSAI/i);
+      expect(r.body, note.path).not.toMatch(/\bours is better\b/i);
     }
   });
 
-  it('the sitemap lists all four notes and still lists the ingredient library', () => {
+  it('guide titles and descriptions stay inside the site limits', () => {
+    for (const note of BAKING_NOTES) {
+      expect(note.title.length, note.title).toBeLessThanOrEqual(TITLE_MAX);
+      expect(note.description.length, note.path).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    }
+  });
+
+  it('the sitemap lists every note and still lists the ingredient library', () => {
     const paths = sitemapEntries({ products: [], tree: buildTree([]), policy: DEFAULT_POLICY }).map((e) => e.path);
     for (const note of BAKING_NOTES) expect(paths, note.path).toContain(note.path);
     expect(paths).toContain('/ingredients');
@@ -166,5 +174,126 @@ describe('ingredient notes', () => {
       const status = (await render(href, '', 'coco36.com')).status;
       expect(status, href).toBe(200);
     }
+  });
+
+  it('keeps the pistachio URL and publishes the repositioned title, meta and article', async () => {
+    const path = '/guides/pistachio-paste-dubai-chocolate-at-home';
+    const r = await render(path, '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(canonicalOf(r.body)).toBe(`https://coco36.com${path}`);
+    expect(titleOf(r.body)).toBe('Pistachio Paste for Baking, Gelato & Mithai | COCO36');
+    const desc = decode(r.body.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? '');
+    expect(desc).toBe('Pistachio paste vs cream for Indian bakers: unsweetened paste for gelato, frangipane, entremets and mithai — and how to read the label.');
+    expect(decode(r.body.match(/property="og:title" content="([^"]*)"/)?.[1] ?? '')).toBe('Pistachio Paste for Baking, Gelato & Mithai | COCO36');
+    expect(decode(r.body.match(/property="og:description" content="([^"]*)"/)?.[1] ?? '')).toBe(desc);
+    const article = jsonLd(r.body).find((b) => b['@type'] === 'Article') as {
+      headline?: string; description?: string; mainEntityOfPage?: string;
+    };
+    expect(article.headline).toBe('Pistachio paste for baking, gelato, viennoiserie and mithai');
+    expect(article.description).toBe('Pistachio paste vs cream for Indian bakers: unsweetened paste for gelato, frangipane, entremets and mithai, and how to read the label.');
+    expect(article.mainEntityOfPage).toBe(`https://coco36.com${path}`);
+    for (const url of [
+      'https://www.tastetomorrow.com/inspiration/after-72-percent-growth-the-past-year-where-does-pistachio-go-now',
+      'https://www.agri-pulse.com/articles/24950-dubai-chocolate-craze-helps-pistachios-defy-tree-nut-downturn',
+      'https://www.callebaut.com/en/products/callebaut/nuts-pure-pistachio-paste/NPO-PI1-2B-18A',
+      'https://shop.pisti.it/en/products/pistachio-spreadable-cream-in-premium-pack',
+      'https://www.callebaut.com/en/recipes/dubai-bar/4898',
+      'https://www.callebaut.com/en/recipes/yesims-dubai-chocolate-bar/4942',
+    ]) expect(r.body, url).toContain(url);
+  });
+
+  it('puts the answer-first sentence first and keeps the previous opening sentence second', async () => {
+    const cases = [
+      {
+        path: '/guides',
+        first: 'These guides help Indian bakers choose couverture versus compound chocolate, natural (non-alkalised) versus Dutch-process cocoa',
+        second: 'Short, practical notes from COCO36 for bakers and pastry cooks across India',
+      },
+      {
+        path: '/guides/couverture-vs-compound',
+        first: 'Couverture is cocoa-butter-rich chocolate; compound uses a different principal fat',
+        second: 'Walk into any bakery supplier in India',
+      },
+      {
+        path: '/guides/natural-vs-dutch-cocoa',
+        first: 'Natural (non-alkalised) cocoa is more acidic; Dutch-process (alkalised) cocoa has reduced acidity',
+        second: 'Cocoa powder looks simple: a brown pouch next to the maida.',
+        later: 'Dark colour doesn’t tell you everything.',
+      },
+      {
+        path: '/guides/pistachio-paste-dubai-chocolate-at-home',
+        first: 'Pistachio paste should be unsweetened ground pistachios',
+        second: 'This guide is for home bakers, pastry cooks, gelato makers and mithai kitchens',
+        later: 'Pistachio paste is coming soon to the COCO36 shop, and it will not be sold as cream.',
+      },
+    ];
+    for (const c of cases) {
+      const text = visible((await render(c.path, '', 'coco36.com')).body);
+      const iFirst = text.indexOf(c.first);
+      const iSecond = text.indexOf(c.second);
+      expect(iFirst, c.path).toBeGreaterThan(-1);
+      expect(iSecond, c.path).toBeGreaterThan(iFirst);
+      if (c.later) expect(text.indexOf(c.later), c.path).toBeGreaterThan(iSecond);
+    }
+    const hub = visible((await render('/guides', '', 'coco36.com')).body);
+    expect(hub).toContain('Pistachio paste for baking, gelato, viennoiserie and mithai');
+    expect(hub).toContain('Unsweetened paste versus sweetened cream — for gelato, frangipane, entremets and mithai, with a Dubai-style bar as one method.');
+    expect(hub).toContain('The writing stays crop-to-craft.');
+  });
+
+  it('publishes the couverture buying guide, its sitemap entry, and the placeholder date', async () => {
+    const path = '/guides/best-couverture-chocolate-india';
+    const note = BAKING_NOTES.find((n) => n.path === path);
+    expect(note?.published).toBe(COUVERTURE_BUYING_GUIDE_PUBLISH_DATE);
+    const r = await render(path, '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(titleOf(r.body)).toBe('Best Couverture Chocolate in India (2027) | COCO36');
+    expect(canonicalOf(r.body)).toBe(`https://coco36.com${path}`);
+    expect(r.body.match(/<h1[\s>]/g)?.length).toBe(1);
+    expect(decode(r.body.match(/property="og:title" content="([^"]*)"/)?.[1] ?? '')).toBe(note!.title);
+    expect(decode(r.body.match(/property="og:description" content="([^"]*)"/)?.[1] ?? '')).toBe(note!.description);
+    expect(r.body).toContain('property="og:type" content="article"');
+    const blocks = jsonLd(r.body);
+    const types = blocks.map((b) => b['@type']);
+    expect(types).toContain('Article');
+    expect(types).toContain('FAQPage');
+    expect(types).toContain('BreadcrumbList');
+    expect(types).not.toContain('Review');
+    expect(types).not.toContain('AggregateRating');
+    const article = blocks.find((b) => b['@type'] === 'Article') as {
+      headline?: string; description?: string; datePublished?: string; mainEntityOfPage?: string;
+    };
+    expect(article.headline).toBe(note!.h1);
+    expect(article.description).toBe(note!.description);
+    expect(article.datePublished).toBe(COUVERTURE_BUYING_GUIDE_PUBLISH_DATE);
+    expect(article.mainEntityOfPage).toBe(`https://coco36.com${path}`);
+    const text = visible(r.body);
+    expect(text).toContain(`Published ${formatPublishDate(COUVERTURE_BUYING_GUIDE_PUBLISH_DATE)}`);
+    expect(r.body).toContain(`datetime="${COUVERTURE_BUYING_GUIDE_PUBLISH_DATE}"`);
+    expect(r.body).toContain('href="/guides/couverture-vs-compound"');
+    expect(text).toContain('coming soon to the COCO36 shop');
+    expect(text).toContain('FSSAI couverture standard');
+    expect(text).toContain('not claiming that our forthcoming chocolate is better');
+    expect(text).not.toMatch(/₹/);
+    expect(text).not.toMatch(/Visakhapatnam|Vizag/);
+    const urls = new Set<string>();
+    const walk = (value: unknown) => {
+      if (typeof value === 'string') {
+        for (const m of value.matchAll(/https?:\/\/[^)\s]+/g)) urls.add(m[0]);
+      } else if (Array.isArray(value)) value.forEach(walk);
+      else if (value && typeof value === 'object') Object.values(value).forEach(walk);
+    };
+    walk(note);
+    expect(urls.size).toBeGreaterThanOrEqual(22);
+    expect(urls.has('https://www.fssai.gov.in/upload/uploadfiles/files/Gazette_Notification_Chocolate_Standards_01_06_2017.pdf')).toBe(true);
+    expect(urls.has('https://www.amul.com/index.php?q=products%2Famul-dark-compound-dco-18-info.php')).toBe(true);
+    for (const url of urls) expect(r.body, url).toContain(url);
+
+    const paths = sitemapEntries({ products: [], tree: buildTree([]), policy: DEFAULT_POLICY }).map((e) => e.path);
+    expect(paths).toContain(path);
+    expect(paths.filter((p) => p === path)).toHaveLength(1);
+    expect(paths).not.toContain('/cart');
+    expect(paths).not.toContain('/recipes');
+    expect(paths).not.toContain('/shop/bean-to-bar-kit');
   });
 });
