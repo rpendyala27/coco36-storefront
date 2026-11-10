@@ -107,6 +107,16 @@ describe('server-rendered pages', () => {
     expect(canonical(r.body)).toBeNull();
   });
 
+  it('a /{key}.txt path is a normal HTML 404, not the IndexNow key file', async () => {
+    vi.stubEnv('INDEXNOW_KEY', 'IndexNowTestKey');
+    const r = await render('/IndexNowTestKey.txt', '', 'coco36.com');
+    expect(r.status).toBe(404);
+    expect(r.headers['Content-Type']).toBe('text/html; charset=utf-8');
+    expect(r.body.startsWith('<!doctype html>')).toBe(true);
+    expect(r.body).not.toContain('IndexNowTestKey');
+    expect(robots(r.body)).toBe('noindex');
+  });
+
   it('/auth and /recipes: 200 but noindex', async () => {
     for (const p of ['/auth', '/recipes']) {
       const r = await render(p, '', 'coco36.com');

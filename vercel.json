@@ -6,7 +6,9 @@
   "trailingSlash": false,
   "functions": {
     "api/render.ts": { "includeFiles": "dist-server/index.html", "maxDuration": 10 },
-    "api/sitemap.ts": { "maxDuration": 10 }
+    "api/sitemap.ts": { "maxDuration": 10 },
+    "api/indexnow-key.ts": { "maxDuration": 10 },
+    "api/indexnow-submit.ts": { "maxDuration": 10 }
   },
   "redirects": [
     {
@@ -36,6 +38,7 @@
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/:file.txt", "destination": "/api/indexnow-key?file=:file" },
     { "source": "/(.*)", "destination": "/api/render?__path=$1" }
   ],
   "headers": [

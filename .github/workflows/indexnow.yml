@@ -1,0 +1,82 @@
+name: IndexNow
+
+# After Vercel marks a deployment successful. Only a Production deployment
+# asks coco36.com to submit its sitemap. Preview deployments skip this job.
+# The key stays in the Vercel Production env; this workflow never sees it.
+# IndexNow errors are warnings. They do not fail the Vercel build.
+
+on:
+  deployment_status:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ping:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ask production to submit sitemap URLs
+        run: |
+          set +e
+          echo "Waiting for https://coco36.com/sitemap.xml"
+          ready=0
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 https://coco36.com/sitemap.xml)
+            if [ "$code" = "200" ]; then
+              ready=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::warning::IndexNow skipped: sitemap.xml was not reachable"
+            exit 0
+          fi
+
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" ]; then
+            echo "::warning::IndexNow skipped: GitHub OIDC token is unavailable"
+            exit 0
+          fi
+
+          token_json=$(curl -sS --max-time 20 \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            -H "Accept: application/json; api-version=2.0" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://coco36.com")
+          token=$(printf '%s' "$token_json" | jq -r '.value // empty')
+          if [ -z "$token" ] || [ "$token" = "null" ]; then
+            echo "::warning::IndexNow skipped: could not obtain an OIDC token"
+            exit 0
+          fi
+
+          # Retry only while the production alias may still be the previous
+          # deployment (HTML). A JSON answer is this code: stop, even if the
+          # key is not configured yet.
+          for _ in 1 2 3 4 5 6; do
+            hdr=$(mktemp)
+            body=$(mktemp)
+            code=$(curl -sS --max-time 30 -D "$hdr" -o "$body" -w '%{http_code}' \
+              -X POST \
+              -H "Authorization: Bearer ${token}" \
+              -H "Accept: application/json" \
+              https://coco36.com/api/indexnow-submit)
+            ctype=$(grep -i '^content-type:' "$hdr" | head -n 1 | tr -d '\r')
+            echo "indexnow-submit HTTP ${code} ${ctype}"
+            case "$ctype" in
+              *[Jj][Ss][Oo][Nn]*)
+                jq -c '{pinged,reason,status,count}' "$body" 2>/dev/null || echo "indexnow-submit returned JSON that did not parse"
+                pinged=$(jq -r '.pinged // false' "$body" 2>/dev/null)
+                rm -f "$hdr" "$body"
+                if [ "$pinged" != "true" ]; then
+                  echo "::warning::IndexNow did not submit (see the JSON above). The Vercel build is unaffected."
+                fi
+                exit 0
+                ;;
+            esac
+            rm -f "$hdr" "$body"
+            sleep 15
+          done
+          echo "::warning::IndexNow submit did not reach the production function. The Vercel build is unaffected."
+          exit 0
