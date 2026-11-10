@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { categoryPath, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
+import { bakingNoteByPath } from '../src/content/bakingNotes.js';
 import { guideBySlug } from '../src/content/guides.js';
 import { categoryListingMeta } from '../src/content/categoryPages.js';
 import {
@@ -9,13 +10,14 @@ import {
   homeMeta, notFoundMeta, productCrumbs, productMeta, shopMeta, staticPageCrumbs, staticPageMeta,
   type PageMeta,
 } from '../src/seo/meta.js';
+import { bakingNoteMeta } from '../src/seo/bakingNoteMeta.js';
 import { guideMeta } from '../src/seo/guideMeta.js';
 import { DEFAULT_POLICY, SITE_HOST, SITE_ORIGIN } from '../src/seo/site.js';
 import { buildTree } from '../src/lib/categoryTree.js';
 import { inject, isTemplate, renderHead } from './html.js';
 import { loadCatalog, loadLotPassport, type Catalog } from './catalog.js';
 import {
-  categorySnapshot, errorSnapshot, guideSnapshot, guidesHubSnapshot, homeSnapshot,
+  bakingNoteSnapshot, categorySnapshot, errorSnapshot, guideSnapshot, guidesHubSnapshot, homeSnapshot,
   productSnapshot, shopSnapshot, staticSnapshot, type SnapshotCtx,
 } from './snapshot.js';
 
@@ -114,6 +116,15 @@ export async function render(pathname: string, search: string, host: string): Pr
     try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (static page)', err); }
     const meta = staticPageMeta(pathname, ctx.policy)!;
     return withHost(page(200, meta, staticSnapshot(ctx, pathname, staticPageCrumbs(pathname))));
+  }
+
+  // Ingredient Notes (/guides). Same resilience as the info pages: the copy
+  // does not depend on the catalogue. /ingredients stays the family library.
+  const note = bakingNoteByPath(pathname);
+  if (note) {
+    let ctx = emptyCtx();
+    try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (baking note)', err); }
+    return withHost(page(200, bakingNoteMeta(note), bakingNoteSnapshot(ctx, note)));
   }
 
   // Everything else depends on the live catalogue.
