@@ -174,17 +174,31 @@ describe('server-rendered pages', () => {
       .map((m) => JSON.parse(m[1]))
       .find((b) => b['@type'] === 'FAQPage');
     const questions = faq.mainEntity.map((q: { name: string }) => q.name);
-    expect(questions).toHaveLength(4);
+    expect(questions.length).toBeGreaterThanOrEqual(10);
     for (const q of questions) expect(r.body).toContain(q);
+    expect(r.body).toContain('12 PM IST');
+    expect(r.body).toContain('original payment method');
+    expect(r.body).not.toMatch(/Shiprocket/i);
   });
 
-  it('/shipping and /returns keep owner TODOs in the HTML', async () => {
-    for (const p of ['/shipping', '/returns', '/about', '/contact']) {
+  it('owner TODOs remain only on /about; shipping and returns state the decided policy', async () => {
+    const about = await render('/about', '', 'coco36.com');
+    expect(about.body).toContain('TODO for the owner');
+    expect(about.body).toContain('company story');
+    expect(about.body).not.toMatch(/Shiprocket/i);
+    for (const p of ['/contact', '/shipping', '/returns', '/faq']) {
       const r = await render(p, '', 'coco36.com');
-      expect(r.body, p).toContain('TODO for the owner');
+      expect(r.body, p).not.toContain('TODO for the owner');
+      expect(r.body, p).not.toMatch(/Shiprocket/i);
     }
-    const faq = await render('/faq', '', 'coco36.com');
-    expect(faq.body).not.toContain('TODO for the owner');
+    const shipping = await render('/shipping', '', 'coco36.com');
+    expect(shipping.body).toContain('12 PM IST');
+    expect(shipping.body).toContain('estimate, not a guarantee');
+    expect(shipping.body).toContain('our courier partners');
+    const returns = await render('/returns', '', 'coco36.com');
+    expect(returns.body).toContain('original payment method');
+    expect(returns.body).toContain('change of mind');
+    expect(returns.body).toContain('automatic full refund');
   });
 
   it('/cart is a real noindex page, not a 404', async () => {

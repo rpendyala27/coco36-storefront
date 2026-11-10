@@ -63,21 +63,29 @@ describe('SEO copy bounds', () => {
     expect(meta.robots).toBeUndefined();
   });
 
-  it('the public FAQ is only the four order facts', () => {
+  it('the public FAQ answers the decided shipping, returns and contact questions', () => {
     const faqs = policyFaqs(DEFAULT_POLICY);
-    expect(faqs).toHaveLength(4);
+    expect(faqs.length).toBeGreaterThanOrEqual(10);
     const blob = faqs.map((f) => `${f.q} ${f.a}`).join(' ');
-    expect(blob).toContain('Shiprocket');
+    expect(blob).toContain('our courier partners');
+    expect(blob).not.toMatch(/Shiprocket/i);
     expect(blob).toContain('₹1,200');
     expect(blob).toContain('7 days');
     expect(blob).toContain('support@coco36.com');
+    expect(blob).toContain('12 PM IST');
+    expect(blob).toContain('estimate, not a guarantee');
+    expect(blob).toContain('original payment method');
+    expect(blob).toContain('10 AM to 6 PM IST');
+    expect(blob).toContain('change of mind');
     expect(blob).not.toMatch(/GST|Razorpay|WhatsApp/i);
   });
 
-  it('every info page except the FAQ has an owner TODO, and the sitemap lists them but not /cart', () => {
-    expect(infoTodos('/faq')).toEqual([]);
-    for (const path of ['/about', '/contact', '/shipping', '/returns']) {
-      expect(infoTodos(path).length, path).toBeGreaterThan(0);
+  it('only the about company story is still an owner TODO, and the sitemap lists the pages but not /cart', () => {
+    expect(infoTodos('/about')).toEqual([
+      'Add a short company story if you want this page to go beyond the homepage: when COCO36 started, and who you sell to besides bakers, pastry chefs and chocolatiers. Do not add a street address unless you want it public.',
+    ]);
+    for (const path of ['/contact', '/faq', '/shipping', '/returns']) {
+      expect(infoTodos(path), path).toEqual([]);
     }
     const paths = sitemapEntries({
       products: [], tree: buildTree([]), policy: DEFAULT_POLICY,

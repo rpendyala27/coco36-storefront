@@ -1,13 +1,15 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
 import { HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy } from '../seo/site.js';
 import {
-  contactLine, dispatchLine, returnsLine, shippingPriceLine,
+  businessDaysLine, cancellationLine, changeOfMindLine, contactLine, cutoffLine,
+  deliveryEstimateLine, dispatchLine, emailReplyLine, refundLine, remedyLine,
+  reportLine, returnsLine, serviceabilityLine, shippingPriceLine, supportHoursLine,
+  trackingLine, transitLossLine,
 } from './orderFacts.js';
 
 /**
- * Indexable info pages. Copy may only restate the homepage (who COCO36 is,
- * what it sells, ships across India) plus the four order facts in orderFacts.ts.
- * Gaps are `todo` strings, rendered as "TODO for the owner" callouts.
+ * Indexable info pages. Shipping, returns and contact copy is the owner's
+ * decided wording. The only remaining placeholder is the /about company story.
  * /faq JSON-LD is built from `policyFaqs` and from nothing else.
  */
 
@@ -55,19 +57,47 @@ export function policyFaqs(policy: StorePolicy): { q: string; a: string }[] {
   return [
     {
       q: 'Where do COCO36 orders ship from, and how soon do they leave?',
-      a: `${dispatchLine()} We ship across India.`,
+      a: `${dispatchLine()} ${businessDaysLine()} ${cutoffLine()} We ship across India.`,
     },
     {
       q: 'How much does shipping cost?',
       a: shippingPriceLine(policy),
     },
     {
-      q: 'What if an item arrives damaged, wrong or expired?',
-      a: `${returnsLine(policy)} ${contactLine()}`,
+      q: 'How long does delivery take after an order ships?',
+      a: deliveryEstimateLine(),
+    },
+    {
+      q: 'Do you deliver to every Indian pincode?',
+      a: serviceabilityLine(),
+    },
+    {
+      q: 'How do I track an order?',
+      a: trackingLine(),
+    },
+    {
+      q: 'What can I report after delivery?',
+      a: reportLine(policy),
+    },
+    {
+      q: 'Can I return an item if I change my mind?',
+      a: changeOfMindLine(),
+    },
+    {
+      q: 'What happens after you approve a report?',
+      a: `${remedyLine()} ${transitLossLine()}`,
+    },
+    {
+      q: 'How are refunds paid?',
+      a: refundLine(),
+    },
+    {
+      q: 'Can I cancel an order?',
+      a: cancellationLine(),
     },
     {
       q: 'How do I contact COCO36?',
-      a: `${contactLine()} COCO36 ships from ${SHIPS_FROM}.`,
+      a: `${contactLine()} ${supportHoursLine()} ${emailReplyLine()} COCO36 ships from ${SHIPS_FROM}.`,
     },
   ];
 }
@@ -93,7 +123,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: 'How an order leaves',
         paragraphs: [
           `${dispatchLine()} We ship across India. ${shippingPriceLine(policy)}`,
-          'Two business days is the time until an order ships, not a promise about the day it arrives. The carrier is Shiprocket. The city it leaves from is Visakhapatnam, in Andhra Pradesh.',
+          `${businessDaysLine()} ${cutoffLine()} Two business days is when the order leaves Visakhapatnam, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
         ],
         todo: 'Add a short company story if you want this page to go beyond the homepage: when COCO36 started, and who you sell to besides bakers, pastry chefs and chocolatiers. Do not add a street address unless you want it public.',
       },
@@ -101,7 +131,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: 'If something is wrong with an item',
         paragraphs: [
           `${returnsLine(policy)} ${contactLine()}`,
-          'The shipping page and the returns page spell those two points out on their own, with room marked for the details this site does not state yet, such as transit time by region and how a refund is paid.',
+          'The returns page sets out the photos we need, replacements, refunds and cancellations. The shipping page sets out the cutoff, delivery estimates and pincodes.',
         ],
       },
     ],
@@ -119,11 +149,11 @@ export const INFO_PAGES: InfoPage[] = [
       {
         paragraphs: [
           `Questions about an order, a product or a delivery come to ${SUPPORT_EMAIL} and to ${SUPPORT_PHONE_DISPLAY}. Use either. If the question is about an order you have already placed, include the order number so we can find it.`,
-          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong or expired. ${returnsLine(policy)} ${dispatchLine()} ${shippingPriceLine(policy)}`,
+          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong, missing, or expired or near expiry. ${returnsLine(policy)} ${dispatchLine()} ${shippingPriceLine(policy)}`,
+          `${supportHoursLine()} ${emailReplyLine()}`,
           `COCO36 ships from ${SHIPS_FROM}. That is the city we publish. The catalogue is specialty baking and pastry ingredients sourced direct from origin, for bakers, pastry chefs and chocolatiers across India.`,
-          'If you are deciding what to buy, the shop lists every ingredient, and the ingredient guides explain vanilla, cocoa and chocolate, sugars, flours, and spices and salt. This page is only the way to reach a person. The FAQ answers the shipping and returns questions in short form. The shipping and returns pages carry the same facts, with notes where a detail still needs the owner.',
+          'If you are deciding what to buy, the shop lists every ingredient, and the ingredient guides explain vanilla, cocoa and chocolate, sugars, flours, and spices and salt. This page is how to reach a person. The FAQ, shipping page and returns page say the same things about orders.',
         ],
-        todo: 'State the hours the phone is answered, and how quickly email is answered.',
       },
     ],
     related: relatedExcept('/contact'),
@@ -138,7 +168,7 @@ export const INFO_PAGES: InfoPage[] = [
     sections: () => [
       {
         paragraphs: [
-          'These are the questions we can answer from the facts already on the homepage: where an order ships from, what shipping costs, what to do about a damaged, wrong or expired item, and how to reach us. Anything past that is marked on the shipping and returns pages for the owner, and it is not listed here.',
+          'These are the answers on dispatch, delivery estimates, shipping cost, returns, refunds, cancellations and how to reach us. The shipping and returns pages say the same things in full.',
         ],
       },
     ],
@@ -148,7 +178,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/shipping',
     title: 'COCO36 Shipping: From Visakhapatnam, India | COCO36',
-    description: (policy) => `COCO36 ships within ${HANDLING_DAYS_MAX} business days from Visakhapatnam, Andhra Pradesh, via Shiprocket. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
+    description: (policy) => `COCO36 ships within ${HANDLING_DAYS_MAX} business days from Visakhapatnam via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
     crumb: 'Shipping',
     eyebrow: 'Delivery',
     h1: 'Shipping from Visakhapatnam',
@@ -156,13 +186,14 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: 'When an order ships',
         paragraphs: [
-          dispatchLine(),
-          'That is a dispatch time. It counts business days until the order leaves Visakhapatnam, Andhra Pradesh. It is not a date for when the parcel reaches you. The carrier is Shiprocket.',
+          `${dispatchLine()} We ship across India.`,
+          `${businessDaysLine()} ${cutoffLine()}`,
+          'Two business days is when the order leaves Visakhapatnam. It is not a date for when the parcel reaches you.',
         ],
         bullets: [
           'Leaves from Visakhapatnam, Andhra Pradesh.',
-          'Handed to Shiprocket.',
-          `Ships within ${HANDLING_DAYS_MAX} business days.`,
+          'Handed to our courier partners.',
+          `Dispatched within ${HANDLING_DAYS_MAX} business days, using the 12 PM IST cutoff.`,
           'We ship across India.',
         ],
       },
@@ -172,56 +203,57 @@ export const INFO_PAGES: InfoPage[] = [
           shippingPriceLine(policy),
           'The threshold is the order amount. At or above it, shipping is free. Below it, the shipping charge is the flat fee. The figure used at checkout is the one that applies when you pay.',
         ],
-        todo: 'State the order cutoff time that still dispatches within 2 business days, and which days count as business days.',
       },
       {
         heading: 'After the parcel leaves',
-        paragraphs: [
-          'How long Shiprocket takes after collection depends on the route. This page does not publish a transit time, because we will not print a number we cannot stand behind.',
+        paragraphs: [deliveryEstimateLine()],
+        bullets: [
+          '3 to 5 business days to metro cities.',
+          '5 to 8 business days to the rest of India.',
+          'Up to 10 business days for remote areas, including the North-East, J&K, and the Andaman & Nicobar and Lakshadweep islands.',
+          'These are estimates, not guarantees.',
         ],
-        todo: 'State delivery time after handoff to Shiprocket, including any difference by region or pincode. Do not publish a number until it is one COCO36 will stand behind.',
       },
       {
-        todo: 'List any Indian pincodes or regions Shiprocket does not serve for COCO36, if there are any.',
+        heading: 'Pincodes',
+        paragraphs: [serviceabilityLine()],
+      },
+      {
+        heading: 'Tracking',
+        paragraphs: [trackingLine()],
       },
     ],
     related: relatedExcept('/shipping'),
   },
   {
     path: '/returns',
-    title: 'Returns for Damaged, Wrong or Expired Items | COCO36',
-    description: (policy) => `Report damaged, wrong or expired COCO36 items within ${policy.returnWindowDays} days of delivery. Email support@coco36.com or call 9944213233.`,
+    title: 'Returns: Damaged, Wrong, Missing or Expired | COCO36',
+    description: (policy) => `Report a damaged, wrong, missing, expired or near-expiry COCO36 item within ${policy.returnWindowDays} days, with your order number and photos.`,
     crumb: 'Returns',
     eyebrow: 'After delivery',
-    h1: 'Damaged, wrong or expired items',
+    h1: 'Damaged, wrong, missing or expired items',
     sections: (policy) => [
       {
         heading: 'What you can report',
         paragraphs: [
-          returnsLine(policy),
-          `Damaged means the item arrived damaged. Wrong means it is not the item you ordered. Expired means the item is expired. The window is measured from delivery, and it is ${policy.returnWindowDays} days. This page does not add other reasons.`,
+          reportLine(policy),
+          changeOfMindLine(),
         ],
       },
       {
-        heading: 'How to tell us',
+        heading: 'After we approve a report',
         paragraphs: [
-          `${contactLine()} Say which order you mean. The shipping page covers how the order left Visakhapatnam. This page covers only the report after it arrives.`,
-          'What we do after a report is not fully written here. The terms of sale are linked below so you can read them. The notes under this section are for the owner to complete before this wording is final.',
+          remedyLine(),
+          transitLossLine(),
         ],
-        todo: 'State what a report should include (for example an order number and photos) if you want that required, and confirm the address it should go to if it is not support@coco36.com or 9944213233.',
       },
       {
-        heading: 'What we still need to publish',
-        paragraphs: [
-          'A returns page that stopped at the 7-day window would hide the practical questions. Those answers are not in the homepage facts, so they are marked here instead of being guessed.',
-        ],
-        todo: 'State how an approved refund is paid (original payment method, bank transfer, or store credit) and how many days it takes.',
+        heading: 'Refunds',
+        paragraphs: [refundLine()],
       },
       {
-        todo: 'State whether the remedy is a replacement, a refund, or the customer’s choice, and who pays return postage if the item has to come back.',
-      },
-      {
-        todo: 'State whether items that arrive in good condition, including a change of mind, can be returned. Do not add this until you have decided.',
+        heading: 'Cancellations',
+        paragraphs: [cancellationLine()],
       },
     ],
     related: [...relatedExcept('/returns'), { href: '/terms', label: 'Terms of sale' }],
