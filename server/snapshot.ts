@@ -22,6 +22,11 @@ import {
 import { policyBlurb } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
 import { bakingNoteCrumbs } from '../src/seo/bakingNoteMeta.js';
+import { recipeCrumbs, recipesHubCrumbs } from '../src/seo/recipeMeta.js';
+import {
+  RECIPES_HUB, RECIPES_PUBLISH_DATE, RECIPES_PUBLISH_LABEL, RECIPE_INDEX_LINKS,
+  type RecipeDoc, type RecipeLink,
+} from '../src/content/recipes.js';
 import { esc } from './html.js';
 
 /**
@@ -52,6 +57,7 @@ function layout(ctx: SnapshotCtx, main: string, opts?: { omitDispatchCity?: bool
     a('/shop', 'All ingredients'),
     ...stockedCategories(ctx).map((c) => a(categoryPath(c), c.name)),
     a('/guides', 'Ingredient notes'),
+    a('/recipes', 'Recipes'),
     ...GUIDES.map((g) => a(guidePath(g), `${g.name} guide`)),
     a('/36-steps', '36 Steps'), a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'),
     a('/impact', 'Impact'), a('/about', 'About'), a('/contact', 'Contact'), a('/faq', 'FAQ'),
@@ -260,7 +266,6 @@ const STATIC_COPY: Record<string, { h1: string; lede: string }> = {
   '/impact':       { h1: 'Impact from the ground up', lede: 'We’re building COCO36 to measure success in soil health, fair farmer income and full traceability. Not just kilos shipped.' },
   '/privacy':      { h1: 'Privacy notice', lede: `How ${LEGAL_NAME} collects, uses and protects your personal data.` },
   '/terms':        { h1: 'Terms of sale', lede: 'Who is selling, prices and GST, payment, shipping and returns.' },
-  '/recipes':      { h1: 'Recipes & pairings, powered by COCO AI', lede: 'An AI recipe consultant to help you cook and bake with our ingredients is on the way. In the meantime, browse the shop and the ingredient guides.' },
   '/quick-order':  { h1: 'Quick order', lede: 'Choose sizes and quantities from a single list and check out in one step.' },
   '/auth':         { h1: 'Sign in', lede: 'Sign in or create a COCO36 account.' },
   '/checkout':     { h1: 'Checkout', lede: 'Review your bag and place your order.' },
@@ -326,6 +331,52 @@ export function staticSnapshot(ctx: SnapshotCtx, pathname: string, crumbs: Crumb
     copy.lede ? `<p>${esc(copy.lede)}</p>` : '',
     extra,
   ].join('\n'));
+}
+
+function recipeLink(link: RecipeLink): string {
+  return `${a(link.href, link.label)}${link.suffix ? esc(link.suffix) : ''}`;
+}
+
+/** /recipes. Same copy as the React index. Dispatch city stays off this page. */
+export function recipesHubSnapshot(ctx: SnapshotCtx): string {
+  return layout(ctx, [
+    breadcrumbs(recipesHubCrumbs()),
+    '<article>',
+    '<p>Recipes</p>',
+    `<h1>${esc(RECIPES_HUB.h1)}</h1>`,
+    `<p>Published <time datetime="${esc(RECIPES_PUBLISH_DATE)}">${esc(RECIPES_PUBLISH_LABEL)}</time></p>`,
+    ...RECIPES_HUB.intro.map((paragraph) => `<p>${richHtml(paragraph, esc)}</p>`),
+    `<ul>${RECIPE_INDEX_LINKS.map((link) => `<li>${recipeLink(link)}</li>`).join('')}</ul>`,
+    '</article>',
+  ].join('\n'), { omitDispatchCity: true });
+}
+
+/** One recipe. Ingredient lists, method and tips match the React page and the Recipe JSON-LD. */
+export function recipeSnapshot(ctx: SnapshotCtx, recipe: RecipeDoc): string {
+  const facts = `<ul>${recipe.facts.map((fact) => `<li>${esc(fact.label)}: ${esc(fact.value)}</li>`).join('')}</ul>`;
+  const groups = recipe.groups.map((group) => [
+    `<h2>${esc(group.heading)}</h2>`,
+    `<ul>${group.items.map((item) => `<li>${esc(item)}</li>`).join('')}</ul>`,
+  ].join('\n')).join('\n');
+  const notes = recipe.afterIngredients.map((paragraph) => `<p>${richHtml(paragraph, esc)}</p>`).join('\n');
+  const steps = `<h2>Method</h2><ol>${recipe.steps.map((step) => `<li>${richHtml(step, esc)}</li>`).join('')}</ol>`;
+  const tips = `<h2>Warm-kitchen tips</h2><ul>${recipe.tips.map((tip) => `<li>${richHtml(tip, esc)}</li>`).join('')}</ul>`;
+  const related = `<nav aria-label="Related pages"><h2>On this site</h2><ul>${recipe.related.map((link) => `<li>${recipeLink(link)}</li>`).join('')}</ul></nav>`;
+  return layout(ctx, [
+    breadcrumbs(recipeCrumbs(recipe)),
+    '<article>',
+    '<p>Recipes</p>',
+    `<h1>${esc(recipe.h1)}</h1>`,
+    `<p>Published <time datetime="${esc(RECIPES_PUBLISH_DATE)}">${esc(RECIPES_PUBLISH_LABEL)}</time></p>`,
+    `<p>${esc(recipe.opening)}</p>`,
+    facts,
+    groups,
+    notes,
+    steps,
+    tips,
+    related,
+    '</article>',
+  ].join('\n'), { omitDispatchCity: true });
 }
 
 export function errorSnapshot(ctx: SnapshotCtx, kind: 'not-found' | 'gone'): string {

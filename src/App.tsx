@@ -22,7 +22,7 @@ const Guide            = lazy(() => import('./pages/Guide').then(m => ({ default
 const Guides           = lazy(() => import('./pages/Guide').then(m => ({ default: m.Guides })));
 const ThirtySixSteps   = lazy(() => import('./pages/ThirtySixSteps').then(m => ({ default: m.ThirtySixSteps })));
 const LotPassport      = lazy(() => import('./pages/LotPassport').then(m => ({ default: m.LotPassport })));
-const RecipeConsultant = lazy(() => import('./pages/RecipeConsultant').then(m => ({ default: m.RecipeConsultant })));
+const Recipes          = lazy(() => import('./pages/Recipes').then(m => ({ default: m.Recipes })));
 const Partnerships     = lazy(() => import('./pages/Partnerships').then(m => ({ default: m.Partnerships })));
 const Trade            = lazy(() => import('./pages/Trade').then(m => ({ default: m.Trade })));
 const Impact           = lazy(() => import('./pages/Impact').then(m => ({ default: m.Impact })));
@@ -158,7 +158,8 @@ export default function App() {
               <Route path="/36-steps" element={<ThirtySixSteps />} />
               {/* Lot passport: answers "not found" until SHOW_LOT_PASSPORT is on (database-side). */}
               <Route path="/lot/:lotCode" element={<LotPassport />} />
-              <Route path="/recipes" element={<RecipeConsultant />} />
+              <Route path="/recipes" element={<Recipes />} />
+              <Route path="/recipes/:slug" element={<Recipes />} />
               <Route path="/partnerships" element={<Partnerships />} />
               <Route path="/trade" element={<Trade />} />
               <Route path="/impact" element={<Impact />} />
@@ -246,6 +247,7 @@ export default function App() {
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Guides</h4>
                 <ul className="space-y-3 text-sm text-white/70">
                   <li><a href="/guides" className="hover:text-brand-leaf-bright transition-colors">Ingredient notes</a></li>
+                  <li><a href="/recipes" className="hover:text-brand-leaf-bright transition-colors">Recipes</a></li>
                   {GUIDE_LINKS.map((g) => (
                     <li key={g.slug}><a href={guidePath(g)} className="hover:text-brand-leaf-bright transition-colors">{g.name}</a></li>
                   ))}

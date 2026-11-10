@@ -117,12 +117,14 @@ describe('server-rendered pages', () => {
     expect(robots(r.body)).toBe('noindex');
   });
 
-  it('/auth and /recipes: 200 but noindex', async () => {
-    for (const p of ['/auth', '/recipes']) {
-      const r = await render(p, '', 'coco36.com');
-      expect(r.status, p).toBe(200);
-      expect(robots(r.body), p).toMatch(/noindex/);
-    }
+  it('/auth: 200 but noindex; /recipes is indexable', async () => {
+    const auth = await render('/auth', '', 'coco36.com');
+    expect(auth.status).toBe(200);
+    expect(robots(auth.body)).toMatch(/noindex/);
+    const recipes = await render('/recipes', '', 'coco36.com');
+    expect(recipes.status).toBe(200);
+    expect(robots(recipes.body)).toBeNull();
+    expect(recipes.headers['X-Robots-Tag']).toBeUndefined();
   });
 
   it('preview hosts are never indexable', async () => {

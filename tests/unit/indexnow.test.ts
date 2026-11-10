@@ -43,6 +43,8 @@ const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?>
 const KEPT = [
   'https://coco36.com/',
   'https://coco36.com/guides/best-couverture-chocolate-india',
+  'https://coco36.com/recipes',
+  'https://coco36.com/recipes/ganache',
   'https://coco36.com/about',
 ];
 
@@ -125,6 +127,7 @@ describe('URL list', () => {
       'https://www.coco36.com/shop',
       'https://coco36.com/cart',
       'https://coco36.com/recipes',
+      'https://coco36.com/recipes/ganache',
       'https://coco36.com/shop/bean-to-bar-kit',
       'https://coco36-storefront-git-x.vercel.app/',
       'http://coco36.com/shop',
@@ -249,6 +252,7 @@ describe('URL list', () => {
         { loc: 'https://coco36.com/shop', lastmod: '2026-10-01' },
         { loc: 'https://coco36.com/about', lastmod: null },
         { loc: 'https://coco36.com/guides/new-guide', lastmod: '2026-11-09' },
+        { loc: 'https://coco36.com/recipes', lastmod: null },
       ],
     });
 

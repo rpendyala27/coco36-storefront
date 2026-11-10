@@ -9,8 +9,8 @@ import { useSearchIndex } from '../hooks/useProducts';
 import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
 
-// /recipes is a noindex "coming soon" stub, so it's out of the nav until it
-// has real content; the ingredient guides take its slot.
+// /recipes is a published index. It stays out of this bar so the existing
+// destinations keep their places; the footer and the recipe pages link it.
 const NAV_LINKS = [
   { to: '/shop',         label: 'Shop' },
   { to: '/guides',       label: 'Notes' },

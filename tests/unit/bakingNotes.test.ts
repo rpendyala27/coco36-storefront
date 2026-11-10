@@ -293,7 +293,7 @@ describe('ingredient notes', () => {
     expect(paths).toContain(path);
     expect(paths.filter((p) => p === path)).toHaveLength(1);
     expect(paths).not.toContain('/cart');
-    expect(paths).not.toContain('/recipes');
+    expect(paths).toContain('/recipes');
     expect(paths).not.toContain('/shop/bean-to-bar-kit');
   });
 });

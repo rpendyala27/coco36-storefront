@@ -177,7 +177,7 @@ async function live(base) {
     if (title) titles.set(title, [...(titles.get(title) ?? []), path]);
   }
   for (const [t, paths] of titles) if (paths.length > 1) err('titles', `duplicate title "${t}" on ${paths.join(', ')}`);
-  for (const banned of ['/recipes', '/shop/bean-to-bar-kit']) {
+  for (const banned of ['/shop/bean-to-bar-kit']) {
     if (urls.some((u) => u.replace(/\/+$/, '').endsWith(banned))) err('/sitemap.xml', `lists ${banned}`);
   }
 
@@ -198,7 +198,7 @@ async function live(base) {
       err('/shop/bean-to-bar-kit/', `expected a permanent redirect toward /shop, got ${res.status} ${res.headers.get('location')}`);
     }
   }
-  for (const path of ['/recipes', '/auth', '/quick-order']) {
+  for (const path of ['/auth', '/quick-order']) {
     const res = await get(origin + path);
     if (!/noindex/.test(res.headers.get('x-robots-tag') ?? '')) err(path, 'expected X-Robots-Tag: noindex');
   }

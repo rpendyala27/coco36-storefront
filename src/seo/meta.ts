@@ -89,12 +89,8 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
     description: (p) => `Terms of sale for COCO36: prices in INR including GST, Razorpay payments, shipping across India via our courier partners and our ${p.returnWindowDays}-day returns window.`,
     crumb: 'Terms of sale',
   },
-  // ── Not for the index: thin, transactional or not-yet-built pages ──
-  '/recipes': {
-    title: 'Recipe Consultant: Coming Soon | COCO36',
-    description: () => 'An AI recipe consultant for cooking and baking with COCO36 ingredients is on the way. Meanwhile, browse the shop and our ingredient guides.',
-    noindex: true,
-  },
+  // ── Not for the index: thin or transactional pages ──
+  // /recipes is a real index now (src/content/recipes.ts + src/seo/recipeMeta.ts).
   '/quick-order': {
     title: 'Quick Order | COCO36',
     description: () => 'Order COCO36 ingredients fast: choose sizes and quantities from a single list and check out in one step.',
