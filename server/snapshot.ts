@@ -30,6 +30,7 @@ import {
 } from '../src/content/recipes.js';
 import { esc } from './html.js';
 import { TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL, TRADE_STEPS } from '../src/content/tradeSteps.js';
+import { BULK_GUIDE_LABEL, bulkGuideHref } from '../src/content/bulkGuideLink.js';
 
 /**
  * Server-rendered content snapshot for each page: real headings, copy and
@@ -190,6 +191,7 @@ export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): 
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
     cat ? `<p>More in ${a(categoryPath(cat), cat.name)}</p>` : '',
     guide ? `<p>Buying guide: ${a(guidePath(guide), guide.h1)}</p>` : '',
+    bulkGuideHref(p) ? `<p>${a(bulkGuideHref(p)!, BULK_GUIDE_LABEL)}</p>` : '',
     related,
     faqs,
     '</article>',

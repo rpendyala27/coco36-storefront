@@ -14,7 +14,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../content/policyLabels';
 import { dispatchWindow } from '../seo/site';
-import { bulkGuideHref } from '../content/bulkGuideLink';
+import { BULK_GUIDE_LABEL, bulkGuideHref } from '../content/bulkGuideLink';
 import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
 import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
@@ -330,8 +330,8 @@ export const ProductDetail = () => {
           <div className="mt-8 rounded-xl border border-brand-line bg-brand-surface p-5">
             <p className="eyebrow text-brand-leaf mb-3">For professional kitchens &amp; brands</p>
             <div className="flex flex-wrap gap-3">
-              {bulkGuideHref(product.name) && (
-                <Link to={bulkGuideHref(product.name)!} className="text-sm text-brand-leaf hover:underline">Buying in bulk?</Link>
+              {bulkGuideHref(product) && (
+                <Link to={bulkGuideHref(product)!} className="text-sm text-brand-leaf hover:underline">{BULK_GUIDE_LABEL}</Link>
               )}
               <Link to="/trade" className="btn-ghost !py-2.5 text-sm"><HandCoins size={15} /> Request bulk pricing</Link>
               <Link to="/trade" className="inline-flex items-center gap-2 text-sm font-medium text-brand-forest border border-brand-line rounded-full px-5 py-2.5 hover:border-brand-forest transition-colors"><FileText size={15} /> Request spec sheet / CoA</Link>

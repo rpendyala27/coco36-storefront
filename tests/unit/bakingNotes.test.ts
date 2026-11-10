@@ -441,12 +441,9 @@ describe('ingredient notes', () => {
     const robots = readFileSync(path.resolve(__dirname, '../../public/robots.txt'), 'utf8');
     expect(robots).toContain('Allow: /');
     expect(robots).not.toMatch(/Disallow:\s*\/guides/);
-    expect(bulkGuideHref('India Trinitario Couverture')).toBe(guidePath);
-    expect(bulkGuideHref('Black Dutch Process Cocoa')).toBe(guidePath);
-    expect(bulkGuideHref('Deodorized Cocoa Butter')).toBe(guidePath);
-    expect(bulkGuideHref('Palm Sugar Jaggery')).toBe(guidePath);
-    expect(bulkGuideHref('Coconut sugar')).toBe(guidePath);
-    expect(bulkGuideHref('Dark muscovado cane sugar')).toBeNull();
-    for (const slug of PRODUCT_PAGE_SLUGS) expect(bulkGuideHref(slug.replace(/-/g, ' '))).toBeNull();
+    expect(bulkGuideHref({ name: 'India Trinitario Couverture 70%', category: 'Cocoa & Chocolate' })).toBe(guidePath);
+    expect(bulkGuideHref({ name: 'White Couverture 32%', category: 'Cocoa & Chocolate' })).toBeNull();
+    expect(bulkGuideHref({ name: 'Dark muscovado cane sugar', category: 'Sugars & Sweeteners' })).toBeNull();
+    for (const slug of PRODUCT_PAGE_SLUGS) expect(bulkGuideHref({ name: slug.replace(/-/g, ' ') })).toBeNull();
   });
 });
