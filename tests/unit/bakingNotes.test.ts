@@ -14,7 +14,7 @@ import { DEFAULT_POLICY } from '../../src/seo/site';
  * different route and must stay 200.
  */
 
-const UNRESOLVED = [
+const RETARGETED = [
   '/shop/indian-dark-couverture',
   '/shop/category/couverture',
   '/shop/dutch-process-cocoa-powder',
@@ -108,7 +108,8 @@ describe('ingredient notes', () => {
     expect(blob).not.toContain('Confirm weights');
     expect(blob).not.toContain('Confirm timings');
     expect(recipe.recipeIngredient?.join(' ')).not.toMatch(/cooking fat/i);
-    expect(recipe.description).toContain('100% pistachio-paste');
+    expect(recipe.description).toContain('unsweetened pistachio-paste');
+    expect(recipe.description).not.toMatch(/100%/);
   });
 
   it('published HTML has no [CONFIRM], Shiprocket, Visakhapatnam, or Vizag', async () => {
@@ -121,16 +122,26 @@ describe('ingredient notes', () => {
     }
   });
 
+  it('published HTML has no FSSAI repack, hero SKU, or India-stock', async () => {
+    for (const note of BAKING_NOTES) {
+      const r = await render(note.path, '', 'coco36.com');
+      expect(r.body, note.path).not.toContain('FSSAI repack');
+      expect(r.body, note.path).not.toContain('hero SKU');
+      expect(r.body, note.path).not.toContain('India-stock');
+      expect(r.body, note.path).not.toMatch(/FSSAI/i);
+    }
+  });
+
   it('the sitemap lists all four notes and still lists the ingredient library', () => {
     const paths = sitemapEntries({ products: [], tree: buildTree([]), policy: DEFAULT_POLICY }).map((e) => e.path);
     for (const note of BAKING_NOTES) expect(paths, note.path).toContain(note.path);
     expect(paths).toContain('/ingredients');
     expect(paths).toContain('/ingredients/vanilla');
     expect(paths).toContain('/ingredients/cocoa-chocolate');
-    for (const missing of UNRESOLVED) expect(paths, missing).not.toContain(missing);
+    for (const missing of RETARGETED) expect(paths, missing).not.toContain(missing);
   });
 
-  it('keeps /ingredients, links the library from /guides, and reports placeholder routes that 404', async () => {
+  it('keeps /ingredients, links the library from /guides, and sends unpublished product paths to /shop', async () => {
     const library = await render('/ingredients', '', 'coco36.com');
     expect(library.status).toBe(200);
     expect(library.body).toContain('<h1>Know your ingredients</h1>');
@@ -149,11 +160,11 @@ describe('ingredient notes', () => {
       const ssr = r.body.split('<div class="ssr">')[1] ?? '';
       for (const href of ssr.matchAll(/href="(\/[^"]*)"/g)) hrefs.add(href[1]);
     }
-    for (const missing of UNRESOLVED) expect(hrefs, missing).toContain(missing);
+    for (const missing of RETARGETED) expect(hrefs, missing).not.toContain(missing);
+    expect(hrefs).toContain('/shop');
     for (const href of hrefs) {
       const status = (await render(href, '', 'coco36.com')).status;
-      if (UNRESOLVED.includes(href)) expect(status, href).toBe(404);
-      else expect(status, href).toBe(200);
+      expect(status, href).toBe(200);
     }
   });
 });

@@ -54,7 +54,7 @@ export interface BakingNote {
 const pistachioIngredients = [
   '120 g kataifi (kunafa) pastry, thawed if frozen',
   '100 g **100% unsweetened pistachio paste** (verified label)',
-  '32 g white chocolate, melted (optional but matches the pure-paste reference style)',
+  '32 g white chocolate, melted (optional but matches the unsweetened-paste reference style)',
   '10 g tahini (optional)',
   'Extra icing sugar only if your trial needs it after tasting the white-chocolate version',
   'Pinch of salt',
@@ -63,7 +63,7 @@ const pistachioIngredients = [
 
 const pistachioSteps = [
   '**Toast kataifi** in fat until deep golden and crisp; **cool fully**. Soft pastry is the usual failure.',
-  '**Build filling:** stir paste with melted white chocolate (if using), tahini and salt; fold in cooled kataifi. Film honesty: if white chocolate is in the mix, show it — pure paste alone did not create a sweetened filling.',
+  '**Build filling:** stir paste with melted white chocolate (if using), tahini and salt; fold in cooled kataifi. Film honesty: if white chocolate is in the mix, show it — unsweetened paste alone did not create a sweetened filling.',
   '**Shell:** temper couverture; line a bar mould; chill briefly until just set.',
   '**Fill and cap;** tap out bubbles; set; unmould.',
   'Serve cool room temperature. No borrowed shelf-life claims.',
@@ -73,8 +73,8 @@ export const BAKING_NOTES: BakingNote[] = [
   {
     path: '/guides',
     title: 'Baking Ingredient Guides for India | COCO36',
-    description: 'COCO36 ingredient guides for Indian bakers — couverture vs compound, natural vs Dutch cocoa, pistachio paste and Dubai-style chocolate.',
-    schemaDescription: 'COCO36 ingredient guides for Indian bakers — couverture vs compound, natural vs Dutch cocoa, pistachio paste and Dubai-style chocolate.',
+    description: 'COCO36 ingredient guides for Indian bakers — couverture vs compound, natural (non-alkalised) vs Dutch cocoa, pistachio paste and Dubai-style chocolate.',
+    schemaDescription: 'COCO36 ingredient guides for Indian bakers — couverture vs compound, natural (non-alkalised) vs Dutch cocoa, pistachio paste and Dubai-style chocolate.',
     h1: 'Ingredient guides',
     crumb: 'Guides',
     updated: '2026-11-09',
@@ -85,18 +85,18 @@ export const BAKING_NOTES: BakingNote[] = [
           { type: 'p', text: 'These three guides are the December **Ingredient Notes** cluster (Instagram link-in-bio destination once published and approved):' },
           { type: 'ol', items: [
             '**[Couverture vs compound chocolate: what Indian bakers should use](/guides/couverture-vs-compound)**\nCocoa-butter-rich couverture versus compound’s other fat matrix — comparison, not a universal winner.',
-            '**[Natural vs Dutch-process cocoa powder: which one for your bake](/guides/natural-vs-dutch-cocoa)**\nAcidity, colour and leavening — darker is not automatically better.',
-            '**[Pistachio paste vs cream, and Dubai chocolate at home](/guides/pistachio-paste-dubai-chocolate-at-home)**\nRead the pistachio label, then build a Dubai-style kataifi bar with 100% unsweetened paste.',
+            '**[Natural (non-alkalised) vs Dutch-process cocoa powder: which one for your bake](/guides/natural-vs-dutch-cocoa)**\nAcidity, colour and leavening — darker is not automatically better.',
+            '**[Pistachio paste vs cream, and Dubai chocolate at home](/guides/pistachio-paste-dubai-chocolate-at-home)**\nRead the pistachio label, then build a Dubai-style kataifi bar with unsweetened paste.',
           ] },
           { type: 'p', text: 'Also browse our longer [ingredient library](/ingredients) (vanilla, cocoa & chocolate, sugars & jaggery, flours, spices & salt) and the [shop](/shop).' },
-          { type: 'p', text: 'New guides publish here first. Product pages for December heroes go live only when stock and copy are approved — guides never invent availability.' },
+          { type: 'p', text: 'New guides publish here first. If a product is not in the shop, these notes say only that it is coming soon.' },
         ],
       },
     ],
     faqs: [],
     related: [
       { href: '/guides/couverture-vs-compound', label: 'Couverture vs compound' },
-      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural vs Dutch cocoa' },
+      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
       { href: '/guides/pistachio-paste-dubai-chocolate-at-home', label: 'Pistachio paste' },
       { href: '/ingredients', label: 'Ingredient library' },
       { href: '/shop', label: 'Shop' },
@@ -115,26 +115,26 @@ export const BAKING_NOTES: BakingNote[] = [
         blocks: [
           { type: 'p', text: 'Walk into any bakery supplier in India and you will meet two kinds of “chocolate for baking”: **couverture** and **compound**. They look similar in a block. They behave differently in a tempering bowl, on a moulded egg, or on a warm Indian kitchen counter in May.' },
           { type: 'p', text: 'This guide helps home bakers, pastry students and small kitchens choose a **fat system for the job**. It is not a blanket “compound is bad” verdict. At COCO36 we talk crop-to-craft: Rohan’s family farms in West Godavari, Andhra Pradesh, so heat, humidity and monsoon storage are part of the brief.' },
-          { type: 'p', text: 'For pod-to-bar basics see [Cocoa & chocolate](/ingredients/cocoa-chocolate). Hub for this cluster: [Guides](/guides). When Indian-origin dark couverture lands, it will sit under [Shop](/shop) (product page placeholder until stock is live).' },
+          { type: 'p', text: 'For pod-to-bar basics see [Cocoa & chocolate](/ingredients/cocoa-chocolate). Hub for this cluster: [Guides](/guides). Dark couverture is coming soon to the COCO36 shop. Until then, [browse the shop](/shop).' },
         ],
       },
       {
         heading: 'Couverture and compound, in one sentence each',
         blocks: [
           { type: 'p', text: '**Couverture** is real chocolate **rich in cocoa butter** (with cocoa mass, sugar, and sometimes milk or emulsifiers). Extra cocoa butter makes melted chocolate more fluid for thin coatings; when correctly tempered it sets with gloss and snap. Couverture is a **formulated** product — not a single ingredient, and not “100% cacao” unless the label literally says so.' },
-          { type: 'p', text: '**Compound chocolate** (often “cooking chocolate”, “coating chocolate” or compound slabs) uses a **different principal fat matrix** — typically other vegetable fats in place of most cocoa butter. It generally does not require classical tempering. It can be the honest choice for volume work. It is not the same material as couverture.' },
+          { type: 'p', text: '**Compound chocolate** (often “cooking chocolate”, “coating chocolate” or compound slabs) uses a **different principal fat matrix** — typically other vegetable fats in place of most cocoa butter. It generally does not require classical tempering. It can be the right choice for volume work. It is not the same material as couverture.' },
           { type: 'p', text: 'Important nuance (from maker technical pages such as Valrhona on couverture and Barry Callebaut on compound coatings): **cocoa butter itself is a vegetable fat**. When we say compound uses “other vegetable fats,” we mean fats other than cocoa butter as the principal working fat — not a plant-versus-non-plant distinction. Compound **need not contain absolutely zero cocoa butter**; read the actual pack. Do not claim “zero cocoa butter” unless the label says so.' },
         ],
       },
       {
         heading: 'Why the difference matters in India',
         blocks: [
-          { type: 'p', text: 'Volume bakery work in India often leans on compound because it is stable, affordable and easier without a tempering machine. Premium pastry, bean-to-bar makers and many café dessert counters move toward **real chocolate** and, where budgets allow, couverture for enrobing and moulded work.' },
+          { type: 'p', text: 'Compound is common in high-volume baking because it sets without tempering. Premium pastry, bean-to-bar makers and many café dessert counters use cocoa-butter chocolate and, where budgets allow, couverture for enrobing and moulded work.' },
           { type: 'ul', items: [
             'Compound: quick drips, school fudge, high-volume coated biscuits.',
             'Couverture: bonbons, thin shells, shiny glaze, ganache where cacao flavour matters.',
           ] },
-          { type: 'p', text: 'Neither is universally “wrong.” Calling compound “couverture” on a menu or reel is the expensive kind of wrong.' },
+          { type: 'p', text: 'Neither suits every job. On a menu or a reel, name the fat system you actually used.' },
         ],
       },
       {
@@ -147,7 +147,7 @@ export const BAKING_NOTES: BakingNote[] = [
             '**Fluidity / cocoa butter level** on maker sheets when available.',
             '**Origin story, if any.** Named Indian cacao vs blended vs unnamed fat.',
           ] },
-          { type: 'p', text: 'Price for a baker’s 1 kg block varies with cocoa butter content, origin, brand and retail vs trade. We will publish our own 1 kg baker-pack price on the product page when stock is live. Until then, treat web “from ₹X/kg” quotes as supplier-specific, not a national average. Commodity cocoa futures are not the same as retail couverture.' },
+          { type: 'p', text: 'Price for a baker’s 1 kg block varies with cocoa butter content, origin, brand and retail vs trade. Treat web “from ₹X/kg” quotes as supplier-specific, not a national average. Commodity cocoa futures are not the same as retail couverture.' },
           { type: 'p', text: 'Sources for definitions (not Coco36 specs): [Valrhona — Couverture chocolate](https://www.valrhona.com/en/l-ecole-valrhona/discover-l-ecole-valrhona/chocolate-terminology/couverture-chocolate); [Barry Callebaut — Compound coatings](https://www.barry-callebaut.com/en/trends-insights/compound-coatings-confectionery-bakery-pastry-biscuits-and-cereals); [Callebaut — Tempering](https://www.callebaut.com/en-US/callebaut-chocolate-academy/tutorials/tempering/how-to).' },
         ],
       },
@@ -158,9 +158,9 @@ export const BAKING_NOTES: BakingNote[] = [
         ],
       },
       {
-        heading: 'When compound is the honest choice',
+        heading: 'When compound fits the job',
         blocks: [
-          { type: 'p', text: 'Use compound when you coat hundreds of pieces without tempering, the kitchen sits hot, guest expectation is “chocolate flavour and a set coating,” or cost per kilogram must stay in a volume-bakery band. Compound can snap too when handled per its supplier — **snap is not proof of authenticity**.' },
+          { type: 'p', text: 'Use compound when you coat hundreds of pieces without tempering, the kitchen sits hot, guest expectation is “chocolate flavour and a set coating,” or cost per kilogram must stay in a volume-bakery band. Compound can snap too when handled per its supplier — **snap is not proof of which fat is inside**.' },
         ],
       },
       {
@@ -187,7 +187,7 @@ export const BAKING_NOTES: BakingNote[] = [
         heading: 'Tempering and Indian weather',
         blocks: [
           { type: 'p', text: 'Properly tempered chocolate has gloss, snap and clean mould release (Callebaut tempering guidance). Thickness and process also affect snap. Temper for tiles and moulding — not as an unnecessary step for brownie batter.' },
-          { type: 'p', text: 'In summer heat: work early or in AC; keep moulds dry; prefer a cool pantry over the fridge (condensation → sugar bloom). Summer couverture shipments need insulated thinking — another reason volume bakeries like compound for travel-stable coatings.' },
+          { type: 'p', text: 'In summer heat: work early or in AC; keep moulds dry; prefer a cool pantry over the fridge (condensation → sugar bloom). Summer couverture shipments need care in the heat. Compound coatings are often chosen when a set coating has to travel.' },
         ],
       },
       {
@@ -197,17 +197,15 @@ export const BAKING_NOTES: BakingNote[] = [
         ],
       },
       {
-        heading: 'How COCO36 will stock this',
+        heading: 'Coming soon',
         blocks: [
-          { type: 'p', text: 'December hero plan: **Indian-origin dark couverture** in a baker-friendly pack (including 1 kg). Until live:' },
+          { type: 'p', text: 'Dark couverture is coming soon to the COCO36 shop. Until then:' },
           { type: 'ul', items: [
             '[Cocoa & chocolate](/ingredients/cocoa-chocolate)',
             '[Guides hub](/guides)',
-            '[Shop](/shop)',
-            'Placeholder PDP: [/shop/indian-dark-couverture](/shop/indian-dark-couverture)',
-            'Category [/shop/category/couverture](/shop/category/couverture) stays noindex until stocked',
+            '[Browse the shop](/shop)',
           ] },
-          { type: 'p', text: 'We will not call couverture “pure” or “100%” unless the product is literally single-ingredient cacao. Couverture is a recipe. No Coco36 fat %, cocoa %, farm or stock claims until supplier docs are confirmed on the PDP.' },
+          { type: 'p', text: 'Couverture is a recipe of cocoa ingredients and sugar, not a single-ingredient cacao. This page does not give a fat percentage, a cocoa percentage, or an origin for COCO36 couverture.' },
         ],
       },
     ],
@@ -217,30 +215,29 @@ export const BAKING_NOTES: BakingNote[] = [
       { q: 'Why does a 1 kg couverture block often cost more?', a: 'Cocoa butter is costly relative to many bakery coating fats, and higher-fluidity couverture uses more of it. Origin and brand also move price. Compare ingredients, not only the sticker.' },
       { q: 'Does a clean snap prove I bought couverture?', a: 'No. Thickness, process and compound formulations can also snap. Snap is a handling result, not a purity test.' },
       { q: 'Does couverture need a fridge in Indian summers?', a: 'Usually a cool, dry, airtight pantry is kinder. Fridge humidity causes condensation and sugar bloom.' },
-      { q: 'Will COCO36 sell Indian-origin couverture?', a: 'Yes — planned December hero SKU. Pack sizes, ingredients and price publish when stock is confirmed. No availability claim until then.' },
+      { q: 'Will COCO36 sell couverture?', a: 'It is coming soon to the COCO36 shop.' },
     ],
     related: [
       { href: '/guides', label: 'Guides hub' },
       { href: '/ingredients/cocoa-chocolate', label: 'Cocoa & chocolate' },
-      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural vs Dutch cocoa' },
-      { href: '/shop', label: 'Shop' },
-      { href: '/shop/indian-dark-couverture', label: 'Indian dark couverture (planned)' },
+      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
+      { href: '/shop', label: 'Browse the shop' },
     ],
   },
   {
     path: '/guides/natural-vs-dutch-cocoa',
-    title: 'Natural vs Dutch Cocoa Powder for Baking | COCO36',
-    description: 'Natural vs Dutch-process cocoa for cakes and hot chocolate in India — acidity, colour, baking soda vs powder, and how to choose by recipe.',
-    schemaDescription: 'Natural vs Dutch-process cocoa for cakes and hot chocolate in India — acidity, colour, baking soda vs powder, and how to choose by recipe.',
-    h1: 'Natural vs Dutch-process cocoa powder: which one for your bake',
-    crumb: 'Natural vs Dutch cocoa',
+    title: 'Natural (Non-Alkalised) vs Dutch Cocoa | COCO36',
+    description: 'Natural (non-alkalised) vs Dutch-process cocoa for cakes and hot chocolate in India — acidity, colour, soda vs powder, and how to choose.',
+    schemaDescription: 'Natural (non-alkalised) vs Dutch-process cocoa for cakes and hot chocolate in India — acidity, colour, soda vs powder, and how to choose.',
+    h1: 'Natural (non-alkalised) vs Dutch-process cocoa powder: which one for your bake',
+    crumb: 'Cocoa powder',
     updated: '2026-11-09',
     sections: [
       {
         blocks: [
-          { type: 'p', text: 'Cocoa powder looks simple: a brown pouch next to the maida. In the bowl it is not. **Natural** and **Dutch-process** (alkalised) cocoa taste different, colour differently, and change how a batter’s **acid / leavener balance** behaves.' },
+          { type: 'p', text: 'Cocoa powder looks simple: a brown pouch next to the maida. In the bowl it is not. **Natural (non-alkalised)** and **Dutch-process** (alkalised) cocoa taste different, colour differently, and change how a batter’s **acid / leavener balance** behaves.' },
           { type: 'p', text: '**Dark colour doesn’t tell you everything.** A darker spoon is not a universal flavour or quality ranking.' },
-          { type: 'p', text: 'COCO36 comes at cocoa from farm and pastry: Rohan’s roots are in a West Godavari farming family. Wider cacao story: [Cocoa & chocolate](/ingredients/cocoa-chocolate). Cluster hub: [Guides](/guides). Dutch-process cocoa is planned as a December reorder staple — PDP only when stock is live.' },
+          { type: 'p', text: 'COCO36 comes at cocoa from farm and pastry: Rohan’s roots are in a West Godavari farming family. Wider cacao story: [Cocoa & chocolate](/ingredients/cocoa-chocolate). Cluster hub: [Guides](/guides). Dutch-process cocoa is coming soon to the COCO36 shop.' },
         ],
       },
       {
@@ -250,28 +247,28 @@ export const BAKING_NOTES: BakingNote[] = [
         ],
       },
       {
-        heading: 'Natural cocoa powder',
+        heading: 'Natural (non-alkalised) cocoa powder',
         blocks: [
-          { type: 'p', text: 'Natural cocoa is not alkalised. It is often lighter to medium brown, sharper and more acidic, and can contribute acid that **baking soda** needs in some formulas.' },
+          { type: 'p', text: 'Natural (non-alkalised) cocoa is not treated with an alkali. It is often lighter to medium brown, sharper and more acidic, and can contribute acid that **baking soda** needs in some formulas.' },
         ],
       },
       {
         heading: 'Dutch-process (alkalised) cocoa',
         blocks: [
-          { type: 'p', text: 'Dutch-process cocoa is treated with an alkaline solution that **reduces acidity**, generally darkens colour and alters flavour (practical bakery references such as [King Arthur — Dutch-process vs natural cocoa](https://www.kingarthurbaking.com/blog/2020/07/15/dutch-process-vs-natural-cocoa)). It is often milder and disperses well in drinks. Many bakery sponges pair it with **baking powder**.' },
+          { type: 'p', text: 'Dutch-process cocoa is treated with an alkaline solution that **reduces acidity**, generally darkens colour and alters flavour (practical bakery references such as [King Arthur — Dutch-process vs natural (non-alkalised) cocoa](https://www.kingarthurbaking.com/blog/2020/07/15/dutch-process-vs-natural-cocoa)). It is often milder and disperses well in drinks. Many bakery sponges pair it with **baking powder**.' },
           { type: 'p', text: 'We do not publish fictitious pH meter readouts. Process direction is qualitative unless a supplier sheet gives a measured value for that batch.' },
         ],
       },
       {
-        heading: 'Natural vs Dutch: useful pairs (not absolute laws)',
+        heading: 'Natural (non-alkalised) vs Dutch: useful pairs (not absolute laws)',
         blocks: [
           { type: 'table', headers: ['Situation', 'Often works', 'Caution'], rows: [
             ['Baking-powder-led chocolate cake', 'Either cocoa; Dutch common for darker crumb', 'Follow the whole tested formula'],
-            ['Baking-soda-led cake that relies on cocoa’s acidity', 'Natural is the classic partner', 'Dutch can still work if **other acids** in the formula supply balance'],
-            ['Hot chocolate / sauces', 'Dutch often mellower and easier to dissolve', 'Natural is fine if you whisk and accept brighter taste'],
+            ['Baking-soda-led cake that relies on cocoa’s acidity', 'Natural (non-alkalised) is the classic partner', 'Dutch can still work if **other acids** in the formula supply balance'],
+            ['Hot chocolate / sauces', 'Dutch often mellower and easier to dissolve', 'Natural (non-alkalised) is fine if you whisk and accept a brighter taste'],
             ['“Darker = better chocolate” shopping', '—', 'Reject the shortcut'],
           ] },
-          { type: 'p', text: '**Avoid the absolute rule** “natural always soda / Dutch always powder.” [King Arthur’s soda vs powder](https://www.kingarthurbaking.com/blog/2021/09/10/baking-soda-vs-baking-powder-substitutions) and [A-B-Cs of cocoa](https://www.kingarthurbaking.com/blog/2014/01/10/the-a-b-cs-of-cocoa) guidance: soda needs an acidic partner; powder brings its own acid/base system; cocoa is not the only possible acid. Do not import one blog’s substitution ratios as universal conversions.' },
+          { type: 'p', text: '**Avoid the absolute rule** “natural (non-alkalised) cocoa always with soda / Dutch-process always with powder.” [King Arthur’s soda vs powder](https://www.kingarthurbaking.com/blog/2021/09/10/baking-soda-vs-baking-powder-substitutions) and [A-B-Cs of cocoa](https://www.kingarthurbaking.com/blog/2014/01/10/the-a-b-cs-of-cocoa) guidance: soda needs an acidic partner; powder brings its own acid/base system; cocoa is not the only possible acid. Do not import one blog’s substitution ratios as universal conversions.' },
         ],
       },
       {
@@ -282,7 +279,7 @@ export const BAKING_NOTES: BakingNote[] = [
             'Read the leavener line before you buy the cocoa.',
             'Match colour expectation honestly — many “dark chocolate cake” photos use Dutch.',
             'Sift cocoa with flour; monsoon humidity clumps both types.',
-            'In eggless cakes using vinegar + soda, natural cocoa adds to that acid system; swapping Dutch without adjusting acids can change rise — test a half batch.',
+            'In eggless cakes using vinegar + soda, natural (non-alkalised) cocoa adds to that acid system; swapping Dutch without adjusting acids can change rise — test a half batch.',
           ] },
           { type: 'p', text: 'Brownies are more forgiving on lift; taste and colour still shift with the swap.' },
         ],
@@ -290,13 +287,13 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'Cocoa powder for hot chocolate',
         blocks: [
-          { type: 'p', text: 'Dutch-process usually dissolves cooperatively and tastes less sharp in milk. Natural can taste brighter. Add sugar (or jaggery — see [sugars & jaggery](/ingredients/sugars-jaggery)) separately. Neither powder is a sweetened premix. Café hot chocolate sometimes starts from melted chocolate or ganache instead.' },
+          { type: 'p', text: 'Dutch-process usually dissolves cooperatively and tastes less sharp in milk. Natural (non-alkalised) cocoa can taste brighter. Add sugar (or jaggery — see [sugars & jaggery](/ingredients/sugars-jaggery)) separately. Neither powder is a sweetened premix. Café hot chocolate sometimes starts from melted chocolate or ganache instead.' },
         ],
       },
       {
         heading: 'Fat percentage',
         blocks: [
-          { type: 'p', text: 'Residual fat varies by press. When COCO36 lists a Dutch cocoa, fat % will come from **our supplier documentation** on the PDP — not invented competitor numbers. Prefer similar fat contents when comparing two cocoas in a side-by-side bake and document differences.' },
+          { type: 'p', text: 'Residual fat varies by press. Prefer similar fat contents when comparing two cocoas in a side-by-side bake and document differences. Read the fat percentage on the pack you buy.' },
         ],
       },
       {
@@ -304,7 +301,7 @@ export const BAKING_NOTES: BakingNote[] = [
         blocks: [
           { type: 'p', text: 'Aligns with Ingredient Notes · 02: illustrate substitution in a **pre-tested baking-powder-led** mini-cake. This does **not** prove that Dutch cocoa “fails” with soda, and it does not isolate alkalisation from fat/roast/origin.' },
           { type: 'ol', items: [
-            'Confirm both pouches are labelled natural vs Dutch-process by the supplier.',
+            'Confirm both pouches are labelled natural (non-alkalised) vs Dutch-process by the supplier.',
             'Keep cocoa mass and every other ingredient fixed; bake matched tins together; cool equally.',
             'Compare colour, height, crumb and flavour. **No pre-written winner.**',
             'Teaching props: show soda and powder in separate dishes — not a fake chemical strip “lab value.”',
@@ -322,14 +319,14 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'Reading an Indian cocoa pouch',
         blocks: [
-          { type: 'p', text: 'Packs sold as “cocoa powder,” “dutch cocoa,” “alkalised cocoa” or “natural cocoa” are not always explicit. Look for:' },
+          { type: 'p', text: 'Packs sold as “cocoa powder,” “dutch cocoa,” “alkalised cocoa” or “natural (non-alkalised) cocoa” are not always explicit. Look for:' },
           { type: 'ul', items: [
-            'The words **natural** or **Dutch-process / alkalised**',
+            'The words **natural (non-alkalised)** or **Dutch-process / alkalised**',
             '“Unsweetened” vs sugar in the ingredients',
             'Any fat percentage on bakery-facing SKUs',
             'A lot or batch code if you buy trade sizes',
           ] },
-          { type: 'p', text: 'If the pouch only says “cocoa powder,” treat process as unknown until the brand confirms. Colour alone will mislead you — some natural cocoas run fairly dark; some Dutch cocoas are reddish rather than black.' },
+          { type: 'p', text: 'If the pouch only says “cocoa powder,” treat the process as unknown until the brand confirms. Colour alone will not tell you the process — some natural (non-alkalised) cocoas run fairly dark; some Dutch cocoas are reddish rather than black.' },
         ],
       },
       {
@@ -347,25 +344,23 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'How this fits COCO36’s shop',
         blocks: [
-          { type: 'p', text: 'Dutch-process cocoa is a planned **steady reorder** hero. Until live: this guide, [Guides](/guides), [Shop](/shop), placeholder [/shop/dutch-process-cocoa-powder](/shop/dutch-process-cocoa-powder). No stock, origin or certification claim without docs.' },
+          { type: 'p', text: 'Dutch-process cocoa is coming soon to the COCO36 shop. Until then, read this guide, the [Guides hub](/guides), or [browse the shop](/shop).' },
         ],
       },
     ],
     faqs: [
-      { q: 'Can I swap Dutch-process for natural in any recipe?', a: 'No blanket yes. Flavour-only uses are often flexible. Where soda depends on natural cocoa’s acidity, Dutch can flatten rise unless other acids balance the formula. Follow a tested recipe.' },
-      { q: 'Which cocoa is better for hot chocolate?', a: 'Dutch-process is usually mellower and easier to dissolve. Natural works if you whisk well. Sweetness is separate.' },
-      { q: 'Is Dutch-process “less healthy”?', a: 'We make **no health, antioxidant or diabetic claims** for either process. Choose by recipe performance.' },
+      { q: 'Can I swap Dutch-process for natural (non-alkalised) cocoa in any recipe?', a: 'No blanket yes. Flavour-only uses are often flexible. Where soda depends on natural (non-alkalised) cocoa’s acidity, Dutch can flatten rise unless other acids balance the formula. Follow a tested recipe.' },
+      { q: 'Which cocoa is better for hot chocolate?', a: 'Dutch-process is usually mellower and easier to dissolve. Natural (non-alkalised) cocoa works if you whisk well. Sweetness is separate.' },
       { q: 'Does darker cocoa mean better cocoa?', a: 'No. Darkness is not a universal quality scale.' },
       { q: 'What does unsweetened mean?', a: 'No added sugar in the powder. Your drink still needs sweetening if you want it sweet.' },
-      { q: 'Will COCO36 sell cocoa powder?', a: 'Dutch-process is a planned December hero. Details on the PDP when stock is confirmed.' },
+      { q: 'Will COCO36 sell cocoa powder?', a: 'Dutch-process cocoa is coming soon to the COCO36 shop.' },
     ],
     related: [
       { href: '/guides', label: 'Guides hub' },
       { href: '/ingredients/cocoa-chocolate', label: 'Cocoa & chocolate' },
       { href: '/guides/couverture-vs-compound', label: 'Couverture vs compound' },
       { href: '/ingredients/sugars-jaggery', label: 'Sugars & jaggery' },
-      { href: '/shop', label: 'Shop' },
-      { href: '/shop/dutch-process-cocoa-powder', label: 'Dutch-process cocoa powder (planned)' },
+      { href: '/shop', label: 'Browse the shop' },
     ],
   },
   {
@@ -381,15 +376,14 @@ export const BAKING_NOTES: BakingNote[] = [
         blocks: [
           { type: 'p', text: '**Dubai chocolate? Start with the label.**' },
           { type: 'p', text: 'The viral bar — chocolate shell, crunchy kunafa (kataifi), pistachio, often tahini — made pistachio jars fly off Indian specialty shelves. It also blurred **pistachio paste** and **pistachio cream**. This guide separates them, then walks a **Dubai-style / kunafa chocolate** method you can test at home.' },
-          { type: 'p', text: 'COCO36 sources origin ingredients for Indian bakers. Pistachio paste is a December hero candidate as **pure 100% pistachio paste, unsweetened** — never marketed as cream. Hub: [Guides](/guides). Chocolate technique: [Cocoa & chocolate](/ingredients/cocoa-chocolate), [Couverture vs compound](/guides/couverture-vs-compound).' },
+          { type: 'p', text: 'COCO36 sources origin ingredients for Indian bakers. Pistachio paste is coming soon to the COCO36 shop, and it will not be sold as cream. Hub: [Guides](/guides). Chocolate technique: [Cocoa & chocolate](/ingredients/cocoa-chocolate), [Couverture vs compound](/guides/couverture-vs-compound).' },
         ],
       },
       {
         heading: 'What 100% pistachio paste means',
         blocks: [
-          { type: 'p', text: 'A verified **100% pistachio paste** is pistachios ground to a paste **without added sugar** (reference example: [Callebaut Pure Pistachio Paste](https://www.callebaut.com/en/products/callebaut/nuts-pure-pistachio-paste/NPO-PI1-2B-18A) — explicitly 100% pistachio and unsweetened).' },
-          { type: 'p', text: 'On a COCO36 page we will say **pure 100% pistachio paste, unsweetened** only when that is true.' },
-          { type: 'p', text: 'Pure paste lets the maker **choose the sweetness** in a filling. It is **not** a ready-made sweetened filling and **not** an automatic 1:1 swap for cream.' },
+          { type: 'p', text: '**100% pistachio paste** means pistachios ground to a paste **without added sugar** (reference example: [Callebaut Pure Pistachio Paste](https://www.callebaut.com/en/products/callebaut/nuts-pure-pistachio-paste/NPO-PI1-2B-18A) — that maker lists the product as 100% pistachio and unsweetened).' },
+          { type: 'p', text: 'Unsweetened paste lets the maker **choose the sweetness** in a filling. It is **not** a ready-made sweetened filling and **not** an automatic 1:1 swap for cream.' },
         ],
       },
       {
@@ -410,11 +404,10 @@ export const BAKING_NOTES: BakingNote[] = [
           { type: 'ol', items: [
             'Ingredients should read pistachios (or roasted pistachios) for true paste.',
             'Neon green ≠ purity.',
-            'Natural paste separates; stir.',
-            'Ask for aflatoxin CoA on wholesale lots before retail packing.',
-            '“Made in India” often means domestic milling of imported kernels — fine if disclosed.',
+            'The paste can separate; stir it back together.',
+            'On a wholesale lot, ask the seller for an aflatoxin certificate of analysis.',
+            'Some pastes sold in India are milled here from imported kernels, so check the label for kernel origin.',
           ] },
-          { type: 'p', text: 'COCO36’s December path (pending Rohan’s OK to contact suppliers): **India-stock 100% paste** + FSSAI repack — not a last-minute import container.' },
         ],
       },
       {
@@ -426,7 +419,7 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'Dubai-style kataifi chocolate bar (adapted home method)',
         blocks: [
-          { type: 'p', text: '**Cite, don’t invent origin stories.** Workflow inspiration: Callebaut / Frank Carrieri’s [Dubai Bar](https://www.callebaut.com/en/recipes/dubai-bar/4898) (toast kataifi; fill pre-cast tempered shells). Pure-paste filling reference: Callebaut / Yeşim Erol’s [Dubai chocolate bar](https://www.callebaut.com/en/recipes/yesims-dubai-chocolate-bar/4942) — published reference uses white chocolate + pure paste + tahini + kataifi (example scale: 160 g white chocolate, 500 g pure paste, 50 g tahini, 150 g kataifi; one-fifth test ~32 / 100 / 10 / 30 g). That Carrieri recipe’s sweetness balance uses sweetened praline — **do not gram-for-gram replace praline with pure paste**.' },
+          { type: 'p', text: '**Cite, don’t invent origin stories.** Workflow inspiration: Callebaut / Frank Carrieri’s [Dubai Bar](https://www.callebaut.com/en/recipes/dubai-bar/4898) (toast kataifi; fill pre-cast tempered shells). Unsweetened-paste filling reference: Callebaut / Yeşim Erol’s [Dubai chocolate bar](https://www.callebaut.com/en/recipes/yesims-dubai-chocolate-bar/4942) — that published recipe uses white chocolate + unsweetened paste + tahini + kataifi (example scale: 160 g white chocolate, 500 g unsweetened paste, 50 g tahini, 150 g kataifi; one-fifth test ~32 / 100 / 10 / 30 g). That Carrieri recipe’s sweetness balance uses sweetened praline — **do not gram-for-gram replace praline with unsweetened paste**.' },
           { type: 'p', text: 'Below is a **practice framework** for home kitchens. Not a Coco36 shelf-life or sale specification. Contains pistachio (tree nut) and wheat; sesame/milk/soy if tahini or white chocolate / milk couverture are used.' },
           { type: 'h3', text: 'Ingredients (starting point for one medium bar — adjust after trial)' },
           { type: 'ul', items: pistachioIngredients },
@@ -443,7 +436,7 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'Why “paste or cream?” belongs in the reel',
         blocks: [
-          { type: 'p', text: 'Our Ingredient Notes reel for this topic opens on a bar break, then on two real ingredient panels. The educational job is **label literacy**, not dunking sweetened cream as a category. Creams earn their place on toast and in some ready fillings. Paste earns its place when you are building a filling whose sugar and fat you want to specify yourself — including a Dubai-style centre that should taste of pistachio and toasted pastry, not only of sugar.' },
+          { type: 'p', text: 'Our Ingredient Notes reel for this topic opens on a bar break, then on two ingredient panels. The educational job is **label literacy**, not a ranking of sweetened cream. Creams earn their place on toast and in some ready fillings. Paste earns its place when you are building a filling whose sugar and fat you want to specify yourself — including a Dubai-style centre that should taste of pistachio and toasted pastry, not only of sugar.' },
           { type: 'p', text: 'If a jar is neon green and the ingredient list is long, believe the list. If a 100% paste looks quieter in colour than social media fillings, that can still be correct.' },
         ],
       },
@@ -456,13 +449,13 @@ export const BAKING_NOTES: BakingNote[] = [
       {
         heading: 'Food safety and labelling',
         blocks: [
-          { type: 'p', text: 'Allergen-label pistachio and wheat; sesame/milk/soy as used. No health-food positioning. No unsourced “trend will keep growing” claim. “Dubai-style” describes format, not geographic certification.' },
+          { type: 'p', text: 'Allergen-label pistachio and wheat; sesame/milk/soy as used. “Dubai-style” describes format, not geographic certification.' },
         ],
       },
       {
         heading: 'How COCO36 will sell this',
         blocks: [
-          { type: 'p', text: 'Planned hero wording: **pure 100% pistachio paste, unsweetened**. Placeholder [/shop/pistachio-paste](/shop/pistachio-paste). Until live, this guide + [Shop](/shop) only — no product CTA inventing stock.' },
+          { type: 'p', text: 'Pistachio paste is coming soon to the COCO36 shop. Until then, use this guide or [browse the shop](/shop).' },
         ],
       },
     ],
@@ -472,19 +465,18 @@ export const BAKING_NOTES: BakingNote[] = [
       { q: 'What is kunafa chocolate?', a: 'Common name for Dubai-style bars with toasted kataifi and pistachio inside chocolate.' },
       { q: 'Is paste available in India?', a: 'Yes via specialty shops and millers. Read ingredients every time.' },
       { q: 'Do I need tempered couverture?', a: 'Best for glossy snappy moulds. Follow the shell chocolate’s tempering instructions — they vary.' },
-      { q: 'Will COCO36 sell pistachio paste?', a: 'Planned if supplier CoA/origin checks and Rohan’s approval clear. Page will say pure 100% pistachio paste, unsweetened — never cream — when true.' },
+      { q: 'Will COCO36 sell pistachio paste?', a: 'It is coming soon to the COCO36 shop. It will not be sold as cream.' },
     ],
     related: [
       { href: '/guides', label: 'Guides hub' },
       { href: '/guides/couverture-vs-compound', label: 'Couverture vs compound' },
-      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural vs Dutch cocoa' },
+      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
       { href: '/ingredients/cocoa-chocolate', label: 'Cocoa & chocolate' },
-      { href: '/shop', label: 'Shop' },
-      { href: '/shop/pistachio-paste', label: 'Pistachio paste (planned)' },
+      { href: '/shop', label: 'Browse the shop' },
     ],
     recipe: {
       name: 'Dubai-style kataifi pistachio chocolate bar (home adaptation)',
-      description: 'Adapted home method: toasted kataifi folded into a 100% pistachio-paste filling, sealed in tempered chocolate.',
+      description: 'Adapted home method: toasted kataifi folded into an unsweetened pistachio-paste filling, sealed in tempered chocolate.',
       recipeCuisine: 'Indian home baking',
       recipeCategory: 'Dessert',
       recipeYield: '1 medium bar',
