@@ -45,17 +45,23 @@ export function returnPolicyJsonLd(policy: StorePolicy = DEFAULT_POLICY): Mercha
  * the listed price as current. It is not a restock date, and the price itself
  * still comes from the live catalogue.
  */
-export function offerPriceValidUntil(now: Date): string {
-  const d = new Date(now.getTime());
-  d.setUTCDate(d.getUTCDate() + 365);
+export const PRICE_VALID_DAYS = 365;
+
+export function offerPriceValidUntil(now: Date, days = PRICE_VALID_DAYS): string {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
 
-/** "250 g" / "1 kg" as printed on the size label. Anything else is left unset. */
-function weightProperty(label: string): { '@type': 'PropertyValue'; name: string; value: string } | undefined {
-  const m = label.trim().match(/^(\d+(?:\.\d+)?)\s*(g|kg)$/i);
-  if (!m) return undefined;
-  return { '@type': 'PropertyValue', name: 'Weight', value: `${m[1]} ${m[2].toLowerCase()}` };
+/** Net weight from a pack label such as "250 g" or "1 kg". Anything else is unknown. */
+export function netWeightFromLabel(label: string): { value: number; unitCode: 'GRM' | 'KGM'; unitText: 'g' | 'kg' } | null {
+  const m = label.trim().match(/^(\d+(?:\.\d+)?)\s*(kg|g)$/i);
+  if (!m) return null;
+  const value = Number(m[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return m[2].toLowerCase() === 'kg'
+    ? { value, unitCode: 'KGM', unitText: 'kg' }
+    : { value, unitCode: 'GRM', unitText: 'g' };
 }
 
 /** The catalogue SKU, only when every pack is the same single code. */
@@ -175,14 +181,28 @@ export function productJsonLd(
   const returnPolicy = returnPolicyJsonLd(policy);
   const validUntil = offerPriceValidUntil(opts.now ?? new Date());
   const sku = productSku(p);
-  const properties = (opts.additionalProperty ?? []).map((prop) => ({
-    '@type': 'PropertyValue' as const,
-    name: prop.name,
-    value: prop.value,
-  }));
+  const weights = p.sizes.flatMap((s) => {
+    const w = netWeightFromLabel(s.label);
+    return w ? [{ label: s.label, ...w }] : [];
+  });
+  const properties = [
+    ...(opts.additionalProperty ?? []).map((prop) => ({
+      '@type': 'PropertyValue' as const,
+      name: prop.name,
+      value: prop.value,
+    })),
+    ...weights.map((w) => ({
+      '@type': 'PropertyValue' as const,
+      name: 'Net weight',
+      value: w.value,
+      unitCode: w.unitCode,
+      unitText: w.unitText,
+      description: w.label,
+    })),
+  ];
 
   const offers: Offer[] = p.sizes.map((s) => {
-    const weight = weightProperty(s.label);
+    const weight = netWeightFromLabel(s.label);
     return {
       '@type': 'Offer',
       name: s.label,
@@ -196,7 +216,15 @@ export function productJsonLd(
       seller: { '@type': 'Organization', '@id': ORG_ID, name: BRAND },
       shippingDetails: shippingJsonLd(s.priceInPaise, policy),
       hasMerchantReturnPolicy: returnPolicy,
-      ...(weight ? { additionalProperty: weight } : {}),
+      ...(weight ? {
+        additionalProperty: {
+          '@type': 'PropertyValue' as const,
+          name: 'Net weight',
+          value: weight.value,
+          unitCode: weight.unitCode,
+          unitText: weight.unitText,
+        },
+      } : {}),
     };
   });
 
@@ -217,6 +245,9 @@ export function productJsonLd(
     brand: { '@type': 'Brand', name: p.brand || BRAND },
     ...(p.category ? { category: p.category } : {}),
     ...(p.originCountry ? { countryOfOrigin: { '@type': 'Country', name: p.originCountry } } : {}),
+    ...(weights.length === 1 ? {
+      weight: { '@type': 'QuantitativeValue' as const, value: weights[0].value, unitCode: weights[0].unitCode },
+    } : {}),
     ...(properties.length ? { additionalProperty: properties } : {}),
     ...(offers.length ? { offers } : {}),
     ...(reviews ? {

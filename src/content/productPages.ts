@@ -57,16 +57,6 @@ function minRupees(p: Product): string | undefined {
   return rupees(Math.min(...p.sizes.map((s) => s.priceInPaise)));
 }
 
-/** "Ships across India; currently out of stock." / "in stock." / a per-size list. */
-function shipsTail(sizes: readonly ProductSize[]): string {
-  if (!sizes.length) return 'Ships across India.';
-  const stocked = sizes.filter((s) => s.inStock).length;
-  if (stocked === 0) return 'Ships across India; currently out of stock.';
-  if (stocked === sizes.length) return 'Ships across India; in stock.';
-  const bits = sizes.map((s) => `${s.label} ${s.inStock ? 'in stock' : 'out of stock'}`);
-  return `${bits.join('; ')}. Ships across India.`;
-}
-
 function stockPhrase(size: ProductSize): string {
   return size.inStock ? 'in stock' : 'currently out of stock';
 }
@@ -123,12 +113,12 @@ function heritage(p: Product): ProductPageCopy {
   const sizes = p.sizes;
   const price = minRupees(p);
   const listed = kitListed(sizes);
-  const stock = sizes.length === 1
-    ? (sizes[0].inStock ? ' In stock.' : ' Currently out of stock.')
-    : '';
+  // Price may follow the catalogue. Stock state stays out of the meta so the snippet does not churn.
   const priceBit = price && sizes.length === 1
-    ? `${price}, ships across India.${stock}`
-    : shipsTail(sizes);
+    ? `${price}, ships across India.`
+    : price
+      ? `From ${price}. Ships across India.`
+      : 'Ships across India.';
   const whenBack = sizes.some((s) => s.inStock)
     ? 'You can order it from this page. Shipping times and fees are on the [shipping](/shipping) page.'
     : 'This page shows the live price and when it can be ordered again. It does not give a restock date.';
@@ -231,7 +221,6 @@ function maldon(p: Product): ProductPageCopy {
     title: 'Maldon Flaky Sea Salt in India | COCO36',
     h1: 'Maldon flaky sea salt',
     metaDescription: meta([
-      from ? `${lead} From ${from}. ${shipsTail(sizes)}` : `${lead} ${shipsTail(sizes)}`,
       from ? `${lead} From ${from}. Ships across India.` : `${lead} Ships across India.`,
       `${lead} Ships across India.`,
     ]),
@@ -312,7 +301,7 @@ function maldonSizes(sizes: readonly ProductSize[]): string {
 function darkMuscovado(p: Product): ProductPageCopy {
   const sizes = p.sizes;
   const lead = 'Unrefined dark muscovado cane sugar from Mauritius, with more of its molasses left in.';
-  const bits = sizes.map((s) => `${s.label} ${rupees(s.priceInPaise)} ${s.inStock ? 'in stock' : 'out of stock'}`).join('; ');
+  const bits = sizes.map((s) => `${s.label} ${rupees(s.priceInPaise)}`).join('; ');
   const from = minRupees(p);
   const status = packStatus(sizes);
 
@@ -412,7 +401,7 @@ function lightMuscovado(p: Product): ProductPageCopy {
     title: 'Light Muscovado Sugar in India | COCO36',
     h1: 'Light muscovado cane sugar',
     metaDescription: meta([
-      priceBits ? `${lead} ${priceBits}. ${shipsTail(sizes)}` : `${lead} Ships across India.`,
+      priceBits ? `${lead} ${priceBits}. Ships across India.` : `${lead} Ships across India.`,
       from ? `${lead} From ${from}. Ships across India.` : `${lead} Ships across India.`,
       `${lead} Ships across India.`,
     ]),

@@ -10,7 +10,7 @@ import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
 import { productPage } from '../content/productPages.js';
 import { richPlain } from '../content/richText.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
-import { DESCRIPTION_MAX, TITLE_MAX, clip, firstComplete, firstThatFits, fitSentences, sentence, sentences, stripMarkdown } from './text.js';
+import { DESCRIPTION_MAX, TITLE_MAX, clip, composeProductDescription, firstThatFits, fitWithin, stripMarkdown } from './text.js';
 
 /**
  * Per-page <head> metadata. Every route's title, description, canonical,
@@ -228,28 +228,17 @@ export function productCrumbs(p: Product, tree: CategoryTree): Crumb[] {
 }
 
 /**
- * Catalogue meta: whole sentences plus origin and price, longest first.
- * A sentence is never cut in half to make room for the price. The old clip
- * turned "Stone-ground in small batches." into "Stone-ground in…".
+ * Catalogue meta. composeProductDescription drops whole sentences until the
+ * price line fits, so a long description is never cut mid-sentence.
  */
 function catalogueProductDescription(p: Product): string {
   const prices = p.sizes.map((s) => s.priceInPaise);
   const from = prices.length
     ? `${prices.length > 1 ? 'From ' : ''}${rupees(Math.min(...prices))}, shipped across India.`
     : 'Shipped across India.';
-  const base = sentence(stripMarkdown(p.description || p.tag || p.name));
+  const base = stripMarkdown(p.description || p.tag || p.name);
   const origin = p.originCountry ? `Origin: ${p.originCountry}.` : '';
-  const chunks = sentences(base);
-  const bodies: string[] = [];
-  for (let n = chunks.length; n >= 1; n--) bodies.push(chunks.slice(0, n).join(' '));
-  if (!bodies.length && base) bodies.push(base);
-  const candidates: string[] = [];
-  for (const body of bodies) {
-    if (origin) candidates.push(`${body} ${origin} ${from}`);
-    candidates.push(`${body} ${from}`);
-  }
-  candidates.push(from);
-  return firstComplete(candidates, DESCRIPTION_MAX);
+  return composeProductDescription(base, origin, from);
 }
 
 export function productMeta(p: Product, tree: CategoryTree, policy: StorePolicy = DEFAULT_POLICY, now: Date = new Date()): PageMeta {
@@ -257,7 +246,7 @@ export function productMeta(p: Product, tree: CategoryTree, policy: StorePolicy 
   const raw = page ? page.metaDescription : catalogueProductDescription(p);
   // Editorial metas are written as complete strings. If a price change pushes
   // one over the limit, drop a trailing sentence — do not insert an ellipsis.
-  const description = raw.length <= DESCRIPTION_MAX ? raw : fitSentences(raw, DESCRIPTION_MAX);
+  const description = raw.length <= DESCRIPTION_MAX ? raw : fitWithin(raw, DESCRIPTION_MAX);
   const faqs = page?.faqs.map((f) => ({ q: f.q, a: richPlain(f.a) })) ?? [];
   const intro = page ? richPlain(page.intro.join(' ')) : '';
 

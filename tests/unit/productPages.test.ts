@@ -8,7 +8,7 @@ import { imageUrl } from '../../src/lib/img';
 import { productPath } from '../../src/lib/productPath';
 import { productMeta } from '../../src/seo/meta';
 import { DEFAULT_POLICY } from '../../src/seo/site';
-import { DESCRIPTION_MAX, TITLE_MAX } from '../../src/seo/text';
+import { composeProductDescription, DESCRIPTION_MAX, fitWithin, TITLE_MAX } from '../../src/seo/text';
 import type { Product, ProductSize } from '../../src/types';
 import { resetCatalogCache } from '../../server/catalog';
 import { render, setTemplate } from '../../server/render';
@@ -95,28 +95,28 @@ const PAGES = [
     product: KIT,
     title: 'Heritage Sourdough Starter Kit | COCO36',
     h1: 'Heritage sourdough starter kit',
-    description: 'Living sourdough starter from a 100-year SF culture, with heritage flour and a banneton. ₹5,312, ships across India. Currently out of stock.',
+    description: 'Living sourdough starter from a 100-year SF culture, with heritage flour and a banneton. ₹5,312, ships across India.',
     sku: 'KIT-SRDK-EA',
   },
   {
     product: SALT,
     title: 'Maldon Flaky Sea Salt in India | COCO36',
     h1: 'Maldon flaky sea salt',
-    description: 'Maldon pyramid sea-salt flakes from Essex, England, for finishing chocolate, caramel and bread. From ₹743. Ships across India; currently out of stock.',
+    description: 'Maldon pyramid sea-salt flakes from Essex, England, for finishing chocolate, caramel and bread. From ₹743. Ships across India.',
     sku: undefined,
   },
   {
     product: DARK,
     title: 'Dark Muscovado Sugar in India | COCO36',
     h1: 'Dark muscovado cane sugar',
-    description: 'Unrefined dark muscovado cane sugar from Mauritius, with more of its molasses left in. 250 g ₹623 in stock; 1 kg ₹1,992 out of stock. Ships across India.',
+    description: 'Unrefined dark muscovado cane sugar from Mauritius, with more of its molasses left in. 250 g ₹623; 1 kg ₹1,992. Ships across India.',
     sku: undefined,
   },
   {
     product: LIGHT,
     title: 'Light Muscovado Sugar in India | COCO36',
     h1: 'Light muscovado cane sugar',
-    description: 'Unrefined light muscovado cane sugar from Mauritius, with caramel and molasses notes. 250 g ₹623. Ships across India; currently out of stock.',
+    description: 'Unrefined light muscovado cane sugar from Mauritius, with caramel and molasses notes. 250 g ₹623. Ships across India.',
     sku: 'SGR-MUSL-250G',
   },
 ] as const;
@@ -129,7 +129,8 @@ type Ld = {
   image?: string[];
   aggregateRating?: unknown;
   review?: unknown;
-  additionalProperty?: { name: string; value: string }[];
+  additionalProperty?: { name: string; value: string | number; unitCode?: string }[];
+  weight?: { '@type': string; value: number; unitCode: string };
   offers?: {
     '@type': string;
     name: string;
@@ -138,7 +139,7 @@ type Ld = {
     priceCurrency: string;
     priceValidUntil?: string;
     availability: string;
-    additionalProperty?: { name: string; value: string };
+    additionalProperty?: { name: string; value: string | number; unitCode?: string; unitText?: string };
     hasMerchantReturnPolicy?: { merchantReturnLink?: string };
     shippingDetails?: { deliveryTime?: { transitTime?: { minValue: number; maxValue: number } } };
   }[];
@@ -173,6 +174,7 @@ describe('product page editorial copy', () => {
       expect(meta.description, page.product.name).toBe(page.description);
       expect(meta.description.length, meta.description).toBeLessThanOrEqual(DESCRIPTION_MAX);
       expect(meta.description, page.product.name).not.toMatch(/…|\.\.\./);
+      expect(meta.description, page.product.name).not.toMatch(/\b(in stock|out of stock)\b/i);
     }
   });
 
@@ -189,6 +191,17 @@ describe('product page editorial copy', () => {
     expect(meta.description).toBe('Dark muscovado: unrefined cane sugar that keeps more of its molasses, for a deeper, richer flavour. Origin: Mauritius. From ₹623, shipped across India.');
     expect(meta.description).not.toMatch(/…/);
     expect(meta.description).not.toContain('Stone-ground in…');
+  });
+
+  it('ellipsizes only a sentence that cannot fit, and otherwise keeps the price line whole', () => {
+    const overlong = 'x'.repeat(DESCRIPTION_MAX + 40);
+    const cut = fitWithin(overlong, DESCRIPTION_MAX);
+    expect(cut.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    expect(cut.endsWith('…')).toBe(true);
+
+    const suffixOnly = composeProductDescription(overlong, 'Origin: Mauritius.', 'From ₹10, shipped across India.');
+    expect(suffixOnly).toBe('From ₹10, shipped across India.');
+    expect(suffixOnly).not.toMatch(/…/);
   });
 
   it('keeps a short catalogue description, its origin and its price', () => {
@@ -233,8 +246,9 @@ describe('product page editorial copy', () => {
     const again = ldOf(repriced);
     expect(again.meta.description).toContain('₹5,400');
     expect(again.meta.description).not.toContain('₹5,312');
-    expect(again.meta.description).toContain('In stock.');
-    expect(again.meta.description).not.toContain('out of stock');
+    expect(again.meta.description).not.toMatch(/\b(in stock|out of stock)\b/i);
+    const stockAnswer = again.faqs.find((f) => f.name === 'Is the kit in stock?')?.acceptedAnswer.text ?? '';
+    expect(stockAnswer).toContain('in stock');
     expect(again.product.offers?.[0]).toMatchObject({
       price: '5400.00',
       availability: 'https://schema.org/InStock',
@@ -270,11 +284,13 @@ describe('product page editorial copy', () => {
     expect(kit.offers?.[0].additionalProperty).toBeUndefined();
 
     expect(ldOf(SALT).product.offers?.map((o) => o.additionalProperty)).toEqual([
-      { '@type': 'PropertyValue', name: 'Weight', value: '250 g' },
-      { '@type': 'PropertyValue', name: 'Weight', value: '750 g' },
+      { '@type': 'PropertyValue', name: 'Net weight', value: 250, unitCode: 'GRM', unitText: 'g' },
+      { '@type': 'PropertyValue', name: 'Net weight', value: 750, unitCode: 'GRM', unitText: 'g' },
     ]);
-    expect(ldOf(DARK).product.offers?.map((o) => o.additionalProperty?.value)).toEqual(['250 g', '1 kg']);
-    expect(ldOf(LIGHT).product.offers?.[0].additionalProperty).toMatchObject({ name: 'Weight', value: '250 g' });
+    expect(ldOf(DARK).product.offers?.map((o) => o.additionalProperty?.value)).toEqual([250, 1]);
+    expect(ldOf(LIGHT).product.offers?.[0].additionalProperty).toMatchObject({ name: 'Net weight', value: 250, unitCode: 'GRM' });
+    expect(ldOf(LIGHT).product).toMatchObject({ weight: { '@type': 'QuantitativeValue', value: 250, unitCode: 'GRM' } });
+    expect(ldOf(DARK).product.weight).toBeUndefined();
   });
 
   it('stays inside the claim limits: no city, licence, health, pure or 100% claims', () => {
