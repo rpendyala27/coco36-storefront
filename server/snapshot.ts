@@ -207,18 +207,22 @@ const STATIC_COPY: Record<string, { h1: string; lede: string }> = {
   '/cart':         { h1: 'Your cart', lede: 'Your cart is empty. Browse the shop to add ingredients.' },
 };
 
-function renderInfoSection(section: InfoSection): string {
-  const parts = [
-    section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
+function renderCopy(section: InfoSection, headingTag: 'h2' | 'h3'): string {
+  return [
+    section.heading ? `<${headingTag}>${esc(section.heading)}</${headingTag}>` : '',
     ...(section.paragraphs ?? []).map((p) => `<p>${linkifyHtml(p, esc)}</p>`),
     section.bullets?.length
       ? `<ul>${section.bullets.map((b) => `<li>${linkifyHtml(b, esc)}</li>`).join('')}</ul>`
       : '',
+    ...(section.subsections ?? []).map((sub) => renderCopy(sub, 'h3')),
     section.todo
       ? `<aside><p>TODO for the owner</p><p>${esc(section.todo)}</p></aside>`
       : '',
-  ];
-  return parts.filter(Boolean).join('\n');
+  ].filter(Boolean).join('\n');
+}
+
+function renderInfoSection(section: InfoSection): string {
+  return renderCopy(section, 'h2');
 }
 
 function renderInfoPage(page: InfoPage, policy: SnapshotCtx['policy'], crumbs: Crumb[] | null): string {

@@ -82,7 +82,7 @@ export function InfoPage({ path }: { path: string }) {
 }
 
 function SectionBlock({ section }: { section: InfoSection }) {
-  if (!section.heading && !section.paragraphs?.length && !section.bullets?.length && section.todo) {
+  if (!section.heading && !section.paragraphs?.length && !section.bullets?.length && !section.subsections?.length && section.todo) {
     return <OwnerTodo>{section.todo}</OwnerTodo>;
   }
   return (
@@ -90,16 +90,30 @@ function SectionBlock({ section }: { section: InfoSection }) {
       {section.heading && (
         <h2 className="font-display text-2xl md:text-3xl text-brand-forest mb-3">{section.heading}</h2>
       )}
-      {section.paragraphs?.map((p) => (
-        <p key={p} className="mt-3 text-[16px] leading-relaxed text-brand-ink/80"><RichText text={p} /></p>
+      {section.subsections?.map((sub) => (
+        <div key={sub.heading} className="mt-8">
+          {sub.heading && <h3 className="font-display text-xl md:text-2xl text-brand-forest mb-2">{sub.heading}</h3>}
+          <CopyBlock paragraphs={sub.paragraphs} bullets={sub.bullets} />
+        </div>
       ))}
-      {section.bullets && (
-        <ul className="mt-3 list-disc pl-6 space-y-1 text-[16px] leading-relaxed text-brand-ink/80">
-          {section.bullets.map((b) => <li key={b}><RichText text={b} /></li>)}
-        </ul>
-      )}
+      <CopyBlock paragraphs={section.paragraphs} bullets={section.bullets} />
       {section.todo && <OwnerTodo>{section.todo}</OwnerTodo>}
     </section>
+  );
+}
+
+function CopyBlock({ paragraphs, bullets }: { paragraphs?: string[]; bullets?: string[] }) {
+  return (
+    <>
+      {paragraphs?.map((p) => (
+        <p key={p} className="mt-3 text-[16px] leading-relaxed text-brand-ink/80"><RichText text={p} /></p>
+      ))}
+      {bullets && (
+        <ul className="mt-3 list-disc pl-6 space-y-1 text-[16px] leading-relaxed text-brand-ink/80">
+          {bullets.map((b) => <li key={b}><RichText text={b} /></li>)}
+        </ul>
+      )}
+    </>
   );
 }
 

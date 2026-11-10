@@ -16,6 +16,8 @@ export interface InfoSection {
   heading?: string;
   paragraphs?: string[];
   bullets?: string[];
+  /** Nested blocks under this heading (h3s on the about story). */
+  subsections?: InfoSection[];
   /** Owner-facing placeholder. Not a customer promise. */
   todo?: string;
 }
@@ -112,10 +114,38 @@ export const INFO_PAGES: InfoPage[] = [
     sections: (policy) => [
       {
         heading: 'From crop to craft',
+        subsections: [
+          {
+            heading: 'Our story',
+            paragraphs: [
+              'COCO36 started with a farming family in West Godavari, Andhra Pradesh. Our founder, Rohan, grew up close to the crops and the people who grow them. He went on to study mechanical engineering at VIT Vellore and then earned an MBA in supply chain at the University of Tennessee.',
+              'Agriculture was never far away. Along the way he built side projects in IoT irrigation, mushroom cultivation and hydroponics, and studied polyhouse farming. But he wanted to build something bigger: a business that brings great ingredients to bakers and makers while making sure farmers get their fair share.',
+            ],
+          },
+          {
+            heading: 'Our mission',
+            paragraphs: [
+              'To bring traceable, premium baking and cocoa ingredients from origin to your kitchen, with a supply chain that is fair to the farmers who grow them and open about every step in between.',
+            ],
+          },
+          {
+            heading: 'Our vision',
+            paragraphs: [
+              'A food supply where you can verify, not just trust, where an ingredient came from, how it was grown, and who it benefited.',
+            ],
+          },
+          {
+            heading: 'What we value',
+            bullets: [
+              'Fair share for farmers. Growers should earn more of what their crop is worth.',
+              'Traceability. We know where our lots come from, and we show you.',
+              'Quality from crop to craft. How an ingredient is grown, fermented, dried and shipped matters as much as the ingredient itself.',
+              "Teach, don't hype. We share what we learn at origin, plainly and with sources.",
+            ],
+          },
+        ],
         paragraphs: [
-          'COCO36 Foods is building a new standard for traceable, premium baking and cocoa ingredients. We believe the story of an ingredient (how it was grown, fermented, dried and shipped) matters as much as the ingredient itself.',
-          "That's why we source transparently and are working to make quality and provenance something you can verify, not just claim, by combining farm-level information with origin research.",
-          "We're rooted in India and based in Visakhapatnam, and we're built for bakers and makers who care where their ingredients come from: home bakers, pastry chefs, chocolatiers, and café and bakery owners. Our range covers cocoa and chocolate, vanilla, spices, specialty flours, and other origin ingredients.",
+          "We're rooted in India and based in Visakhapatnam, and we're built for bakers and makers who care where their ingredients come from: home bakers, pastry chefs, chocolatiers, and café and bakery owners.",
           'We ship across India. Follow along on Instagram {@coco36official|https://www.instagram.com/coco36official/} and on {LinkedIn (COCO36 Foods)|https://www.linkedin.com/company/coco36-foods/}, where we share what we learn about where our ingredients come from.',
         ],
       },

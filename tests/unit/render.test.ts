@@ -184,7 +184,14 @@ describe('server-rendered pages', () => {
   it('the about story is published, with no owner TODO left on the info pages', async () => {
     const about = await render('/about', '', 'coco36.com');
     expect(about.body).toContain('From crop to craft');
-    expect(about.body).toContain('farm-level information with origin research');
+    expect(about.body).toContain('<h3>Our story</h3>');
+    expect(about.body).toContain('Our founder, Rohan');
+    expect(about.body).toContain('<h3>Our mission</h3>');
+    expect(about.body).toContain('<h3>Our vision</h3>');
+    expect(about.body).toContain('<h3>What we value</h3>');
+    expect(about.body).toContain('Fair share for farmers.');
+    expect(about.body).toContain('based in Visakhapatnam');
+    expect(about.body).toContain('café and bakery owners');
     expect(about.body).toContain('href="https://www.instagram.com/coco36official/"');
     expect(about.body).toContain('href="https://www.linkedin.com/company/coco36-foods/"');
     expect(about.body).toContain('Visakhapatnam');
