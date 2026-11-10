@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BAKING_NOTES, COUVERTURE_BUYING_GUIDE_PUBLISH_DATE, formatPublishDate } from '../../src/content/bakingNotes';
-import { WHOLESALE_GUIDE_PATH, WHOLESALE_PAYMENT, wholesaleDispatchSentence } from '../../src/content/wholesaleGuide';
+import { WHOLESALE_GUIDE_PATH, WHOLESALE_MINIMUMS, WHOLESALE_PAYMENT, wholesaleDispatchSentence } from '../../src/content/wholesaleGuide';
 import { bulkGuideHref } from '../../src/content/bulkGuideLink';
 import { PRODUCT_PAGE_SLUGS } from '../../src/content/productPages';
 import { filterIndexNowUrls } from '../../server/indexnow';
@@ -415,6 +415,8 @@ describe('ingredient notes', () => {
     expect(types).not.toContain('Product');
     const text = visible(r.body);
     expect(text).toContain(WHOLESALE_PAYMENT);
+    expect(text).toContain(WHOLESALE_MINIMUMS);
+    expect(text).not.toMatch(/\b(?:5|10|1) kg\b|\b500 g\b/);
     expect(text).not.toMatch(/awaiting Rohan|FOR ROHAN|draft wording/i);
     expect(text).toContain(wholesaleDispatchSentence());
     expect(text).toContain('We dispatch orders within 1 business day; bulk and trade orders take 2–3 weeks.');
@@ -432,6 +434,8 @@ describe('ingredient notes', () => {
     expect(trade.body).toContain('Trial pack');
     expect(trade.body).toContain('First order');
     expect(visible(trade.body)).toContain(WHOLESALE_PAYMENT);
+    expect(visible(trade.body)).toContain(WHOLESALE_MINIMUMS);
+    expect(visible(trade.body)).not.toMatch(/\b(?:5|10|1) kg\b|\b500 g\b/);
     expect(trade.body).toContain('Scale up');
     expect(trade.body).toContain(`href="${guidePath}"`);
     expect(trade.body).toContain('Read the full wholesale guide');

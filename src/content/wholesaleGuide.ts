@@ -21,6 +21,10 @@ export function wholesaleDispatchSentence(policy: Pick<StorePolicy, 'handlingDay
 export const WHOLESALE_PAYMENT =
   'Pay in full when you place the order, for your first orders. Credit only if agreed in writing later, once there is a trading history. This page does not by itself grant credit. The quote will state the payment terms that apply to that order.';
 
+/** No kilogram figures. The quote states the minimum and the trial-pack size. */
+export const WHOLESALE_MINIMUMS =
+  'Minimum order quantities and trial pack sizes are confirmed on request with your quote.';
+
 const TRIAL = 'Trial packs available once launch stock lands (from early December).';
 const DISPATCH = wholesaleDispatchSentence();
 const REPORT_DAYS = DEFAULT_POLICY.returnWindowDays;
@@ -54,13 +58,14 @@ export const WHOLESALE_GUIDE: BakingNote = {
       heading: 'Minimum order',
       blocks: [
         { type: 'p', text: 'Minimums are set per product, not as one basket total.' },
+        { type: 'p', text: WHOLESALE_MINIMUMS },
         { type: 'table', headers: ['Ingredient', 'First wholesale order', 'Notes'], rows: [
-          ['Couverture', '5 kg', 'Coming soon to the COCO36 shop. See the [couverture buying guide](/guides/best-couverture-chocolate-india) and [couverture vs compound](/guides/couverture-vs-compound).'],
-          ['Dutch-process cocoa powder', '5 kg', 'Coming soon to the COCO36 shop. COCO36 will stock Dutch-process cocoa only, not natural (non-alkalised) cocoa. See [natural (non-alkalised) vs Dutch-process cocoa](/guides/natural-vs-dutch-cocoa).'],
-          ['Cocoa butter', '5 kg', 'Coming soon to the COCO36 shop. This is mainly a trade item.'],
-          ['Coconut sugar', '10 kg', 'Coming soon to the COCO36 shop.'],
-          ['Palm jaggery', '10 kg', 'Coming soon to the COCO36 shop.'],
-          ['Other products', 'Minimums on request', 'Ask in your enquiry.'],
+          ['Couverture', 'On request', 'Coming soon to the COCO36 shop. See the [couverture buying guide](/guides/best-couverture-chocolate-india) and [couverture vs compound](/guides/couverture-vs-compound).'],
+          ['Dutch-process cocoa powder', 'On request', 'Coming soon to the COCO36 shop. COCO36 will stock Dutch-process cocoa only, not natural (non-alkalised) cocoa. See [natural (non-alkalised) vs Dutch-process cocoa](/guides/natural-vs-dutch-cocoa).'],
+          ['Cocoa butter', 'On request', 'Coming soon to the COCO36 shop. This is mainly a trade item.'],
+          ['Coconut sugar', 'On request', 'Coming soon to the COCO36 shop.'],
+          ['Palm jaggery', 'On request', 'Coming soon to the COCO36 shop.'],
+          ['Other products', 'On request', 'Ask in your enquiry.'],
         ] },
         { type: 'p', text: 'If you need several ingredients at once, the minimum still applies to each line, unless a quote says otherwise.' },
       ],
@@ -69,12 +74,7 @@ export const WHOLESALE_GUIDE: BakingNote = {
       heading: 'Trial packs',
       blocks: [
         { type: 'p', text: 'A trial pack is a paid, smaller pack so a kitchen can test an ingredient before a first wholesale order. It is not a free sample, and it is not credited against a later carton.' },
-        { type: 'p', text: 'Typical trial-pack sizes:' },
-        { type: 'ul', items: [
-          '1 kg for couverture, Dutch-process cocoa powder, coconut sugar and palm jaggery',
-          '500 g for cocoa butter',
-        ] },
-        { type: 'p', text: `Trial packs for other products are available on request. ${TRIAL}` },
+        { type: 'p', text: `${WHOLESALE_MINIMUMS} ${TRIAL}` },
         { type: 'h3', text: 'How to judge a trial pack' },
         { type: 'p', text: 'Use the pack in a recipe you already know, at a measured weight, so you are comparing the ingredient rather than a new formula.' },
         { type: 'ul', items: [
@@ -117,8 +117,8 @@ export const WHOLESALE_GUIDE: BakingNote = {
     },
   ],
   faqs: [
-    { q: 'Can I get a free sample?', a: `No. There are no free samples. ${TRIAL} Those trial packs are paid, at the sizes in the table above.` },
-    { q: 'What is the minimum order?', a: 'It depends on the product. The wholesale minimums are 5 kg for couverture, Dutch-process cocoa powder and cocoa butter, and 10 kg for coconut sugar and palm jaggery. Minimums for other products are on request. A paid trial pack is smaller, and comes before the first wholesale order.' },
+    { q: 'Can I get a free sample?', a: `No. There are no free samples. ${TRIAL} Those trial packs are paid. ${WHOLESALE_MINIMUMS}` },
+    { q: 'What is the minimum order?', a: `${WHOLESALE_MINIMUMS} A paid trial pack comes before the first wholesale order.` },
     { q: 'When can I place a wholesale order?', a: `The shop opens in the first week of December 2026, and ordering is off until then. You can send a [Trade enquiry](/trade#enquire) now. ${TRIAL}` },
     { q: 'How do I pay?', a: WHOLESALE_PAYMENT },
     { q: 'How long does delivery take?', a: `${DISPATCH} Courier transit after dispatch follows the estimates on the shipping policy. The lead time on your quote is the one to rely on for that order.` },
