@@ -35,6 +35,8 @@ const AccountInvoice     = lazy(() => import('./pages/AccountInvoice').then(m =>
 const Track              = lazy(() => import('./pages/Track').then(m => ({ default: m.Track })));
 const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
+const InfoPage           = lazy(() => import('./pages/Info').then(m => ({ default: m.InfoPage })));
+const CartPage           = lazy(() => import('./pages/Cart').then(m => ({ default: m.CartPage })));
 
 function ScrollToTop() {
   const { pathname, hash, search } = useLocation();
@@ -157,7 +159,8 @@ export default function App() {
               <Route path="/trade" element={<Trade />} />
               <Route path="/impact" element={<Impact />} />
 
-              {/* Commerce flow */}
+              {/* Commerce flow. /cart is the same browser cart as the drawer, noindex. */}
+              <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<Checkout />} />
 
               {/* Auth */}
@@ -173,7 +176,12 @@ export default function App() {
               {/* Shipment tracking */}
               <Route path="/track/:awb" element={<Track />} />
 
-              {/* Legal */}
+              {/* Company + policies. Head metadata is STATIC_PAGES in src/seo/meta.ts. */}
+              <Route path="/about" element={<InfoPage path="/about" />} />
+              <Route path="/contact" element={<InfoPage path="/contact" />} />
+              <Route path="/faq" element={<InfoPage path="/faq" />} />
+              <Route path="/shipping" element={<InfoPage path="/shipping" />} />
+              <Route path="/returns" element={<InfoPage path="/returns" />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
 
@@ -241,9 +249,14 @@ export default function App() {
               <div>
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Brand</h4>
                 <ul className="space-y-3 text-sm text-white/70">
+                  <li><a href="/about" className="hover:text-brand-leaf-bright transition-colors">About</a></li>
                   <li><a href="/36-steps" className="hover:text-brand-leaf-bright transition-colors">36 Steps</a></li>
                   <li><a href="/impact" className="hover:text-brand-leaf-bright transition-colors">Impact</a></li>
                   <li><a href="/ingredients" className="hover:text-brand-leaf-bright transition-colors">Ingredient Guides</a></li>
+                  <li><a href="/contact" className="hover:text-brand-leaf-bright transition-colors">Contact</a></li>
+                  <li><a href="/faq" className="hover:text-brand-leaf-bright transition-colors">FAQ</a></li>
+                  <li><a href="/shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping</a></li>
+                  <li><a href="/returns" className="hover:text-brand-leaf-bright transition-colors">Returns</a></li>
                 </ul>
               </div>
               <div>
@@ -258,10 +271,14 @@ export default function App() {
 
             <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-white/50">
               <div>© 2026 COCO36 Foods Pvt Ltd</div>
-              <div className="flex gap-6 font-medium">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center sm:justify-end font-medium">
+                <a href="/about" className="hover:text-brand-leaf-bright transition-colors">About</a>
+                <a href="/contact" className="hover:text-brand-leaf-bright transition-colors">Contact</a>
+                <a href="/faq" className="hover:text-brand-leaf-bright transition-colors">FAQ</a>
+                <a href="/shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping</a>
+                <a href="/returns" className="hover:text-brand-leaf-bright transition-colors">Returns</a>
                 <a href="/privacy" className="hover:text-brand-leaf-bright transition-colors">Privacy</a>
                 <a href="/terms" className="hover:text-brand-leaf-bright transition-colors">Terms</a>
-                <a href="/terms#shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping &amp; Returns</a>
                 <SupportContactLink className="hover:text-brand-leaf-bright transition-colors" />
               </div>
             </div>

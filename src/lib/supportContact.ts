@@ -7,6 +7,14 @@
 
 export const SUPPORT_EMAIL = 'support@coco36.com';
 
+/**
+ * Public support phone published on /contact, /faq, /shipping and /returns.
+ * The visible text is the digits the owner confirmed. `tel:` adds India's
+ * +91 prefix so a handset can dial it. No street address is attached.
+ */
+export const SUPPORT_PHONE_DISPLAY = '9944213233';
+export const SUPPORT_PHONE_TEL = 'tel:+919944213233';
+
 export interface SupportContact {
   /** A publishable phone, or null when settings has none (show the email). */
   phone: string | null;

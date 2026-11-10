@@ -35,9 +35,9 @@ export const SOCIAL_LINKS: readonly { label: string; url: string }[] = [
 ];
 export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url);
 
-/** Shipping carrier + dispatch point, used in visible copy. */
+/** Shipping dispatch point and the public courier wording. The aggregator is not named on the storefront. */
 export const SHIPS_FROM    = 'Visakhapatnam, Andhra Pradesh';
-export const CARRIER       = 'Shiprocket';
+export const CARRIER       = 'our courier partners';
 /** "Ships in 2 business days" — the dispatch promise shown on every PDP. */
 export const HANDLING_DAYS_MAX = 2;
 

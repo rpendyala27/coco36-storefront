@@ -16,9 +16,11 @@ import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { categoryPath } from '../lib/productPath';
+import { categoryListingMeta, categoryPage } from '../content/categoryPages';
+import { shopIntro } from '../content/shopIntro';
 import { browseCategories, listingIntro, productsInCategory } from '../lib/catalog';
 import { useSeo } from '../lib/seo';
-import { NOINDEX, categoryCrumbs, categoryMeta, notFoundMeta, shopMeta } from '../seo/meta';
+import { NOINDEX, categoryCrumbs, notFoundMeta, shopMeta } from '../seo/meta';
 import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 
 type SortKey = 'recommended' | 'newest' | 'price-asc' | 'price-desc' | 'name';
@@ -149,15 +151,16 @@ export const Shop = () => {
   // (`?q=`) keep the /shop canonical and are noindex, per Google's guidance on
   // internal search pages.
   const urlQuery = searchParams.get('q');
+  const searching = !!(urlQuery && urlQuery.trim());
   const meta = useMemo(() => {
     if (unknownCategory) return notFoundMeta();
     if (categorySlug) {
       if (!activeCategory || loading) return null;
-      return categoryMeta(activeCategory, tree, productsInCategory(activeCategory, tree, PRODUCTS));
+      return categoryListingMeta(activeCategory, tree, productsInCategory(activeCategory, tree, PRODUCTS));
     }
     const m = shopMeta();
-    return urlQuery ? { ...m, robots: NOINDEX } : m;
-  }, [unknownCategory, categorySlug, activeCategory, loading, tree, PRODUCTS, urlQuery]);
+    return searching ? { ...m, robots: NOINDEX } : m;
+  }, [unknownCategory, categorySlug, activeCategory, loading, tree, PRODUCTS, searching]);
   useSeo(meta);
 
   // ── Filter + sort ──
@@ -331,15 +334,25 @@ export const Shop = () => {
 
   const crumbs = activeCategory ? categoryCrumbs(activeCategory, tree) : [{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }];
   const emptyCategory = !!activeCategory && !loading && inCategory.length === 0;
-  const intro = activeCategory && loading && !activeCategory.description
+  const shortIntro = activeCategory && loading && !activeCategory.description
     ? `${activeCategory.name}, shipped across India from Visakhapatnam.`
     : listingIntro(activeCategory, inCategory.length);
+  const editorial = categorySlug ? categoryPage(categorySlug) : undefined;
+  const introParas = !categorySlug ? shopIntro(cfg) : (editorial?.intro ?? [shortIntro]);
   const relatedGuides = activeCategory
     ? GUIDE_LINKS.filter((g) => g.shopCategorySlug === activeCategory.slug || g.match.categorySlugs.includes(activeCategory.slug))
     : [];
 
   if (legacyTarget !== undefined) {
     return <Navigate to={legacyTarget ? categoryPath(legacyTarget) : '/shop'} replace />;
+  }
+
+  // Empty ?q= is the same page as /shop. The server 301s it; this covers the SPA.
+  if (!categorySlug && searchParams.has('q') && !(searchParams.get('q') ?? '').trim()) {
+    const next = new URLSearchParams(searchParams);
+    next.delete('q');
+    const rest = next.toString();
+    return <Navigate to={rest ? `/shop?${rest}` : '/shop'} replace />;
   }
 
   if (unknownCategory) {
@@ -360,12 +373,16 @@ export const Shop = () => {
       <section className="relative z-20 bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 md:pt-8 pb-6 md:pb-8">
           <Breadcrumbs crumbs={crumbs} />
-          <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] md:items-end">
-            <div className="min-w-0">
+          {introParas.length > 1 ? (
+            <div className="mt-4">
               <h1 className="font-display text-3xl md:text-5xl leading-[1.05] text-brand-forest">
                 {activeCategory ? activeCategory.name : 'Shop all ingredients'}
               </h1>
-              <p className="mt-3 text-[15px] text-brand-muted max-w-2xl leading-relaxed">{intro}</p>
+              <div className="mt-4 max-w-3xl space-y-3">
+                {introParas.map((p) => (
+                  <p key={p} className="text-[16px] leading-relaxed text-brand-ink/80">{p}</p>
+                ))}
+              </div>
               {relatedGuides.length > 0 && (
                 <p className="mt-3 text-sm text-brand-muted">
                   Buying guide:{' '}
@@ -377,9 +394,32 @@ export const Shop = () => {
                   ))}
                 </p>
               )}
+              <div className="mt-6 max-w-xl">
+                <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
+              </div>
             </div>
-            <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
-          </div>
+          ) : (
+            <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] md:items-end">
+              <div className="min-w-0">
+                <h1 className="font-display text-3xl md:text-5xl leading-[1.05] text-brand-forest">
+                  {activeCategory ? activeCategory.name : 'Shop all ingredients'}
+                </h1>
+                <p className="mt-3 text-[15px] text-brand-muted max-w-2xl leading-relaxed">{introParas[0]}</p>
+                {relatedGuides.length > 0 && (
+                  <p className="mt-3 text-sm text-brand-muted">
+                    Buying guide:{' '}
+                    {relatedGuides.map((g, i) => (
+                      <React.Fragment key={g.slug}>
+                        {i > 0 && ' · '}
+                        <Link to={guidePath(g)} className="text-brand-leaf hover:underline">{g.name}</Link>
+                      </React.Fragment>
+                    ))}
+                  </p>
+                )}
+              </div>
+              <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -618,6 +658,20 @@ export const Shop = () => {
           </div>
         </div>
       </section>
+
+      {editorial && activeCategory && (
+        <section aria-labelledby="category-faq" className="max-w-3xl mx-auto px-6 pb-4">
+          <h2 id="category-faq" className="font-display text-3xl text-brand-forest mb-6">Frequently asked questions</h2>
+          <div className="divide-y divide-brand-line border-y border-brand-line">
+            {editorial.faqs.map((f) => (
+              <div key={f.q} className="py-5">
+                <h3 className="font-display font-bold text-lg text-brand-forest">{f.q}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/80">{f.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ValueProps cfg={cfg} />
     </div>

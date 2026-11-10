@@ -4,8 +4,9 @@ import { categoryPath, productPath } from '../lib/productPath.js';
 import { imageUrl } from '../lib/img.js';
 import { GUIDES_HUB, guidePath, type GuideLink } from '../content/guideIndex.js';
 import {
-  breadcrumbJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
+  breadcrumbJsonLd, faqJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
 } from './jsonld.js';
+import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
 import { DESCRIPTION_MAX, TITLE_MAX, clip, firstThatFits, sentence, stripMarkdown } from './text.js';
 
@@ -49,6 +50,13 @@ interface StaticEntry {
 }
 
 const STATIC_PAGES: Record<string, StaticEntry> = {
+  // Indexable company / policy pages. Titles, descriptions and /faq answers
+  // live in src/content/infoPages.ts so the head and the visible page match.
+  ...Object.fromEntries(INFO_PAGES.map((p): [string, StaticEntry] => [p.path, {
+    title: p.title,
+    description: p.description,
+    crumb: p.crumb,
+  }])),
   '/36-steps': {
     title: 'The 36-Step Crop-to-Craft Traceability Method | COCO36',
     description: () => 'Six phases, thirty-six checkpoints: the crop-to-craft framework behind every COCO36 ingredient, from a named origin to your kitchen.',
@@ -70,13 +78,13 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
     crumb: 'Impact',
   },
   '/privacy': {
-    title: 'Privacy Notice | COCO36',
+    title: 'How COCO36 Foods Protects Your Personal Data | COCO36',
     description: () => 'How COCO36 Foods Pvt Ltd collects, uses and protects your personal data when you shop with us, and the choices you have.',
     crumb: 'Privacy',
   },
   '/terms': {
     title: 'Terms of Sale, Shipping & Returns | COCO36',
-    description: (p) => `Terms of sale for COCO36: prices in INR including GST, Razorpay payments, Shiprocket shipping across India and our ${p.returnWindowDays}-day returns window.`,
+    description: (p) => `Terms of sale for COCO36: prices in INR including GST, Razorpay payments, shipping across India via our courier partners and our ${p.returnWindowDays}-day returns window.`,
     crumb: 'Terms of sale',
   },
   // ── Not for the index: thin, transactional or not-yet-built pages ──
@@ -93,6 +101,8 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
   '/auth':     { title: 'Sign In or Create an Account | COCO36', description: () => 'Sign in to your COCO36 account to check out faster, track orders and download invoices.', noindex: true },
   '/checkout': { title: 'Checkout | COCO36', description: () => 'Review your bag and place your COCO36 order.', noindex: true },
   '/account':  { title: 'Your Account | COCO36', description: () => 'Your COCO36 orders, invoices and saved addresses.', noindex: true },
+  // Real page for the drawer cart. noindex: a utility URL, not a landing page.
+  '/cart': { title: 'Your Shopping Cart | COCO36', description: () => 'Review the ingredients in your COCO36 cart, then continue to checkout or return to the shop.', noindex: true },
 };
 
 /** Visible + BreadcrumbList crumbs for an indexable static route, else null. */
@@ -106,12 +116,16 @@ export function staticPageMeta(pathname: string, policy: StorePolicy = DEFAULT_P
   const e = STATIC_PAGES[pathname];
   if (e) {
     const crumbs = staticPageCrumbs(pathname);
+    const faqs = pathname === '/faq' ? policyFaqs(policy) : null;
     return {
       title: e.title,
       description: e.description(policy),
       path: pathname,
       ...(e.noindex ? { robots: NOINDEX } : {}),
-      jsonLd: crumbs ? [crumbsLd(crumbs)] : [],
+      jsonLd: [
+        ...(crumbs ? [crumbsLd(crumbs)] : []),
+        ...(faqs ? [{ id: 'faq', data: faqJsonLd(faqs) }] : []),
+      ],
     };
   }
   if (pathname.startsWith('/account/')) {
@@ -143,10 +157,18 @@ export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
   };
 }
 
+/**
+ * Self-canonical at exactly https://coco36.com/shop (path `/shop`, no query).
+ * Competing variants are collapsed in server/render.ts: trailing slash, empty
+ * `?q=`, and legacy `?cat=` / `?category=` redirect; a non-empty `?q=` stays
+ * noindex with this same canonical. `/catalog` 301s here from vercel.json.
+ * The long intro (content/shopIntro.ts) is what separates this URL from the
+ * homepage, which lists the same small catalogue.
+ */
 export function shopMeta(): PageMeta {
   return {
     title: 'Shop Baking & Pastry Ingredients in India | COCO36',
-    description: 'Shop every COCO36 ingredient in one place: vanilla, cane sugars, speciality flours, finishing salt and kits, shipped across India from Visakhapatnam.',
+    description: 'The full COCO36 catalogue: specialty baking ingredients sourced direct from origin, from vanilla and cane sugars to flours, salt and kits.',
     path: '/shop',
     jsonLd: [crumbsLd([HOME, SHOP])],
   };

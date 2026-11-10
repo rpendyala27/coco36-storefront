@@ -119,6 +119,144 @@ describe('server-rendered pages', () => {
     expect(r.status).toBe(503);
     expect(r.headers['Retry-After']).toBe('120');
   });
+
+  it('/shop is self-canonical, including when a tracking param is present', async () => {
+    const plain = await render('/shop', '', 'coco36.com');
+    expect(plain.status).toBe(200);
+    expect(canonical(plain.body)).toBe('https://coco36.com/shop');
+    expect(robots(plain.body)).toBeNull();
+    expect(plain.body).toContain('sourced direct from origin');
+    const tracked = await render('/shop', 'utm_source=google', 'coco36.com');
+    expect(tracked.status).toBe(200);
+    expect(canonical(tracked.body)).toBe('https://coco36.com/shop');
+  });
+
+  it('empty /shop?q= and a trailing slash redirect to the bare shop URL', async () => {
+    const empty = await render('/shop', 'q=', 'coco36.com');
+    expect(empty.status).toBe(301);
+    expect(empty.headers.Location).toBe('https://coco36.com/shop');
+    const slash = await render('/shop/', '', 'coco36.com');
+    expect(slash.status).toBe(301);
+    expect(slash.headers.Location).toBe('https://coco36.com/shop');
+  });
+
+  it('a real shop search stays noindex and still canonicalises to /shop', async () => {
+    const r = await render('/shop', 'q=vanilla', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(robots(r.body)).toMatch(/noindex/);
+    expect(canonical(r.body)).toBe('https://coco36.com/shop');
+  });
+
+  it('info pages: 200, self-canonical, breadcrumb, footer links', async () => {
+    for (const p of ['/about', '/contact', '/faq', '/shipping', '/returns']) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.status, p).toBe(200);
+      expect(canonical(r.body), p).toBe(`https://coco36.com${p}`);
+      expect(robots(r.body), p).toBeNull();
+      expect(ldTypes(r.body), p).toContain('BreadcrumbList');
+      expect(r.body, p).toContain(`href="${p}"`);
+      expect(r.body, p).toContain('href="/contact"');
+    }
+  });
+
+  it('/contact publishes email and phone as links and has no form', async () => {
+    const r = await render('/contact', '', 'coco36.com');
+    expect(r.body).toContain('href="mailto:support@coco36.com"');
+    expect(r.body).toContain('href="tel:+919944213233"');
+    expect(r.body).toContain('9944213233');
+    expect(r.body).not.toContain('<form');
+  });
+
+  it('/faq JSON-LD lists only the policy questions, and the body repeats them', async () => {
+    const r = await render('/faq', '', 'coco36.com');
+    expect(ldTypes(r.body)).toContain('FAQPage');
+    const faq = [...r.body.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)]
+      .map((m) => JSON.parse(m[1]))
+      .find((b) => b['@type'] === 'FAQPage');
+    const questions = faq.mainEntity.map((q: { name: string }) => q.name);
+    expect(questions.length).toBeGreaterThanOrEqual(10);
+    for (const q of questions) expect(r.body).toContain(q);
+    expect(r.body).toContain('12 PM IST');
+    expect(r.body).toContain('original payment method');
+    expect(r.body).not.toMatch(/Shiprocket/i);
+  });
+
+  it('the about story is published, with no owner TODO left on the info pages', async () => {
+    const about = await render('/about', '', 'coco36.com');
+    expect(about.body).toContain('From crop to craft');
+    expect(about.body).toContain('<h3>Our story</h3>');
+    expect(about.body).toContain('Our founder, Rohan');
+    expect(about.body).toContain('<h3>Our mission</h3>');
+    expect(about.body).toContain('<h3>Our vision</h3>');
+    expect(about.body).toContain('<h3>What we value</h3>');
+    expect(about.body).toContain('Fair share for farmers.');
+    expect(about.body).toContain('based in Visakhapatnam');
+    expect(about.body).toContain('café and bakery owners');
+    expect(about.body).toContain('href="https://www.instagram.com/coco36official/"');
+    expect(about.body).toContain('href="https://www.linkedin.com/company/coco36-foods/"');
+    expect(about.body).toContain('Visakhapatnam');
+    expect(about.body).not.toContain('TODO for the owner');
+    expect(about.body).not.toMatch(/Shiprocket/i);
+    for (const p of ['/contact', '/shipping', '/returns', '/faq']) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.body, p).not.toContain('TODO for the owner');
+      expect(r.body, p).not.toMatch(/Shiprocket/i);
+    }
+    const shipping = await render('/shipping', '', 'coco36.com');
+    expect(shipping.body).toContain('12 PM IST');
+    expect(shipping.body).toContain('estimate, not a guarantee');
+    expect(shipping.body).toContain('our courier partners');
+    const returns = await render('/returns', '', 'coco36.com');
+    expect(returns.body).toContain('original payment method');
+    expect(returns.body).toContain('change of mind');
+    expect(returns.body).toContain('automatic full refund');
+  });
+
+  it('/cart is a real noindex page, not a 404', async () => {
+    const r = await render('/cart', '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(robots(r.body)).toMatch(/noindex/);
+    expect(canonical(r.body)).toBe('https://coco36.com/cart');
+    expect(r.body).toContain('Your cart is empty');
+    expect(r.body).toContain('href="/shop"');
+  });
+
+  it('no public page names Shiprocket, and home and terms mention missing items', async () => {
+    const paths = [
+      '/',
+      '/shop',
+      '/shop/category/vanilla',
+      '/shop/madagascar-bourbon-vanilla-beans',
+      '/terms',
+      '/privacy',
+      '/about',
+      '/contact',
+      '/faq',
+      '/shipping',
+      '/returns',
+      '/ingredients',
+      '/ingredients/vanilla',
+    ];
+    for (const p of paths) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.status, p).toBe(200);
+      expect(r.body, p).not.toMatch(/Shiprocket/i);
+    }
+    const home = await render('/', '', 'coco36.com');
+    const terms = await render('/terms', '', 'coco36.com');
+    expect(home.body).toContain('missing');
+    expect(terms.body).toContain('missing');
+    expect(terms.body).toContain('Refunds for cash-on-delivery orders are made by bank transfer');
+    expect(home.body).toContain('our courier partners');
+    expect(terms.body).toContain('our courier partners');
+  });
+
+  it('privacy title is in the 50–59 character band', async () => {
+    const r = await render('/privacy', '', 'coco36.com');
+    expect(title(r.body)).toBe('How COCO36 Foods Protects Your Personal Data | COCO36');
+    expect(title(r.body).length).toBeGreaterThanOrEqual(50);
+    expect(title(r.body).length).toBeLessThanOrEqual(59);
+  });
 });
 
 describe('traceability on the server', () => {

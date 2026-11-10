@@ -12,9 +12,10 @@ import type { Catalog } from './catalog.js';
  *   - every live product (status='active', deleted_at null) at its clean URL
  *   - ingredient guides + hub, and the real content pages
  * Left out on purpose: archived/deleted products, empty categories, /recipes
- * (noindex stub), and utility pages (/auth, /quick-order, /checkout,
- * /account, /track) plus /privacy and /terms, which stay crawlable via the
- * footer but aren't search landing pages.
+ * (noindex stub), /cart (real page, noindex — the bag is not a landing page),
+ * and utility pages (/auth, /quick-order, /checkout, /account, /track).
+ * /privacy, /terms and the info pages (/about, /contact, /faq, /shipping,
+ * /returns) are included.
  */
 
 interface Entry { path: string; changefreq: string; priority: number; lastmod?: string }
@@ -24,6 +25,13 @@ const CONTENT_PAGES: Entry[] = [
   { path: '/partnerships', changefreq: 'monthly', priority: 0.5 },
   { path: '/trade',        changefreq: 'monthly', priority: 0.5 },
   { path: '/impact',       changefreq: 'monthly', priority: 0.4 },
+  { path: '/about',        changefreq: 'monthly', priority: 0.5 },
+  { path: '/contact',      changefreq: 'yearly',  priority: 0.4 },
+  { path: '/faq',          changefreq: 'monthly', priority: 0.5 },
+  { path: '/shipping',     changefreq: 'monthly', priority: 0.5 },
+  { path: '/returns',      changefreq: 'monthly', priority: 0.5 },
+  { path: '/privacy',      changefreq: 'yearly',  priority: 0.3 },
+  { path: '/terms',        changefreq: 'yearly',  priority: 0.4 },
 ];
 
 export function sitemapEntries(cat: Catalog): Entry[] {
