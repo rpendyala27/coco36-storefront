@@ -80,11 +80,8 @@ describe('SEO copy bounds', () => {
     expect(blob).not.toMatch(/GST|Razorpay|WhatsApp/i);
   });
 
-  it('only the about company story is still an owner TODO, and the sitemap lists the pages but not /cart', () => {
-    expect(infoTodos('/about')).toEqual([
-      'Add a short company story if you want this page to go beyond the homepage: when COCO36 started, and who you sell to besides bakers, pastry chefs and chocolatiers. Do not add a street address unless you want it public.',
-    ]);
-    for (const path of ['/contact', '/faq', '/shipping', '/returns']) {
+  it('no info page still has an owner TODO, and the sitemap lists the pages but not /cart', () => {
+    for (const path of ['/about', '/contact', '/faq', '/shipping', '/returns']) {
       expect(infoTodos(path), path).toEqual([]);
     }
     const paths = sitemapEntries({

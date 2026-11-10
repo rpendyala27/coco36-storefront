@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { infoPage, type InfoSection } from '../content/infoPages';
+import { textRuns } from '../content/linkify';
 import { useStoreConfig } from '../lib/storeConfig';
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../lib/supportContact';
 import { staticPageCrumbs } from '../seo/meta';
@@ -112,18 +113,18 @@ function OwnerTodo({ children }: { children: string }) {
 }
 
 function RichText({ text }: { text: string }) {
-  const re = new RegExp(`(${SUPPORT_EMAIL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${SUPPORT_PHONE_DISPLAY})`, 'g');
   return (
     <>
-      {text.split(re).map((part, i) => {
-        if (part === SUPPORT_EMAIL) {
-          return <a key={i} href={`mailto:${part}`} className="text-brand-leaf hover:underline">{part}</a>;
-        }
-        if (part === SUPPORT_PHONE_DISPLAY) {
-          return <a key={i} href={SUPPORT_PHONE_TEL} className="text-brand-leaf hover:underline">{part}</a>;
-        }
-        return <span key={i}>{part}</span>;
-      })}
+      {textRuns(text).map((run, i) => run.href ? (
+        <a
+          key={i}
+          href={run.href}
+          className="text-brand-leaf hover:underline"
+          {...(/^https?:/i.test(run.href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+        >{run.text}</a>
+      ) : (
+        <span key={i}>{run.text}</span>
+      ))}
     </>
   );
 }

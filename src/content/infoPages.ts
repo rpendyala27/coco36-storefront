@@ -8,9 +8,8 @@ import {
 } from './orderFacts.js';
 
 /**
- * Indexable info pages. Shipping, returns and contact copy is the owner's
- * decided wording. The only remaining placeholder is the /about company story.
- * /faq JSON-LD is built from `policyFaqs` and from nothing else.
+ * Indexable info pages. Shipping, returns, contact and the about story are the
+ * owner's decided wording. /faq JSON-LD is built from `policyFaqs` only.
  */
 
 export interface InfoSection {
@@ -112,6 +111,15 @@ export const INFO_PAGES: InfoPage[] = [
     h1: 'Specialty baking ingredients, sourced direct from origin',
     sections: (policy) => [
       {
+        heading: 'From crop to craft',
+        paragraphs: [
+          'COCO36 Foods is building a new standard for traceable, premium baking and cocoa ingredients. We believe the story of an ingredient (how it was grown, fermented, dried and shipped) matters as much as the ingredient itself.',
+          "That's why we source transparently and are working to make quality and provenance something you can verify, not just claim, by combining farm-level information with origin research.",
+          "We're rooted in India and based in Visakhapatnam, and we're built for bakers and makers who care where their ingredients come from: home bakers, pastry chefs, chocolatiers, and café and bakery owners. Our range covers cocoa and chocolate, vanilla, spices, specialty flours, and other origin ingredients.",
+          'We ship across India. Follow along on Instagram {@coco36official|https://www.instagram.com/coco36official/} and on {LinkedIn (COCO36 Foods)|https://www.linkedin.com/company/coco36-foods/}, where we share what we learn about where our ingredients come from.',
+        ],
+      },
+      {
         heading: 'What COCO36 is',
         paragraphs: [
           'COCO36 Foods Pvt Ltd sells specialty baking and pastry ingredients to bakers, pastry chefs and chocolatiers across India. The ingredients are sourced direct from origin, from named makers and estates, never through anonymous brokers. The line under the name is from crop to craft.',
@@ -125,7 +133,6 @@ export const INFO_PAGES: InfoPage[] = [
           `${dispatchLine()} We ship across India. ${shippingPriceLine(policy)}`,
           `${businessDaysLine()} ${cutoffLine()} Two business days is when the order leaves Visakhapatnam, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
         ],
-        todo: 'Add a short company story if you want this page to go beyond the homepage: when COCO36 started, and who you sell to besides bakers, pastry chefs and chocolatiers. Do not add a street address unless you want it public.',
       },
       {
         heading: 'If something is wrong with an item',
