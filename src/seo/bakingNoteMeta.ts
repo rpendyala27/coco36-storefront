@@ -7,10 +7,12 @@ import { crumbsLd, type PageMeta } from './meta.js';
 import type { Crumb } from './jsonld.js';
 
 /**
- * Head for /guides and the three Ingredient Notes. Article + FAQPage (when the
+ * Head for /guides and the Ingredient Notes. Article + FAQPage (when the
  * page has a visible FAQ) + BreadcrumbList, from the same copy the page shows.
- * Recipe JSON-LD is only the pistachio method, with untested [CONFIRM] lines
- * already removed from the source copy.
+ * datePublished is emitted only when the note has a publish date, so that
+ * value stays the single source for the visible date too.
+ * Recipe JSON-LD is only the pistachio method. Untested amounts and editorial
+ * confirm-the-trial lines stay out of that block.
  */
 
 const HOME: Crumb = { name: 'Home', path: '/' };
@@ -29,6 +31,7 @@ function articleJsonLd(note: BakingNote): Article & { '@context': 'https://schem
     '@id': `${url}#article`,
     headline: note.h1,
     description: note.schemaDescription,
+    ...(note.published ? { datePublished: note.published } : {}),
     author: { '@type': 'Organization', name: LEGAL_NAME, url: `${SITE_ORIGIN}/` },
     publisher: { '@id': `${SITE_ORIGIN}/#org` },
     mainEntityOfPage: url,
