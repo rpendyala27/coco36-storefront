@@ -46,8 +46,11 @@ export function categoryPath(c: { slug: string }): string {
 /**
  * Slugs from the pre-Supabase static catalogue (src/data/products.ts ids), each
  * mapped to the slug the same product has today. Google still holds some of the
- * old URLs (e.g. /shop/ceylon-cinnamon, /shop/bean-to-bar-kit). When the
- * successor is live the old URL 301s to it; otherwise it answers 410 Gone.
+ * old URLs (e.g. /shop/ceylon-cinnamon). When the successor is live the
+ * old URL 301s to it; otherwise it answers 410 Gone.
+ *
+ * /shop/bean-to-bar-kit is not in this map. The kit is not for sale, so that
+ * URL 301s to /shop (see RETIRED_SLUG_TARGET) instead of a product or a 410.
  */
 export const LEGACY_PRODUCT_SLUGS: Readonly<Record<string, string>> = {
   'criollo-cacao-nibs': 'criollo-cacao-nibs',
@@ -83,16 +86,24 @@ export const LEGACY_PRODUCT_SLUGS: Readonly<Record<string, string>> = {
   'tonka-beans': 'whole-tonka-beans',
   'dried-mediterranean-figs': 'dried-mediterranean-figs',
   'sicilian-pistachio': 'bronte-pistachio-paste',
-  'bean-to-bar-kit': 'bean-to-bar-craft-kit',
   'sourdough-starter-kit': 'heritage-sourdough-kit',
   'croissant-lamination-kit': 'croissant-lamination-kit',
   'ganache-mastery-kit': 'ganache-mastery-kit',
   'spice-explorer-trio': 'spice-explorer-trio',
 };
 
+/**
+ * Retired catalogue slugs that 301 to a non-product URL. The bean-to-bar kit
+ * is not live; advertising its old URL (or answering 410) is a Search Console
+ * soft 404. vercel.json redirects the same path at the edge.
+ */
+export const RETIRED_SLUG_TARGET: Readonly<Record<string, string>> = {
+  'bean-to-bar-kit': '/shop',
+};
+
 export type ProductResolution<T> =
   | { kind: 'found'; product: T }
-  | { kind: 'redirect'; product: T; to: string }  // legacy / non-canonical URL → 301
+  | { kind: 'redirect'; to: string; product?: T } // legacy / non-canonical URL → 301
   | { kind: 'gone' }                              // existed once, not live now → 410
   | { kind: 'not-found' };                        // never existed → 404
 
@@ -100,6 +111,8 @@ export type ProductResolution<T> =
  * Resolve a `/shop/:param` segment against the LIVE catalogue (status=active,
  * deleted_at null — RLS hides everything else from the public key).
  *
+ * - retired slug (RETIRED_SLUG_TARGET) → 301 to that target (/shop), even if a
+ *   live row would slug to the same path
  * - `<slug>`          → found
  * - `<slug>-<uuid>`, `<uuid>`, mixed case → redirect to the clean slug
  * - UUID that isn't live → gone (UUIDs aren't guessable, so it existed once)
@@ -110,6 +123,11 @@ export function resolveProductParam<T extends { id: string; name?: string | null
   param: string,
   products: readonly T[],
 ): ProductResolution<T> {
+  const lower = param.toLowerCase();
+  // Before a live-slug match: this URL 301s to /shop even if a row would slug to it.
+  const retired = RETIRED_SLUG_TARGET[lower];
+  if (retired !== undefined) return { kind: 'redirect', to: retired };
+
   const exact = products.find((p) => productSlug(p) === param);
   if (exact) return { kind: 'found', product: exact };
 
@@ -119,7 +137,6 @@ export function resolveProductParam<T extends { id: string; name?: string | null
     return byId ? { kind: 'redirect', product: byId, to: productPath(byId) } : { kind: 'gone' };
   }
 
-  const lower = param.toLowerCase();
   if (lower !== param) {
     const ci = products.find((p) => productSlug(p) === lower);
     if (ci) return { kind: 'redirect', product: ci, to: productPath(ci) };

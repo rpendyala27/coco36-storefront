@@ -94,6 +94,12 @@ const emptyCtx = (): SnapshotCtx => ({ products: [], tree: buildTree([]), policy
  * `search` the query string without "?"; `host` the request host.
  */
 export async function render(pathname: string, search: string, host: string): Promise<RenderResult> {
+  // Retired kit URL. vercel.json 301s /shop/bean-to-bar-kit (and the trailing
+  // slash) to /shop at the edge, after the www → apex hop. This is the
+  // backstop so a direct function hit, or the slash spelling, never answers 410.
+  const bare = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (bare.toLowerCase() === '/shop/bean-to-bar-kit') return redirect('/shop');
+
   // One canonical host, and one spelling of the path. vercel.json redirects www
   // and strips trailing slashes first; this is the backstop so /shop/ cannot
   // be a second URL beside /shop.

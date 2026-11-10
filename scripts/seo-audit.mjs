@@ -12,7 +12,8 @@
 //     FAQPage (answers visible on the page), Organization and WebSite
 //   - ingredient guides carry 300+ words of copy
 // Live mode also checks status codes: sitemap URLs 200 with no redirect,
-// removed products 404/410, www → apex and http → https permanent redirects.
+// removed products 404/410, the retired bean-to-bar kit 301s to /shop,
+// www → apex and http → https permanent redirects.
 // Exit code 1 if any error is found (warnings don't fail).
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -172,10 +173,26 @@ async function live(base) {
     if (title) titles.set(title, [...(titles.get(title) ?? []), path]);
   }
   for (const [t, paths] of titles) if (paths.length > 1) err('titles', `duplicate title "${t}" on ${paths.join(', ')}`);
+  for (const banned of ['/recipes', '/shop/bean-to-bar-kit']) {
+    if (urls.some((u) => u.replace(/\/+$/, '').endsWith(banned))) err('/sitemap.xml', `lists ${banned}`);
+  }
 
-  for (const path of ['/shop/ceylon-cinnamon', '/shop/bean-to-bar-kit', '/shop/70-dark-couverture-chocolate-4c2f6264-25d1-47af-85ca-3180a2c22edc', '/this-page-does-not-exist']) {
+  for (const path of ['/shop/ceylon-cinnamon', '/shop/70-dark-couverture-chocolate-4c2f6264-25d1-47af-85ca-3180a2c22edc', '/this-page-does-not-exist']) {
     const res = await get(origin + path);
     if (![404, 410].includes(res.status)) err(path, `expected 404/410, got ${res.status}`);
+  }
+  {
+    const res = await get(origin + '/shop/bean-to-bar-kit');
+    const loc = (res.headers.get('location') ?? '').replace(/^https:\/\/coco36\.com/, '');
+    if (![301, 308].includes(res.status) || loc !== '/shop') err('/shop/bean-to-bar-kit', `expected a permanent redirect to /shop, got ${res.status} ${res.headers.get('location')}`);
+  }
+  {
+    // Platform trailingSlash may 308 to the bare path first; that hop then 301s to /shop.
+    const res = await get(origin + '/shop/bean-to-bar-kit/');
+    const loc = (res.headers.get('location') ?? '').replace(/^https:\/\/coco36\.com/, '');
+    if (![301, 308].includes(res.status) || (loc !== '/shop' && loc !== '/shop/bean-to-bar-kit')) {
+      err('/shop/bean-to-bar-kit/', `expected a permanent redirect toward /shop, got ${res.status} ${res.headers.get('location')}`);
+    }
   }
   for (const path of ['/recipes', '/auth', '/quick-order']) {
     const res = await get(origin + path);

@@ -18,6 +18,10 @@ import type { Catalog } from './catalog.js';
  * and utility pages (/auth, /quick-order, /checkout, /account, /track).
  * /privacy, /terms and the info pages (/about, /contact, /faq, /shipping,
  * /returns) are included.
+ *
+ * SITEMAP_DENY is the hard stop. /recipes stays noindex and is not a landing
+ * page. /shop/bean-to-bar-kit 301s to /shop. Neither may come back if a
+ * content page or a catalogue row would otherwise emit that path.
  */
 
 interface Entry { path: string; changefreq: string; priority: number; lastmod?: string }
@@ -35,6 +39,11 @@ const CONTENT_PAGES: Entry[] = [
   { path: '/privacy',      changefreq: 'yearly',  priority: 0.3 },
   { path: '/terms',        changefreq: 'yearly',  priority: 0.4 },
 ];
+
+const SITEMAP_DENY = new Set<string>([
+  '/recipes',
+  '/shop/bean-to-bar-kit',
+]);
 
 export function sitemapEntries(cat: Catalog): Entry[] {
   const day = (iso?: string) => (iso ? new Date(iso).toISOString().slice(0, 10) : undefined);
@@ -58,7 +67,7 @@ export function sitemapEntries(cat: Catalog): Entry[] {
       lastmod: n.updated,
     })),
     ...CONTENT_PAGES,
-  ].filter(unique);
+  ].filter(unique).filter((e) => !SITEMAP_DENY.has(e.path));
 }
 
 export function sitemapXml(cat: Catalog): string {
