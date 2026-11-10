@@ -273,6 +273,7 @@ export default function App() {
                 <ul className="space-y-3 text-sm text-white/70">
                   <li><a href="/partnerships" className="hover:text-brand-leaf-bright transition-colors">Partnerships</a></li>
                   <li><a href="/trade" className="hover:text-brand-leaf-bright transition-colors">Trade &amp; Wholesale</a></li>
+                  <li><a href="/guides/how-to-buy-wholesale-baking-ingredients-india" className="hover:text-brand-leaf-bright transition-colors">Wholesale guide</a></li>
                   <li><a href="/auth" className="hover:text-brand-leaf-bright transition-colors">Partner Portal</a></li>
                 </ul>
               </div>

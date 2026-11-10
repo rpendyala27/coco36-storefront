@@ -1,6 +1,8 @@
+import { WHOLESALE_GUIDE } from './wholesaleGuide.js';
+
 /**
  * /guides, the December Ingredient Notes cluster, the couverture buying guide,
- * and the Christmas chocolate baking guide.
+ * the Christmas chocolate baking guide, and the wholesale buying guide.
  * The wording is the drafted copy. Bracketed [CONFIRM] lines on untested
  * kitchen steps are omitted and are not in the FAQ or JSON-LD either.
  * Image suggestions and the draft's JSON-LD blocks are metadata, not body copy.
@@ -121,6 +123,7 @@ export const BAKING_NOTES: BakingNote[] = [
           ] },
           { type: 'p', text: '**[Best couverture chocolate brands in India (2027 buying guide)](/guides/best-couverture-chocolate-india)**\nImported professional lines and Indian makers — cocoa percentage, format and the job, and how to tell couverture from compound. COCO36 couverture is coming soon to the COCO36 shop.' },
           { type: 'p', text: '**[Chocolate and cocoa for Christmas baking in India: plum cake, brownies, ganache and gifts](/guides/christmas-chocolate-baking)**\nWhich chocolate and cocoa to use for Indian Christmas baking — plum cake, brownies, ganache, hot chocolate and gift boxes — plus tips for a warm kitchen. Dutch-process cocoa, couverture and pistachio paste are coming soon to the COCO36 shop.' },
+          { type: 'p', text: '**[How to buy wholesale baking ingredients in India](/guides/how-to-buy-wholesale-baking-ingredients-india)**\nEnquire, a paid trial pack, a first order, then scale up. For bakeries, cafés and chocolatiers.' },
           { type: 'p', text: 'Also browse our longer [ingredient library](/ingredients) (vanilla, cocoa & chocolate, sugars & jaggery, flours, spices & salt) and the [shop](/shop).' },
           { type: 'p', text: 'New guides publish here first. Product pages for December heroes go live only when stock and copy are approved — guides never invent availability.' },
         ],
@@ -133,6 +136,7 @@ export const BAKING_NOTES: BakingNote[] = [
       { href: '/guides/pistachio-paste-dubai-chocolate-at-home', label: 'Pistachio paste' },
       { href: '/guides/best-couverture-chocolate-india', label: 'Couverture brands' },
       { href: '/guides/christmas-chocolate-baking', label: 'Christmas baking' },
+      { href: '/guides/how-to-buy-wholesale-baking-ingredients-india', label: 'Wholesale ingredients' },
       { href: '/ingredients', label: 'Ingredient library' },
       { href: '/shop', label: 'Shop' },
     ],
@@ -784,6 +788,7 @@ export const BAKING_NOTES: BakingNote[] = [
       { href: '/shop', label: 'Browse the shop' },
     ],
   },
+  WHOLESALE_GUIDE,
 ];
 
 export const bakingNoteByPath = (pathname: string) => BAKING_NOTES.find((n) => n.path === pathname);

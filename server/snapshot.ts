@@ -29,6 +29,7 @@ import {
   type RecipeDoc, type RecipeLink,
 } from '../src/content/recipes.js';
 import { esc } from './html.js';
+import { TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL, TRADE_STEPS } from '../src/content/tradeSteps.js';
 
 /**
  * Server-rendered content snapshot for each page: real headings, copy and
@@ -61,6 +62,7 @@ function layout(ctx: SnapshotCtx, main: string, _opts?: { omitDispatchCity?: boo
     a('/recipes', 'Recipes'),
     ...GUIDES.map((g) => a(guidePath(g), `${g.name} guide`)),
     a('/36-steps', '36 Steps'), a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'),
+    a(TRADE_GUIDE_HREF, 'Wholesale guide'),
     a('/impact', 'Impact'), a('/about', 'About'), a('/contact', 'Contact'), a('/faq', 'FAQ'),
     a('/shipping', 'Shipping'), a('/returns', 'Returns'), a('/privacy', 'Privacy'), a('/terms', 'Terms of sale'),
   ];
@@ -328,6 +330,11 @@ export function staticSnapshot(ctx: SnapshotCtx, pathname: string, crumbs: Crumb
   const extra = pathname === '/36-steps'
     ? PHASES.map((ph) => `<h2>Phase ${esc(ph.number)}: ${esc(ph.title)}</h2><p>${esc(ph.description)}</p><ol>${ph.steps.map((s) => `<li>${esc(s.title)}: ${esc(s.description)}</li>`).join('')}</ol>`).join('\n')
     : pathname === '/terms' ? `<p>${esc(REGISTERED_OFFICE_LINE)}</p><h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>`
+    : pathname === '/trade' ? [
+      '<h2>Four steps to start.</h2>',
+      `<p>${a(TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL)}</p>`,
+      `<ol>${TRADE_STEPS.map((s) => `<li><strong>${esc(s.title)}</strong> ${esc(s.body)}</li>`).join('')}</ol>`,
+    ].join('\n')
     : pathname === '/cart' ? `<p>${a('/shop', 'Browse the shop')}</p>`
     : '';
   const trail = pathname === '/cart'

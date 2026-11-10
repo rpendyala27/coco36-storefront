@@ -6,6 +6,7 @@ import { API_URL } from '../lib/supabase';
 import {
   Boxes, FileCheck2, CalendarClock, Sprout, ArrowRight, Send, Check,
 } from 'lucide-react';
+import { TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL, TRADE_STEPS } from '../content/tradeSteps';
 
 /**
  * /trade — the B2B buyer / wholesale program.
@@ -42,7 +43,7 @@ const VALUE_PROPS = [
   },
 ];
 
-const REQUEST_TYPES = ['Bulk pricing', 'Spec sheet & CoA', 'Wholesale account', 'Other'] as const;
+const REQUEST_TYPES = ['Bulk pricing', 'Spec sheet & CoA', 'Wholesale account', 'Trial pack', 'Other'] as const;
 
 export const Trade = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -170,14 +171,13 @@ export const Trade = () => {
         <div className="max-w-7xl mx-auto">
           <header className="mb-14 max-w-2xl">
             <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">How it works</p>
-            <h2 className="text-4xl md:text-6xl">Three ways to start.</h2>
+            <h2 className="text-4xl md:text-6xl">Four steps to start.</h2>
+            <p className="mt-6">
+              <Link to={TRADE_GUIDE_HREF} className="text-brand-leaf hover:underline">{TRADE_GUIDE_LABEL}</Link>
+            </p>
           </header>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { n: '01', t: 'Bulk pricing', d: 'Send your products and volumes. We come back with a tiered quote and lead times.' },
-              { n: '02', t: 'Spec sheet & CoA', d: 'Request lab analysis, spec sheets and provenance docs to qualify a lot before you order.' },
-              { n: '03', t: 'Wholesale account', d: 'Set up ongoing terms, GST invoicing and priority stock for repeat supply.' },
-            ].map((s, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TRADE_STEPS.map((s, i) => (
               <motion.div
                 key={s.n}
                 initial={{ opacity: 0, y: 20 }}
@@ -187,8 +187,8 @@ export const Trade = () => {
                 className="bg-brand-paper p-8 border border-brand-ink/10"
               >
                 <p className="font-display font-bold text-[11px] uppercase tracking-[0.2em] text-brand-leaf mb-4">{s.n}</p>
-                <h3 className="text-2xl mb-3">{s.t}</h3>
-                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{s.d}</p>
+                <h3 className="text-2xl mb-3">{s.title}</h3>
+                <p className="text-base text-brand-ink/65 leading-relaxed font-display italic">{s.body}</p>
               </motion.div>
             ))}
           </div>
