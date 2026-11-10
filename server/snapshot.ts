@@ -5,6 +5,7 @@ import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
 import { categoryPage } from '../src/content/categoryPages.js';
+import { productPageFor } from '../src/content/productPages.js';
 import type { BakingNote, NoteBlock } from '../src/content/bakingNotes.js';
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
@@ -148,21 +149,36 @@ export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): 
   const cat = p.categoryId ? ctx.tree.byId.get(p.categoryId) : undefined;
   const guide = GUIDES.find((g) => productsForGuide(g, [p], ctx.tree).length > 0);
   const others = ctx.products.filter((o) => o.id !== p.id);
+  const editorial = productPageFor(p);
   // Same src/srcset/sizes as the PDP's main <img>, so the browser reuses it.
   const img = p.image
     ? `<img src="${esc(imageUrl(p.image, 900))}"${imageSrcSet(p.image, [600, 900, 1200]) ? ` srcset="${esc(imageSrcSet(p.image, [600, 900, 1200]))}" sizes="(min-width: 1024px) 45vw, 100vw"` : ''} alt="${esc(p.name)}" width="900" height="900" />`
     : '';
+  const body = editorial
+    ? [
+        ...editorial.intro.map((para) => `<p>${linkifyHtml(para, esc)}</p>`),
+        ...editorial.sections.map((s) => `<h2>${esc(s.heading)}</h2>${s.paragraphs.map((para) => `<p>${linkifyHtml(para, esc)}</p>`).join('')}`),
+      ].join('\n')
+    : (p.description ? `<p>${esc(stripMarkdown(p.description))}</p>` : '');
+  const related = editorial?.links.length
+    ? `<h2>Related</h2><ul>${editorial.links.map((l) => `<li>${a(l.href, l.label)}</li>`).join('')}</ul>`
+    : '';
+  const faqs = editorial?.faqs.length
+    ? `<h2>Frequently asked questions</h2>\n${editorial.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${linkifyHtml(f.a, esc)}</p>`).join('\n')}`
+    : '';
   return layout(ctx, [
     breadcrumbs(crumbs),
     '<article>',
-    `<h1>${esc(p.name)}</h1>`,
+    `<h1>${esc(editorial?.h1 ?? p.name)}</h1>`,
     img,
     `<p>${[p.brand && `By ${esc(p.brand)}`, p.origin && `Origin: ${esc(p.origin)}`].filter(Boolean).join(' · ')}</p>`,
-    p.description ? `<p>${esc(stripMarkdown(p.description))}</p>` : '',
+    body,
     p.sizes.length ? `<h2>Sizes and prices</h2><ul>${p.sizes.map((s) => `<li>${esc(s.label)}${s.sku ? ` (SKU ${esc(s.sku)})` : ''}: ${esc(rupees(s.priceInPaise))} — ${s.inStock ? 'in stock' : 'out of stock'}</li>`).join('')}</ul>` : '',
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
     cat ? `<p>More in ${a(categoryPath(cat), cat.name)}</p>` : '',
     guide ? `<p>Buying guide: ${a(guidePath(guide), guide.h1)}</p>` : '',
+    related,
+    faqs,
     '</article>',
     others.length ? `<h2>More from the shop</h2>${productList(others)}` : '',
   ].join('\n'));

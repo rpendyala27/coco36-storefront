@@ -3,7 +3,7 @@ import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../lib/
 /** A slice of visible copy. `href` is set for email, phone, and `{label|url}` links. */
 export interface TextRun { text: string; href?: string }
 
-const NAMED_LINK = /\{([^{}|]+)\|((?:https?:\/\/|mailto:|tel:)[^}\s]+)\}/g;
+const NAMED_LINK = /\{([^{}|]+)\|((?:https?:\/\/|mailto:|tel:|\/(?!\/))[^}\s]+)\}/g;
 
 /** Split copy into plain text and links. Email and phone are linked; `{label|url}` too. */
 export function textRuns(input: string): TextRun[] {
@@ -27,6 +27,11 @@ export function textRuns(input: string): TextRun[] {
   }
   pushPlain(input.slice(last));
   return runs;
+}
+
+/** The words a visitor reads: link labels, no `{label|url}` syntax. */
+export function visibleCopy(input: string): string {
+  return textRuns(input).map((run) => run.text).join('');
 }
 
 /** Escape-aware replacement so support email, phone and named links become real anchors. */

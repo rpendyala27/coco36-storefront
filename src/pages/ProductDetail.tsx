@@ -13,7 +13,9 @@ import { useProduct, useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 import { useSeo } from '../lib/seo';
-import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
+import { LinkedCopy } from '../components/LinkedCopy';
+import { productPageFor, productPageMeta } from '../content/productPages';
+import { goneMeta, notFoundMeta, productCrumbs } from '../seo/meta';
 import { SHIPS_FROM } from '../seo/site';
 import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
 import { Breadcrumbs } from '../components/Breadcrumbs';
@@ -59,11 +61,12 @@ export const ProductDetail = () => {
   // Title, description, canonical, OG and Product + BreadcrumbList JSON-LD —
   // the same PageMeta the server rendered for this URL (src/seo/meta.ts).
   const meta = useMemo(() => {
-    if (product) return productMeta(product, tree, cfg);
+    if (product) return productPageMeta(product, tree, cfg);
     if (resolution?.kind === 'gone') return goneMeta();
     if (resolution?.kind === 'not-found') return notFoundMeta();
     return null;
   }, [product, resolution, tree, cfg]);
+  const editorial = product ? productPageFor(product) : undefined;
   useSeo(meta);
 
   // The ingredient guide this product belongs to, for the "read the guide" link.
@@ -163,7 +166,7 @@ export const ProductDetail = () => {
         {/* Buy panel */}
         <div>
           <p className="eyebrow text-brand-leaf mb-3">{product.category} · {countryOf(product.origin)}</p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{product.name}</h1>
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{editorial?.h1 ?? product.name}</h1>
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
 
           {/* Cert + dietary marks — stamp icons, same iconography as cards + trust band */}
@@ -185,10 +188,16 @@ export const ProductDetail = () => {
             {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-forest text-white ml-2">Out of stock</span>}
           </div>
 
-          {/* Description (lede) */}
-          {product.description && (
+          {/* Answer-first intro when this slug has editorial copy; otherwise the catalogue line. */}
+          {editorial ? (
+            <div className="mt-6 max-w-[60ch] space-y-4">
+              {editorial.intro.map((para) => (
+                <p key={para} className="text-[15px] leading-relaxed text-brand-muted"><LinkedCopy text={para} /></p>
+              ))}
+            </div>
+          ) : product.description ? (
             <p className="text-[15px] leading-relaxed text-brand-muted mt-6 max-w-[60ch]">{product.description}</p>
-          )}
+          ) : null}
 
           {/* Size selector */}
           {product.sizes.length > 1 && (
@@ -240,9 +249,11 @@ export const ProductDetail = () => {
 
           {/* Accordions */}
           <div className="mt-9">
-            <Acc title="Description" open={open.description} onToggle={() => toggle('description')}>
-              <p>{product.description || 'No description available for this lot yet.'}</p>
-            </Acc>
+            {!editorial && (
+              <Acc title="Description" open={open.description} onToggle={() => toggle('description')}>
+                <p>{product.description || 'No description available for this lot yet.'}</p>
+              </Acc>
+            )}
             <Acc title="Details" open={open.details} onToggle={() => toggle('details')}>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-12">
                 {[
@@ -304,6 +315,46 @@ export const ProductDetail = () => {
           </div>
         </div>
       </div>
+
+      {editorial && (editorial.sections.length > 0 || editorial.faqs.length > 0 || editorial.links.length > 0) && (
+        <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-4">
+          <div className="max-w-3xl">
+            {editorial.sections.map((s) => (
+              <div key={s.heading} className="mt-10">
+                <h2 className="font-display text-2xl md:text-3xl text-brand-forest mb-3">{s.heading}</h2>
+                {s.paragraphs.map((para) => (
+                  <p key={para} className="mt-3 text-[15px] leading-relaxed text-brand-muted"><LinkedCopy text={para} /></p>
+                ))}
+              </div>
+            ))}
+            {editorial.links.length > 0 && (
+              <nav aria-label="Related" className="mt-10">
+                <h2 className="font-display text-2xl text-brand-forest mb-3">Related</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {editorial.links.map((l) => (
+                    <li key={l.href}>
+                      <Link to={l.href} className="inline-flex px-4 py-2 rounded-full border border-brand-line text-sm text-brand-forest hover:border-brand-forest transition-colors">{l.label}</Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+            {editorial.faqs.length > 0 && (
+              <section className="mt-12" aria-labelledby="product-faq">
+                <h2 id="product-faq" className="font-display text-3xl text-brand-forest mb-6">Frequently asked questions</h2>
+                <div className="divide-y divide-brand-line border-y border-brand-line">
+                  {editorial.faqs.map((f) => (
+                    <div key={f.q} className="py-5">
+                      <h3 className="font-display font-bold text-lg text-brand-forest">{f.q}</h3>
+                      <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/80"><LinkedCopy text={f.a} /></p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Reviews — structure present, never fabricated data */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-12">

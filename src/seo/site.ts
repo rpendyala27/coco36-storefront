@@ -42,6 +42,14 @@ export const CARRIER       = 'our courier partners';
 export const HANDLING_DAYS_MAX = 2;
 
 /**
+ * Published delivery estimate on /shipping, after dispatch: 3 business days
+ * to metro cities, up to 10 for remote areas. An estimate, not a guarantee.
+ * Offer JSON-LD uses this whole span as transitTime.
+ */
+export const TRANSIT_DAYS_MIN = 3;
+export const TRANSIT_DAYS_MAX = 10;
+
+/**
  * Store policy defaults = the live `settings` values. The storefront refreshes
  * them from the admin API (lib/storeConfig) and the render function reads the
  * `settings` table, so these only matter if both of those fail.

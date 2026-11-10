@@ -8,7 +8,7 @@ import {
 } from './jsonld.js';
 import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
-import { DESCRIPTION_MAX, TITLE_MAX, clip, firstThatFits, sentence, stripMarkdown } from './text.js';
+import { DESCRIPTION_MAX, TITLE_MAX, clip, composeProductDescription, firstThatFits, stripMarkdown } from './text.js';
 
 /**
  * Per-page <head> metadata. Every route's title, description, canonical,
@@ -228,14 +228,11 @@ export function productCrumbs(p: Product, tree: CategoryTree): Crumb[] {
 export function productMeta(p: Product, tree: CategoryTree, policy: StorePolicy = DEFAULT_POLICY): PageMeta {
   const prices = p.sizes.map((s) => s.priceInPaise);
   const from = prices.length ? `${prices.length > 1 ? 'From ' : ''}${rupees(Math.min(...prices))}, shipped across India.` : 'Shipped across India.';
-  const base = sentence(stripMarkdown(p.description || p.tag || p.name));
-  const origin = p.originCountry ? ` Origin: ${p.originCountry}.` : '';
-  // Longest version that fits: with origin → without → description clipped.
-  const withOrigin = `${base}${origin} ${from}`;
-  const plain = `${base} ${from}`;
-  const description = withOrigin.length <= DESCRIPTION_MAX ? withOrigin
-    : plain.length <= DESCRIPTION_MAX ? plain
-    : `${clip(base, DESCRIPTION_MAX - from.length - 1)} ${from}`;
+  const base = stripMarkdown(p.description || p.tag || p.name);
+  const origin = p.originCountry ? `Origin: ${p.originCountry}.` : '';
+  // Drop whole trailing sentences until the price line fits. Never cut
+  // mid-sentence ("Stone-ground in…") to make room for it.
+  const description = composeProductDescription(base, origin, from);
 
   return {
     title: buyTitle(p.name),

@@ -5,9 +5,10 @@ import { productsInCategory } from '../src/lib/catalog.js';
 import { bakingNoteByPath } from '../src/content/bakingNotes.js';
 import { guideBySlug } from '../src/content/guides.js';
 import { categoryListingMeta } from '../src/content/categoryPages.js';
+import { productPageMeta } from '../src/content/productPages.js';
 import {
   NOINDEX, categoryCrumbs, goneMeta, guideCrumbs, guidesHubMeta,
-  homeMeta, notFoundMeta, productCrumbs, productMeta, shopMeta, staticPageCrumbs, staticPageMeta,
+  homeMeta, notFoundMeta, productCrumbs, shopMeta, staticPageCrumbs, staticPageMeta,
   type PageMeta,
 } from '../src/seo/meta.js';
 import { bakingNoteMeta } from '../src/seo/bakingNoteMeta.js';
@@ -183,7 +184,7 @@ export async function render(pathname: string, search: string, host: string): Pr
     if (r.kind === 'found') {
       if (segs[0] === 'catalog') return redirect(productPath(r.product));
       const p = r.product;
-      return withHost(page(200, productMeta(p, cat.tree, cat.policy), productSnapshot(ctx, p, productCrumbs(p, cat.tree))));
+      return withHost(page(200, productPageMeta(p, cat.tree, cat.policy), productSnapshot(ctx, p, productCrumbs(p, cat.tree))));
     }
     if (r.kind === 'gone') return withHost(page(410, goneMeta(), errorSnapshot(ctx, 'gone')));
     return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
