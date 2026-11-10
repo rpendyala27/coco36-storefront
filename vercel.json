@@ -8,7 +8,10 @@
     "api/render.ts": { "includeFiles": "dist-server/index.html", "maxDuration": 10 },
     "api/sitemap.ts": { "maxDuration": 10 },
     "api/indexnow-key.ts": { "maxDuration": 10 },
-    "api/indexnow-submit.ts": { "maxDuration": 10 }
+    "api/indexnow-submit.ts": { "maxDuration": 10 },
+    "api/notify.ts": { "maxDuration": 10 },
+    "api/notify-export.ts": { "maxDuration": 10 },
+    "api/restock-alerts.ts": { "maxDuration": 10 }
   },
   "redirects": [
     {

@@ -160,8 +160,8 @@ export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
  * Competing variants are collapsed in server/render.ts: trailing slash, empty
  * `?q=`, and legacy `?cat=` / `?category=` redirect; a non-empty `?q=` stays
  * noindex with this same canonical. `/catalog` 301s here from vercel.json.
- * The long intro (content/shopIntro.ts) is what separates this URL from the
- * homepage, which lists the same small catalogue.
+ * The catalogue paragraph under the grid (content/shopIntro.ts) is this URL's
+ * own text. The homepage lists the same small catalogue.
  */
 export function shopMeta(): PageMeta {
   return {
@@ -205,8 +205,8 @@ export function categoryMeta(c: Category, tree: CategoryTree, products: readonly
   const description = c.description
     ? clip(c.description, DESCRIPTION_MAX)
     : firstThatFits([
-        `Shop ${c.name.toLowerCase()} at COCO36${names ? `: ${names}` : ''}. Shipped across India from Visakhapatnam.`,
-        `Shop ${c.name.toLowerCase()} at COCO36. Shipped across India from Visakhapatnam.`,
+        `Shop ${c.name.toLowerCase()} at COCO36${names ? `: ${names}` : ''}. Ships across India.`,
+        `Shop ${c.name.toLowerCase()} at COCO36. Ships across India.`,
       ], DESCRIPTION_MAX);
   return {
     title: buyTitle(c.name),

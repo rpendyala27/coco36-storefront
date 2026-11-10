@@ -14,11 +14,11 @@ import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
 import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
-import { SHIPS_FROM } from '../seo/site';
 import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
 import { productPage } from '../content/productPages';
 import { parseRich, type RichNode } from '../content/richText';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { NotifyMe } from '../components/NotifyMe';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -36,7 +36,7 @@ export const ProductDetail = () => {
   const [activeImage, setActiveImage] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
   const [open, setOpen] = useState({ description: true, details: false, certs: false, dietary: false });
-  const primaryAddRef = useRef<HTMLButtonElement>(null);
+  const primaryAddRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (product && !product.sizes.some((s) => s.id === selectedSizeId)) {
@@ -185,7 +185,6 @@ export const ProductDetail = () => {
           <div className="flex items-baseline gap-2 mt-6 pb-6 border-b border-brand-line">
             <span className="font-display font-bold text-4xl text-brand-forest">{formatMoney(selectedSize?.priceInPaise ?? 0)}</span>
             {selectedSize && <span className="text-sm text-brand-muted">/ {selectedSize.label}</span>}
-            {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-forest text-white ml-2">Out of stock</span>}
           </div>
 
           {/* Answer-first intro when this URL has editorial copy; otherwise the catalogue sentence. */}
@@ -225,16 +224,22 @@ export const ProductDetail = () => {
           )}
 
           {/* Qty + add */}
-          <div className="flex gap-3 mt-7 flex-wrap">
-            <div className="flex items-center border border-brand-line rounded-full px-1.5">
-              <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Decrease quantity"><Minus size={15} strokeWidth={2.5} /></button>
-              <span className="min-w-8 text-center font-semibold tabular-nums">{quantity}</span>
-              <button onClick={() => setQuantity((q) => q + 1)} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
-            </div>
-            <button ref={primaryAddRef} onClick={handleAddToCart} disabled={!selectedSize?.inStock} className="btn-primary flex-1 min-w-[200px] !py-3.5 disabled:opacity-30 disabled:cursor-not-allowed">
-              <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
-            </button>
-            <button onClick={handleBuyNow} disabled={!selectedSize?.inStock} className="btn-ghost !py-3.5 px-7 disabled:opacity-30">Buy now</button>
+          <div ref={primaryAddRef} className="flex gap-3 mt-7 flex-wrap">
+            {selectedSize && !selectedSize.inStock ? (
+              <NotifyMe productKey={product.id} productName={product.name} className="!px-6 !py-3.5" />
+            ) : (
+              <>
+                <div className="flex items-center border border-brand-line rounded-full px-1.5">
+                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Decrease quantity"><Minus size={15} strokeWidth={2.5} /></button>
+                  <span className="min-w-8 text-center font-semibold tabular-nums">{quantity}</span>
+                  <button onClick={() => setQuantity((q) => q + 1)} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
+                </div>
+                <button onClick={handleAddToCart} className="btn-primary flex-1 min-w-[200px] !py-3.5">
+                  <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
+                </button>
+                <button onClick={handleBuyNow} className="btn-ghost !py-3.5 px-7">Buy now</button>
+              </>
+            )}
           </div>
 
           <div className="mt-5">
@@ -244,7 +249,7 @@ export const ProductDetail = () => {
           {/* Ship note */}
           <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
             <Truck size={15} strokeWidth={1.75} className="text-brand-leaf" />
-            Ships in <span className="text-brand-forest font-medium">2 business days</span> from {SHIPS_FROM.split(',')[0]} · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
+            Ships across India in <span className="text-brand-forest font-medium">2 business days</span> · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
           </p>
 
           {page && page.sections.length > 0 && (
@@ -380,14 +385,18 @@ export const ProductDetail = () => {
 
       {/* Sticky add-to-bag — meets the buyer at peak intent on scroll */}
       {showSticky && selectedSize && (
-        <div className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div data-sticky-buy className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
             <div className="hidden sm:block min-w-0 flex-1">
               <p className="font-display font-bold text-lg text-brand-forest truncate">{product.name}</p>
               <p className="text-xs text-brand-muted">{selectedSize.label}</p>
             </div>
             <span className="font-sans font-bold text-xl text-brand-forest tabular-nums">{formatMoney(totalPricePaise)}</span>
-            <button onClick={handleAddToCart} disabled={!selectedSize.inStock} className="btn-primary !py-3 px-8 disabled:opacity-30"><ShoppingBag size={15} /> Add to bag</button>
+            {selectedSize.inStock ? (
+              <button onClick={handleAddToCart} className="btn-primary !py-3 px-8"><ShoppingBag size={15} /> Add to bag</button>
+            ) : (
+              <NotifyMe productKey={product.id} productName={product.name} className="!py-3 !px-6" />
+            )}
           </div>
         </div>
       )}

@@ -15,13 +15,12 @@ export const LEGAL_NAME  = 'COCO36 Foods Pvt Ltd';
 export const LOGO_URL    = `${SITE_ORIGIN}/coco36-floral.png`;   // 256×250
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og.png`;          // 1200×630
 
-/** settings.seller.* — city/state/pincode only; the street line stays on invoices. */
-export const ORG_ADDRESS = {
-  addressLocality: 'Visakhapatnam',
-  addressRegion:   'Andhra Pradesh',
-  postalCode:      '530045',
-  addressCountry:  'IN',
-} as const;
+/**
+ * The only public place the registered city is named. /terms only.
+ * Street line stays on invoices. Do not reuse this string elsewhere.
+ */
+export const REGISTERED_OFFICE_LINE =
+  'Registered office: Visakhapatnam, Andhra Pradesh 530045, India.';
 
 /**
  * Official social profiles: Organization.sameAs + the footer links.
@@ -35,8 +34,7 @@ export const SOCIAL_LINKS: readonly { label: string; url: string }[] = [
 ];
 export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url);
 
-/** Shipping dispatch point and the public courier wording. The aggregator is not named on the storefront. */
-export const SHIPS_FROM    = 'Visakhapatnam, Andhra Pradesh';
+/** Public courier wording. The aggregator is not named on the storefront. */
 export const CARRIER       = 'our courier partners';
 /** "Ships in 2 business days" — the dispatch promise shown on every PDP. */
 export const HANDLING_DAYS_MAX = 2;

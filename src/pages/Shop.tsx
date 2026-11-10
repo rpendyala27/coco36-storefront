@@ -17,7 +17,9 @@ import { useStoreConfig } from '../lib/storeConfig';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { categoryPath } from '../lib/productPath';
 import { categoryListingMeta, categoryPage } from '../content/categoryPages';
-import { shopIntro } from '../content/shopIntro';
+import { SHOP_LEDE, shopSeoBelowGrid } from '../content/shopIntro';
+import { ShopPromises } from '../components/ShopPromises';
+import { ComingSoonRow } from '../components/ComingSoonRow';
 import { browseCategories, listingIntro, productsInCategory } from '../lib/catalog';
 import { useSeo } from '../lib/seo';
 import { NOINDEX, categoryCrumbs, notFoundMeta, shopMeta } from '../seo/meta';
@@ -335,10 +337,10 @@ export const Shop = () => {
   const crumbs = activeCategory ? categoryCrumbs(activeCategory, tree) : [{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }];
   const emptyCategory = !!activeCategory && !loading && inCategory.length === 0;
   const shortIntro = activeCategory && loading && !activeCategory.description
-    ? `${activeCategory.name}, shipped across India from Visakhapatnam.`
+    ? `${activeCategory.name}. Ships across India.`
     : listingIntro(activeCategory, inCategory.length);
   const editorial = categorySlug ? categoryPage(categorySlug) : undefined;
-  const introParas = !categorySlug ? shopIntro(cfg) : (editorial?.intro ?? [shortIntro]);
+  const introParas = categorySlug ? (editorial?.intro ?? [shortIntro]) : [];
   const relatedGuides = activeCategory
     ? GUIDE_LINKS.filter((g) => g.shopCategorySlug === activeCategory.slug || g.match.categorySlugs.includes(activeCategory.slug))
     : [];
@@ -373,7 +375,16 @@ export const Shop = () => {
       <section className="relative z-20 bg-brand-surface border-b border-brand-line">
         <div className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 pt-6 md:pt-8 pb-6 md:pb-8">
           <Breadcrumbs crumbs={crumbs} />
-          {introParas.length > 1 ? (
+          {!categorySlug ? (
+            <div className="mt-4">
+              <h1 className="font-display text-3xl md:text-5xl leading-[1.05] text-brand-forest">Shop all ingredients</h1>
+              <p className="mt-3 max-w-3xl text-[16px] leading-relaxed text-brand-ink/80">{SHOP_LEDE}</p>
+              <ShopPromises />
+              <div className="mt-6 max-w-xl">
+                <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
+              </div>
+            </div>
+          ) : introParas.length > 1 ? (
             <div className="mt-4">
               <h1 className="font-display text-3xl md:text-5xl leading-[1.05] text-brand-forest">
                 {activeCategory ? activeCategory.name : 'Shop all ingredients'}
@@ -670,6 +681,15 @@ export const Shop = () => {
               </div>
             ))}
           </div>
+        </section>
+      )}
+
+      {!categorySlug && <ComingSoonRow />}
+      {!categorySlug && (
+        <section aria-label="About this catalogue" className="max-w-3xl mx-auto px-6 pb-8">
+          {shopSeoBelowGrid().map((paragraph) => (
+            <p key={paragraph} className="text-sm leading-relaxed text-brand-muted">{paragraph}</p>
+          ))}
         </section>
       )}
 

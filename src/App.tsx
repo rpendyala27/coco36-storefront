@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
+import { QuickOrderDock } from './components/QuickOrderDock';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
 import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
@@ -140,6 +141,7 @@ export default function App() {
         <Navigation />
         <CartDrawer />
         <CookieBanner />
+        <QuickOrderDock />
         <main>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -203,7 +205,7 @@ export default function App() {
         </main>
 
         {/* FOOTER */}
-        <footer className="bg-brand-forest text-white px-6 md:px-12 lg:px-20 pt-16 pb-10 mt-8">
+        <footer id="site-footer" className="bg-brand-forest text-white px-6 md:px-12 lg:px-20 pt-16 pb-10 mt-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-10 mb-12">
               {/* Brand col */}

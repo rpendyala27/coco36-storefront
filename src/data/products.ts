@@ -37,18 +37,6 @@ export const PRODUCTS: Product[] = [
     sizes: [{ id: 'sm', label: '500 g block', priceInPaise: 92500, inStock: true }, { id: 'md', label: '1 kg pistoles', priceInPaise: 172500, inStock: true }, { id: 'lg', label: '5 kg bulk', priceInPaise: 775000, inStock: true }],
   },
   {
-    id: 'natural-cocoa-powder',
-    brand: 'Sulawesi Pure',
-    name: 'Natural Cocoa Powder',
-    origin: 'Sulawesi, Indonesia',
-    tag: '22-24% Fat · Unalkalized',
-    image: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?auto=format&fit=crop&q=80&w=800',
-    category: 'Cocoa & Chocolate',
-    description: 'Premium natural cocoa powder, never alkalized. Bright, fruity, with a clean cocoa snap.',
-    badges: ['Best Seller'], rating: 4.8, reviewCount: 421,
-    sizes: [{ id: 'sm', label: '8 oz', priceInPaise: 40000, inStock: true }, { id: 'md', label: '1 lb', priceInPaise: 65000, inStock: true }, { id: 'lg', label: '5 lb bulk', priceInPaise: 257500, inStock: true }],
-  },
-  {
     id: 'dutch-process-cocoa',
     brand: 'Holland Dutch Mill',
     name: 'Black Dutch Process Cocoa',

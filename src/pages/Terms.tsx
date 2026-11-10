@@ -1,6 +1,7 @@
 import type React from 'react';
 import { SupportContactLink } from '../components/SupportContact';
 import { useStoreConfig } from '../lib/storeConfig';
+import { REGISTERED_OFFICE_LINE } from '../seo/site';
 
 /**
  * Soft-launch terms of sale. Covers the basics: who is selling, returns,
@@ -81,8 +82,7 @@ export const Terms = () => {
       <Section title="Governing law & jurisdiction">
         <p>
           These terms are governed by and construed under the laws of India.
-          Any dispute is subject to the exclusive jurisdiction of the courts at
-          Visakhapatnam, Andhra Pradesh.
+          Any dispute is subject to the exclusive jurisdiction of the courts in India.
         </p>
       </Section>
 
@@ -93,7 +93,8 @@ export const Terms = () => {
         </p>
       </Section>
 
-      <p className="text-xs text-brand-muted/70 mt-10 pt-6 border-t border-brand-line">
+      <p className="text-xs text-brand-muted mt-10">{REGISTERED_OFFICE_LINE}</p>
+      <p className="text-xs text-brand-muted/70 mt-4 pt-6 border-t border-brand-line">
         These terms are a plain-language summary for our soft launch and are not legal advice;
         they will be replaced with a counsel-reviewed version as we scale.
       </p>

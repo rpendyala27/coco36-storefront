@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { CARRIER, HANDLING_DAYS_MAX, SHIPS_FROM, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, rupees } from '../seo/site.js';
+import { CARRIER, HANDLING_DAYS_MAX, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, rupees } from '../seo/site.js';
 
 /**
  * Order facts for public pages. The courier is never named; use CARRIER
@@ -10,11 +10,11 @@ export const COURIER_PARTNERS = CARRIER;
 
 /** Shared homepage, shop, product and terms blurb. Courier-neutral, and the same returns facts as /returns. */
 export function policyBlurb(policy: StorePolicy): string {
-  return `Ships within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM} via ${COURIER_PARTNERS}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong, missing or expired items can be reported within ${policy.returnWindowDays} days of delivery, with your order number and photos. We do not accept change-of-mind returns. If the item is in stock we send a replacement; otherwise we refund a prepaid order to the original payment method. ${codRefundLine()} Your bank usually takes 5–7 business days to show the refund.`;
+  return `Ships across India within ${HANDLING_DAYS_MAX} business days via ${COURIER_PARTNERS}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong, missing or expired items can be reported within ${policy.returnWindowDays} days of delivery, with your order number and photos. We do not accept change-of-mind returns. If the item is in stock we send a replacement; otherwise we refund a prepaid order to the original payment method. ${codRefundLine()} Your bank usually takes 5–7 business days to show the refund.`;
 }
 
 export function dispatchLine(): string {
-  return `Ships within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM}, via ${COURIER_PARTNERS}.`;
+  return `Ships across India within ${HANDLING_DAYS_MAX} business days, via ${COURIER_PARTNERS}.`;
 }
 
 export function shippingPriceLine(policy: StorePolicy): string {
