@@ -18,6 +18,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const ORIGIN = 'https://coco36.com';
 const TITLE_MAX = 59;          // "under 60"
@@ -32,7 +33,10 @@ const meta = (html, attr, key) => {
   const m = html.match(new RegExp(`<meta ${attr}="${key.replace(/[.:]/g, '\\$&')}" content="([^"]*)"`));
   return m ? decode(m[1]) : null;
 };
-const textOf = (html) => decode(html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+// Tags become spaces, then whitespace collapses. A link sitting against
+// punctuation (`<a>returns</a>.`) must not keep a space before the mark —
+// a reader does not see one, and FAQ answers often end on a link.
+const textOf = (html) => decode(html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim();
 const isAbs = (u) => typeof u === 'string' && /^https:\/\//.test(u);
 const arr = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
@@ -100,7 +104,7 @@ function checkOrg(where, o) {
   if (!arr(o.sameAs).length) warn(where, 'Organization.sameAs empty — add social profile URLs in src/seo/site.ts');
 }
 
-export function auditHtml(where, html, { expectUrl, sitemapUrl = false } = {}) {
+export function auditHtml(where, html, { expectUrl = '', sitemapUrl = false } = {}) {
   const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1];
   const t = title ? decode(title) : null;
   if (!t) err(where, 'no <title>');
@@ -219,12 +223,20 @@ function offline(dir) {
   }
 }
 
-const args = process.argv.slice(2);
-if (args[0] === '--dir' && args[1]) offline(args[1]);
-else if (args[0]?.startsWith('http')) await live(args[0]);
-else { console.error('usage: seo-audit.mjs <https://origin> | --dir <folder>'); process.exit(2); }
+/** Errors and warnings collected since the last call. Used by unit tests. */
+export function takeFindings() {
+  return { errors: errors.splice(0), warnings: warnings.splice(0) };
+}
 
-for (const w of warnings) console.log(`warn  ${w}`);
-for (const e of errors) console.log(`ERROR ${e}`);
-console.log(`\n${errors.length} error(s), ${warnings.length} warning(s)`);
-process.exit(errors.length ? 1 : 0);
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+  const args = process.argv.slice(2);
+  if (args[0] === '--dir' && args[1]) offline(args[1]);
+  else if (args[0]?.startsWith('http')) await live(args[0]);
+  else { console.error('usage: seo-audit.mjs <https://origin> | --dir <folder>'); process.exit(2); }
+
+  for (const w of warnings) console.log(`warn  ${w}`);
+  for (const e of errors) console.log(`ERROR ${e}`);
+  console.log(`\n${errors.length} error(s), ${warnings.length} warning(s)`);
+  process.exit(errors.length ? 1 : 0);
+}

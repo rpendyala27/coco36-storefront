@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, Fragment } from 'react';
 import { CheckDelivery } from '../components/CheckDelivery';
 import type * as React from 'react';
 import { Minus, Plus, ShoppingBag, ChevronDown, Check, Leaf, Truck, HandCoins, FileText, Network, BookOpen, ArrowRight, Star } from 'lucide-react';
@@ -16,6 +16,8 @@ import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
 import { SHIPS_FROM } from '../seo/site';
 import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
+import { productPage } from '../content/productPages';
+import { parseRich, type RichNode } from '../content/richText';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
@@ -115,6 +117,7 @@ export const ProductDetail = () => {
     );
   }
 
+  const page = productPage(product);
   const selectedSize    = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
   const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * quantity;
   // Driven by tag.kind (like Shop/ProductCard) — no hardcoded slug sets.
@@ -163,7 +166,7 @@ export const ProductDetail = () => {
         {/* Buy panel */}
         <div>
           <p className="eyebrow text-brand-leaf mb-3">{product.category} · {countryOf(product.origin)}</p>
-          <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{product.name}</h1>
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{page?.h1 ?? product.name}</h1>
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
 
           {/* Cert + dietary marks — stamp icons, same iconography as cards + trust band */}
@@ -185,10 +188,16 @@ export const ProductDetail = () => {
             {selectedSize && !selectedSize.inStock && <span className="pill bg-brand-forest text-white ml-2">Out of stock</span>}
           </div>
 
-          {/* Description (lede) */}
-          {product.description && (
+          {/* Answer-first intro when this URL has editorial copy; otherwise the catalogue sentence. */}
+          {page ? (
+            <div className="mt-6 max-w-[65ch] space-y-3">
+              {page.intro.map((para, i) => (
+                <p key={i} className="text-[15px] leading-relaxed text-brand-muted"><Rich text={para} /></p>
+              ))}
+            </div>
+          ) : product.description ? (
             <p className="text-[15px] leading-relaxed text-brand-muted mt-6 max-w-[60ch]">{product.description}</p>
-          )}
+          ) : null}
 
           {/* Size selector */}
           {product.sizes.length > 1 && (
@@ -238,11 +247,34 @@ export const ProductDetail = () => {
             Ships in <span className="text-brand-forest font-medium">2 business days</span> from {SHIPS_FROM.split(',')[0]} · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
           </p>
 
+          {page && page.sections.length > 0 && (
+            <div className="mt-8 space-y-6">
+              {page.sections.map((section) => (
+                <section key={section.heading}>
+                  <h2 className="font-display text-2xl text-brand-forest">{section.heading}</h2>
+                  {section.paragraphs.map((para, i) => (
+                    <p key={i} className="mt-2 text-[15px] leading-relaxed text-brand-muted"><Rich text={para} /></p>
+                  ))}
+                </section>
+              ))}
+            </div>
+          )}
+
+          {page && page.related.length > 0 && (
+            <nav aria-label="Related pages" className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              {page.related.map((link) => (
+                <Link key={link.href} to={link.href} className="text-brand-leaf hover:underline">{link.label}</Link>
+              ))}
+            </nav>
+          )}
+
           {/* Accordions */}
           <div className="mt-9">
-            <Acc title="Description" open={open.description} onToggle={() => toggle('description')}>
-              <p>{product.description || 'No description available for this lot yet.'}</p>
-            </Acc>
+            {!page && (
+              <Acc title="Description" open={open.description} onToggle={() => toggle('description')}>
+                <p>{product.description || 'No description available for this lot yet.'}</p>
+              </Acc>
+            )}
             <Acc title="Details" open={open.details} onToggle={() => toggle('details')}>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-12">
                 {[
@@ -305,6 +337,20 @@ export const ProductDetail = () => {
         </div>
       </div>
 
+      {page && page.faqs.length > 0 && (
+        <section aria-labelledby="product-faq" className="max-w-3xl mx-auto px-4 md:px-8 lg:px-12 pt-12">
+          <h2 id="product-faq" className="font-display text-3xl text-brand-forest mb-6">Frequently asked questions</h2>
+          <div className="divide-y divide-brand-line border-y border-brand-line">
+            {page.faqs.map((f) => (
+              <div key={f.q} className="py-5">
+                <h3 className="font-display font-bold text-lg text-brand-forest">{f.q}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/80"><Rich text={f.a} /></p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Reviews — structure present, never fabricated data */}
       <section className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 pt-12">
         <div className="border-t border-brand-line pt-10">
@@ -348,6 +394,27 @@ export const ProductDetail = () => {
     </div>
   );
 };
+
+function Rich({ text }: { text: string }) {
+  return (
+    <>
+      {parseRich(text).map((node, i) => (
+        <Fragment key={i}><RichView node={node} /></Fragment>
+      ))}
+    </>
+  );
+}
+
+function RichView({ node }: { node: RichNode }) {
+  if (node.type === 'text') return <>{node.text}</>;
+  if (node.type === 'bold') {
+    return <strong className="font-semibold text-brand-ink">{node.children.map((child, i) => <Fragment key={i}><RichView node={child} /></Fragment>)}</strong>;
+  }
+  if (/^https?:/i.test(node.href)) {
+    return <a href={node.href} className="text-brand-leaf hover:underline" target="_blank" rel="noopener noreferrer">{node.text}</a>;
+  }
+  return <Link to={node.href} className="text-brand-leaf hover:underline">{node.text}</Link>;
+}
 
 // Accordion row
 const Acc: React.FC<{ title: string; open: boolean; onToggle: () => void; children: React.ReactNode }> = ({ title, open, onToggle, children }) => (

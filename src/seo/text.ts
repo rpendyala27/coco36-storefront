@@ -31,6 +31,36 @@ export function firstThatFits(options: string[], max: number): string {
   return clip(options[options.length - 1] ?? '', max);
 }
 
+/** Split on sentence endings, keeping the terminator on each piece. */
+export function sentences(text: string): string[] {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (!t) return [];
+  return (t.match(/[^.!?…]+[.!?…]*/g) ?? []).map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Longest run of complete sentences that fits in `max`.
+ * A sentence is cut (with an ellipsis) only when that one sentence is itself
+ * longer than `max`. Callers that used to clip mid-sentence to make room for
+ * a suffix should drop a whole sentence instead.
+ */
+export function fitSentences(text: string, max: number): string {
+  let out = '';
+  for (const s of sentences(text)) {
+    const next = out ? `${out} ${s}` : s;
+    if (next.length <= max) out = next;
+    else break;
+  }
+  if (out) return out;
+  return clip(sentences(text)[0] ?? '', max);
+}
+
+/** First option that fits whole. If none do, keep complete sentences of the first. */
+export function firstComplete(options: string[], max: number): string {
+  for (const o of options) if (o.length <= max) return o;
+  return fitSentences(options[0] ?? '', max);
+}
+
 /** Limits the whole site is held to: titles UNDER 60 chars, descriptions UNDER 155. */
 export const TITLE_MAX = 59;
 export const DESCRIPTION_MAX = 154;
