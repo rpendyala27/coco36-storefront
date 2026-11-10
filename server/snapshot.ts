@@ -10,14 +10,15 @@ import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/conte
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
 import { richHtml } from '../src/content/richText.js';
-import { shopIntro } from '../src/content/shopIntro.js';
+import { SHOP_LEDE, shopPromises, shopSeoBelowGrid } from '../src/content/shopIntro.js';
+import { COMING_SOON, COMING_SOON_NOTE } from '../src/content/comingSoon.js';
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../src/lib/supportContact.js';
 import {
   GUIDES, GUIDES_HUB, guideFaqs, guidePath, productsForGuide, type Guide,
 } from '../src/content/guides.js';
 import { PHASES } from '../src/data/thirtySixSteps.js';
 import {
-  LEGAL_NAME, SHIPS_FROM, type StorePolicy, rupees,
+  LEGAL_NAME, REGISTERED_OFFICE_LINE, type StorePolicy, rupees,
 } from '../src/seo/site.js';
 import { policyBlurb } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
@@ -28,6 +29,8 @@ import {
   type RecipeDoc, type RecipeLink,
 } from '../src/content/recipes.js';
 import { esc } from './html.js';
+import { TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL, TRADE_STEPS } from '../src/content/tradeSteps.js';
+import { BULK_GUIDE_LABEL, bulkGuideHref } from '../src/content/bulkGuideLink.js';
 
 /**
  * Server-rendered content snapshot for each page: real headings, copy and
@@ -48,10 +51,10 @@ const a = (href: string, text: string) => `<a href="${esc(href)}">${esc(text)}</
 const stockedCategories = (ctx: SnapshotCtx) =>
   ctx.tree.roots.filter((c) => productsInCategory(c, ctx.tree, ctx.products).length > 0);
 
-function layout(ctx: SnapshotCtx, main: string, opts?: { omitDispatchCity?: boolean }): string {
+function layout(ctx: SnapshotCtx, main: string, _opts?: { omitDispatchCity?: boolean }): string {
   const nav = [
     a('/shop', 'Shop'), a('/guides', 'Notes'), a('/ingredients', 'Ingredient guides'), a('/36-steps', '36 Steps'),
-    a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'), a('/impact', 'Impact'),
+    a('/partnerships', 'Partnerships'), a('/trade', 'Trade & bulk'), a('/impact', 'Impact'),
   ];
   const foot = [
     a('/shop', 'All ingredients'),
@@ -60,6 +63,7 @@ function layout(ctx: SnapshotCtx, main: string, opts?: { omitDispatchCity?: bool
     a('/recipes', 'Recipes'),
     ...GUIDES.map((g) => a(guidePath(g), `${g.name} guide`)),
     a('/36-steps', '36 Steps'), a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'),
+    a(TRADE_GUIDE_HREF, 'Wholesale guide'),
     a('/impact', 'Impact'), a('/about', 'About'), a('/contact', 'Contact'), a('/faq', 'FAQ'),
     a('/shipping', 'Shipping'), a('/returns', 'Returns'), a('/privacy', 'Privacy'), a('/terms', 'Terms of sale'),
   ];
@@ -68,7 +72,7 @@ function layout(ctx: SnapshotCtx, main: string, opts?: { omitDispatchCity?: bool
     `<header><p>${a('/', 'COCO36 — From crop to craft')}</p><nav aria-label="Main"><ul>${nav.map((l) => `<li>${l}</li>`).join('')}</ul></nav></header>`,
     `<main>${main}</main>`,
     `<footer><nav aria-label="Footer"><ul>${foot.map((l) => `<li>${l}</li>`).join('')}</ul></nav>`,
-    `<p>© ${new Date().getUTCFullYear()} ${esc(LEGAL_NAME)} · ${opts?.omitDispatchCity ? 'India' : `${esc(SHIPS_FROM)}, India`}</p></footer>`,
+    `<p>© ${new Date().getUTCFullYear()} ${esc(LEGAL_NAME)} · Ships across India</p></footer>`,
     '</div>',
   ].join('\n');
 }
@@ -105,7 +109,7 @@ const deliveryLine = (policy: StorePolicy) => policyBlurb(policy);
 export function homeSnapshot(ctx: SnapshotCtx): string {
   return layout(ctx, [
     '<h1>Find your secret ingredient</h1>',
-    `<p>Origin ingredients for bakers, pastry chefs and chocolatiers across India: vanilla, cane sugars, speciality flours, finishing salt and kits, shipped from ${esc(SHIPS_FROM)}.</p>`,
+    '<p>Origin ingredients for bakers, pastry chefs and chocolatiers across India: vanilla, cane sugars, speciality flours, finishing salt and kits. Ships across India.</p>',
     '<h2>Featured ingredients</h2>',
     productList(featuredProducts(ctx.products)) || '<p>New lots are on their way.</p>',
     `<p>${a('/shop', 'Shop all ingredients')}</p>`,
@@ -121,11 +125,14 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
   return layout(ctx, [
     breadcrumbs([{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }]),
     '<h1>Shop all ingredients</h1>',
-    ...shopIntro(ctx.policy).map((p) => `<p>${esc(p)}</p>`),
+    `<p>${esc(SHOP_LEDE)}</p>`,
+    `<ul>${shopPromises(ctx.policy).map((item) => `<li>${esc(item.label)}</li>`).join('')}</ul>`,
     productList(ctx.products) || '<p>New lots are on their way.</p>',
+    '<h2>Coming soon</h2>',
+    `<ul>${COMING_SOON.map((item) => `<li>${esc(item.name)}: ${esc(COMING_SOON_NOTE)}</li>`).join('')}</ul>`,
+    ...shopSeoBelowGrid().map((p) => `<p>${esc(p)}</p>`),
     '<h2>Categories</h2>',
     `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
-    `<p>${esc(deliveryLine(ctx.policy))}</p>`,
   ].join('\n'));
 }
 
@@ -184,6 +191,7 @@ export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): 
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
     cat ? `<p>More in ${a(categoryPath(cat), cat.name)}</p>` : '',
     guide ? `<p>Buying guide: ${a(guidePath(guide), guide.h1)}</p>` : '',
+    bulkGuideHref(p) ? `<p>${a(bulkGuideHref(p)!, BULK_GUIDE_LABEL)}</p>` : '',
     related,
     faqs,
     '</article>',
@@ -323,7 +331,12 @@ export function staticSnapshot(ctx: SnapshotCtx, pathname: string, crumbs: Crumb
       : { h1: 'COCO36', lede: '' });
   const extra = pathname === '/36-steps'
     ? PHASES.map((ph) => `<h2>Phase ${esc(ph.number)}: ${esc(ph.title)}</h2><p>${esc(ph.description)}</p><ol>${ph.steps.map((s) => `<li>${esc(s.title)}: ${esc(s.description)}</li>`).join('')}</ol>`).join('\n')
-    : pathname === '/terms' ? `<h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>`
+    : pathname === '/terms' ? `<p>${esc(REGISTERED_OFFICE_LINE)}</p><h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>`
+    : pathname === '/trade' ? [
+      '<h2>Four steps to start.</h2>',
+      `<p>${a(TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL)}</p>`,
+      `<ol>${TRADE_STEPS.map((s) => `<li><strong>${esc(s.title)}</strong> ${esc(s.body)}</li>`).join('')}</ol>`,
+    ].join('\n')
     : pathname === '/cart' ? `<p>${a('/shop', 'Browse the shop')}</p>`
     : '';
   const trail = pathname === '/cart'

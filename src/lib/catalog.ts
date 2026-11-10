@@ -35,8 +35,8 @@ export const browseCategories = (tree: CategoryTree) => tree.roots.filter((c) =>
 
 /** Intro line under a listing H1 (/shop or a category) — server + client. */
 export function listingIntro(c: Category | null, count: number): string {
-  if (!c) return 'Every COCO36 ingredient in one place. Filter by origin, certification and price; we ship across India from Visakhapatnam.';
+  if (!c) return 'Every COCO36 ingredient in one place. Filter by origin, certification and price. Ships across India.';
   if (c.description) return c.description;
   if (count === 0) return `Nothing from ${c.name} is in the shop right now.`;
-  return `${count} ${count === 1 ? 'ingredient' : 'ingredients'} in ${c.name}, shipped across India from Visakhapatnam.`;
+  return `${count} ${count === 1 ? 'ingredient' : 'ingredients'} in ${c.name}. Ships across India.`;
 }

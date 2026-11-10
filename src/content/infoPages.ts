@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy } from '../seo/site.js';
+import { businessDayPhrase, DEFAULT_POLICY, dispatchWindow, type StorePolicy } from '../seo/site.js';
 import {
   businessDaysLine, cancellationLine, changeOfMindLine, contactLine, cutoffLine,
   deliveryEstimateLine, dispatchLine, emailReplyLine, refundLine, remedyLine,
@@ -26,8 +26,10 @@ export interface InfoLink { href: string; label: string }
 
 export interface InfoPage {
   path: string;
-  /** <title>, 50–59 characters. */
+  /** <title>, 50–59 characters. At the fallback dispatch window. */
   title: string;
+  /** When set, the live title follows store policy (shipping uses handling days). */
+  titleFor?: (policy: StorePolicy) => string;
   description: (policy: StorePolicy) => string;
   crumb: string;
   eyebrow: string;
@@ -50,6 +52,12 @@ const RELATED: InfoLink[] = [
 
 const relatedExcept = (path: string) => RELATED.filter((l) => l.href !== path);
 
+export function shippingPageTitle(policy: StorePolicy = DEFAULT_POLICY): string {
+  const window = dispatchWindow(policy);
+  const unit = window.trim() === '1' ? 'Business Day' : 'Business Days';
+  return `Shipping across India within ${window} ${unit} | COCO36`;
+}
+
 /**
  * Questions the shipping and returns facts actually answer.
  * Visible FAQ and FAQPage JSON-LD both call this.
@@ -58,7 +66,7 @@ export function policyFaqs(policy: StorePolicy): { q: string; a: string }[] {
   return [
     {
       q: 'Where do COCO36 orders ship from, and how soon do they leave?',
-      a: `${dispatchLine()} ${businessDaysLine()} ${cutoffLine()} We ship across India.`,
+      a: `${dispatchLine(policy)} ${businessDaysLine()} ${cutoffLine(policy)} We ship across India.`,
     },
     {
       q: 'How much does shipping cost?',
@@ -98,7 +106,7 @@ export function policyFaqs(policy: StorePolicy): { q: string; a: string }[] {
     },
     {
       q: 'How do I contact COCO36?',
-      a: `${contactLine()} ${supportHoursLine()} ${emailReplyLine()} COCO36 ships from ${SHIPS_FROM}.`,
+      a: `${contactLine()} ${supportHoursLine()} ${emailReplyLine()} COCO36 ships across India.`,
     },
   ];
 }
@@ -107,7 +115,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/about',
     title: 'About COCO36: Specialty Ingredients from Origin | COCO36',
-    description: () => 'COCO36 Foods sells specialty baking and pastry ingredients sourced direct from origin, and ships them across India from Visakhapatnam.',
+    description: () => 'COCO36 Foods sells specialty baking and pastry ingredients sourced direct from origin, and ships them across India.',
     crumb: 'About',
     eyebrow: 'The company',
     h1: 'Specialty baking ingredients, sourced direct from origin',
@@ -115,13 +123,6 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: 'From crop to craft',
         subsections: [
-          {
-            heading: 'Our story',
-            paragraphs: [
-              'COCO36 started with a farming family in West Godavari, Andhra Pradesh. Our founder, Rohan, grew up close to the crops and the people who grow them. He went on to study mechanical engineering at VIT Vellore and then earned an MBA in supply chain at the University of Tennessee.',
-              'Agriculture was never far away. Along the way he built side projects in IoT irrigation, mushroom cultivation and hydroponics, and studied polyhouse farming. But he wanted to build something bigger: a business that brings great ingredients to bakers and makers while making sure farmers get their fair share.',
-            ],
-          },
           {
             heading: 'Our mission',
             paragraphs: [
@@ -145,7 +146,7 @@ export const INFO_PAGES: InfoPage[] = [
           },
         ],
         paragraphs: [
-          "We're rooted in India and based in Visakhapatnam, and we're built for bakers and makers who care where their ingredients come from: home bakers, pastry chefs, chocolatiers, and café and bakery owners.",
+          "We're rooted in India, and we're built for bakers and makers who care where their ingredients come from: home bakers, pastry chefs, chocolatiers, and café and bakery owners.",
           'We ship across India. Follow along on Instagram {@coco36official|https://www.instagram.com/coco36official/} and on {LinkedIn (COCO36 Foods)|https://www.linkedin.com/company/coco36-foods/}, where we share what we learn about where our ingredients come from.',
         ],
       },
@@ -160,8 +161,8 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: 'How an order leaves',
         paragraphs: [
-          `${dispatchLine()} We ship across India. ${shippingPriceLine(policy)}`,
-          `${businessDaysLine()} ${cutoffLine()} Two business days is when the order leaves Visakhapatnam, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
+          `${dispatchLine(policy)} We ship across India. ${shippingPriceLine(policy)}`,
+          `${businessDaysLine()} ${cutoffLine(policy)} ${businessDayPhrase(dispatchWindow(policy))} is when the order is dispatched, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
         ],
       },
       {
@@ -177,7 +178,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/contact',
     title: 'Contact COCO36 Foods: Email and Phone Support | COCO36',
-    description: () => 'Contact COCO36 at support@coco36.com or on 9944213233. We ship specialty baking ingredients from Visakhapatnam, Andhra Pradesh.',
+    description: () => 'Contact COCO36 at support@coco36.com or on 9944213233. We ship specialty baking ingredients across India.',
     crumb: 'Contact',
     eyebrow: 'Support',
     h1: 'Contact COCO36',
@@ -186,9 +187,9 @@ export const INFO_PAGES: InfoPage[] = [
       {
         paragraphs: [
           `Questions about an order, a product or a delivery come to ${SUPPORT_EMAIL} and to ${SUPPORT_PHONE_DISPLAY}. Use either. If the question is about an order you have already placed, include the order number so we can find it.`,
-          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong, missing, or expired or near expiry. ${returnsLine(policy)} ${dispatchLine()} ${shippingPriceLine(policy)}`,
+          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong, missing, or expired or near expiry. ${returnsLine(policy)} ${dispatchLine(policy)} ${shippingPriceLine(policy)}`,
           `${supportHoursLine()} ${emailReplyLine()}`,
-          `COCO36 ships from ${SHIPS_FROM}. That is the city we publish. The catalogue is specialty baking and pastry ingredients sourced direct from origin, for bakers, pastry chefs and chocolatiers across India.`,
+          'The catalogue is specialty baking and pastry ingredients sourced direct from origin, for bakers, pastry chefs and chocolatiers. We ship across India.',
           'If you are deciding what to buy, the shop lists every ingredient, and the ingredient guides explain vanilla, cocoa and chocolate, sugars, flours, and spices and salt. This page is how to reach a person. The FAQ, shipping page and returns page say the same things about orders.',
         ],
       },
@@ -198,7 +199,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/faq',
     title: 'Frequently Asked Questions about COCO36 Orders | COCO36',
-    description: (policy) => `How COCO36 shipping works: dispatch within ${HANDLING_DAYS_MAX} business days from Visakhapatnam, free shipping over ${rupeesLabel(policy)}, and the ${policy.returnWindowDays}-day report window.`,
+    description: (policy) => `How COCO36 shipping works: dispatch within ${businessDayPhrase(dispatchWindow(policy))}, ships across India, free on orders of ${rupeesLabel(policy)} or more, and the ${policy.returnWindowDays}-day report window.`,
     crumb: 'FAQ',
     eyebrow: 'Help',
     h1: 'Orders, shipping and returns',
@@ -214,24 +215,24 @@ export const INFO_PAGES: InfoPage[] = [
   },
   {
     path: '/shipping',
-    title: 'COCO36 Shipping: From Visakhapatnam, India | COCO36',
-    description: (policy) => `COCO36 ships within ${HANDLING_DAYS_MAX} business days from Visakhapatnam via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
+    title: shippingPageTitle(DEFAULT_POLICY),
+    titleFor: shippingPageTitle,
+    description: (policy) => `COCO36 ships across India within ${businessDayPhrase(dispatchWindow(policy))} via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
     crumb: 'Shipping',
     eyebrow: 'Delivery',
-    h1: 'Shipping from Visakhapatnam',
+    h1: 'Shipping across India',
     sections: (policy) => [
       {
         heading: 'When an order ships',
         paragraphs: [
-          `${dispatchLine()} We ship across India.`,
-          `${businessDaysLine()} ${cutoffLine()}`,
-          'Two business days is when the order leaves Visakhapatnam. It is not a date for when the parcel reaches you.',
+          `${dispatchLine(policy)} We ship across India.`,
+          `${businessDaysLine()} ${cutoffLine(policy)}`,
+          `${businessDayPhrase(dispatchWindow(policy))} is when the order is dispatched. It is not a date for when the parcel reaches you.`,
         ],
         bullets: [
-          'Leaves from Visakhapatnam, Andhra Pradesh.',
+          'Ships across India.',
           'Handed to our courier partners.',
-          `Dispatched within ${HANDLING_DAYS_MAX} business days, using the 12 PM IST cutoff.`,
-          'We ship across India.',
+          `Dispatched within ${businessDayPhrase(dispatchWindow(policy))}, using the 12 PM IST cutoff.`,
         ],
       },
       {
@@ -309,7 +310,7 @@ export function infoPage(path: string): InfoPage | undefined {
 export function infoTodos(path: string): string[] {
   const page = infoPage(path);
   if (!page) return [];
-  return page.sections({ freeShippingPaise: 120000, flatShippingPaise: 9900, codSurchargePaise: 0, returnWindowDays: 7 })
+  return page.sections(DEFAULT_POLICY)
     .map((s) => s.todo)
     .filter((t): t is string => !!t);
 }

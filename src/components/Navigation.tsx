@@ -4,10 +4,12 @@ import { Menu, Search, ShoppingBag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { useStoreConfig } from '../lib/storeConfig';
+import { freeShippingOnLabel } from '../content/policyLabels';
 import { useSearchIndex } from '../hooks/useProducts';
 import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
+import { TradeBulkLink } from './TradeBulkLink';
 
 // /recipes is a published index. It stays out of this bar so the existing
 // destinations keep their places; the footer and the recipe pages link it.
@@ -56,7 +58,7 @@ export const Navigation: React.FC = () => {
             </span>
             {/* Right — value props (md+) */}
             <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
-              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span className="text-white/90">{freeShippingOnLabel(cfg)}</span>
               <span className="hidden lg:inline text-white/25">·</span>
               <span className="hidden lg:inline">Bulk &amp; trade</span>
               <span className="text-white/25">·</span>
@@ -67,7 +69,7 @@ export const Navigation: React.FC = () => {
 
         {/* Header */}
         <nav className="h-[50px] bg-brand-paper border-b border-brand-line flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 grid grid-cols-[auto_1fr_auto] items-center gap-6">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 grid grid-cols-[auto_1fr_auto] items-center gap-2 md:gap-6">
             {/* Logo */}
             <NavLink to="/" className="flex items-center gap-2.5 shrink-0" aria-label="COCO36 — From crop to craft">
               <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={41} height={40} alt="" className="h-10 w-auto" />
@@ -96,8 +98,7 @@ export const Navigation: React.FC = () => {
                   collapsed into the hamburger (md→lg). Hidden at lg+, where the
                   center nav already carries Shop, to avoid a duplicate. */}
               <NavLink to="/shop" className="hidden md:inline-flex lg:hidden items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Shop</NavLink>
-              <NavLink to="/quick-order" className="hidden lg:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Quick order</NavLink>
-              <NavLink to="/trade" className="hidden md:inline-flex items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Trade</NavLink>
+              <TradeBulkLink />
               {user ? (
                 <ProfileDropdown />
               ) : (
@@ -166,8 +167,11 @@ export const Navigation: React.FC = () => {
                     </NavLink>
                   </li>
                 ))}
+                <li className="pt-6 mt-6 border-t border-brand-line">
+                  <TradeBulkLink className="w-full" />
+                </li>
                 {!user && (
-                  <li className="pt-6 mt-6 border-t border-brand-line">
+                  <li className="pt-3">
                     <NavLink to="/auth" onClick={() => setMobileOpen(false)} className="btn-primary w-full">Account</NavLink>
                   </li>
                 )}

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CATEGORY_PAGE_SLUGS, categoryListingMeta, categoryPage } from '../../src/content/categoryPages';
 import { INFO_PAGES, infoTodos, policyFaqs } from '../../src/content/infoPages';
-import { shopIntro } from '../../src/content/shopIntro';
+import { SHOP_LEDE, shopPromises, shopSeoBelowGrid } from '../../src/content/shopIntro';
+import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../../src/content/policyLabels';
 import { buildTree } from '../../src/lib/categoryTree';
 import { DEFAULT_POLICY } from '../../src/seo/site';
 import { DESCRIPTION_MAX, TITLE_MAX } from '../../src/seo/text';
@@ -21,14 +22,23 @@ describe('SEO copy bounds', () => {
     }
   });
 
-  it('the shop intro is 120–200 words and names the origin line', () => {
-    const text = shopIntro(DEFAULT_POLICY).join(' ');
-    const n = words(text);
-    expect(n).toBeGreaterThanOrEqual(120);
-    expect(n).toBeLessThanOrEqual(200);
-    expect(text).toContain('sourced direct from origin');
-    expect(text).toContain('₹1,200');
-    expect(text).toContain('9944213233');
+  it('the shop lede is one line, the promises are the four labels, and SEO copy sits apart from them', () => {
+    expect(SHOP_LEDE).toBe('Specialty baking and pastry ingredients, sourced direct from origin, for bakers and pastry chefs across India');
+    expect(shopPromises(DEFAULT_POLICY).map((item) => item.label)).toEqual([
+      'Sourced direct from origin',
+      shipsInLabel(),
+      freeShippingOnLabel(DEFAULT_POLICY),
+      reportIssuesLabel(DEFAULT_POLICY),
+    ]);
+    expect(shipsInLabel()).toBe('Ships in 1 business day');
+    expect(freeShippingOnLabel(DEFAULT_POLICY)).toBe('Free shipping on ₹1,200+');
+    expect(reportIssuesLabel(DEFAULT_POLICY)).toBe('Report issues within 7 days');
+    const below = shopSeoBelowGrid().join(' ');
+    expect(below).toContain('sourced direct from origin');
+    expect(below.toLowerCase()).not.toContain('homepage is a shorter introduction');
+    expect(below).not.toContain('9944213233');
+    expect(below).not.toContain('₹1,200');
+    expect(words(SHOP_LEDE)).toBeLessThan(30);
   });
 
   it('the four thin categories have a 150–250 word intro and 3–4 FAQs', () => {

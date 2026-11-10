@@ -206,20 +206,19 @@ describe('server-rendered pages', () => {
     expect(r.body).not.toMatch(/Shiprocket/i);
   });
 
-  it('the about story is published, with no owner TODO left on the info pages', async () => {
+  it('the about page keeps mission and values, and the story section is gone', async () => {
     const about = await render('/about', '', 'coco36.com');
     expect(about.body).toContain('From crop to craft');
-    expect(about.body).toContain('<h3>Our story</h3>');
-    expect(about.body).toContain('Our founder, Rohan');
+    expect(about.body).not.toContain('<h3>Our story</h3>');
+    expect(about.body).not.toContain('Our founder, Rohan');
     expect(about.body).toContain('<h3>Our mission</h3>');
     expect(about.body).toContain('<h3>Our vision</h3>');
     expect(about.body).toContain('<h3>What we value</h3>');
     expect(about.body).toContain('Fair share for farmers.');
-    expect(about.body).toContain('based in Visakhapatnam');
     expect(about.body).toContain('café and bakery owners');
     expect(about.body).toContain('href="https://www.instagram.com/coco36official/"');
     expect(about.body).toContain('href="https://www.linkedin.com/company/coco36-foods/"');
-    expect(about.body).toContain('Visakhapatnam');
+    expect(about.body).not.toMatch(/Visakhapatnam|Vizag/i);
     expect(about.body).not.toContain('TODO for the owner');
     expect(about.body).not.toMatch(/Shiprocket/i);
     for (const p of ['/contact', '/shipping', '/returns', '/faq']) {

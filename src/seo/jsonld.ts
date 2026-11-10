@@ -7,7 +7,7 @@ import { imageUrl } from '../lib/img.js';
 import { productPath } from '../lib/productPath.js';
 import { stripMarkdown } from './text.js';
 import {
-  BRAND, DEFAULT_POLICY, HANDLING_DAYS_MAX, LEGAL_NAME, LOGO_URL, ORG_ADDRESS,
+  BRAND, DEFAULT_POLICY, LEGAL_NAME, LOGO_URL, dispatchDayBounds, dispatchWindow,
   SITE_ORIGIN, SOCIAL_PROFILES, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, absUrl,
 } from './site.js';
 
@@ -71,7 +71,7 @@ function productSku(p: Product): string | undefined {
 }
 /**
  * Domestic shipping: flat fee below the free-shipping threshold, free at or
- * above it. Handling time is the "ships in 2 business days" promise.
+ * above it. Handling time follows DISPATCH_WINDOW.
  * Transit time is the envelope published on /shipping (3–10 business days,
  * metro through remote). It is an estimate, not a guaranteed delivery date.
  */
@@ -85,15 +85,15 @@ export function shippingJsonLd(pricePaise: number, policy: StorePolicy = DEFAULT
       currency: 'INR',
     },
     shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'IN' },
-    shippingOrigin: {
-      '@type': 'DefinedRegion',
-      addressCountry: ORG_ADDRESS.addressCountry,
-      addressRegion: ORG_ADDRESS.addressRegion,
-      postalCode: ORG_ADDRESS.postalCode,
-    },
+    shippingOrigin: { '@type': 'DefinedRegion', addressCountry: 'IN' },
     deliveryTime: {
       '@type': 'ShippingDeliveryTime',
-      handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: HANDLING_DAYS_MAX, unitCode: 'DAY' },
+      handlingTime: {
+        '@type': 'QuantitativeValue',
+        minValue: dispatchDayBounds(dispatchWindow(policy)).min,
+        maxValue: dispatchDayBounds(dispatchWindow(policy)).max,
+        unitCode: 'DAY',
+      },
       transitTime: { '@type': 'QuantitativeValue', minValue: TRANSIT_DAYS_MIN, maxValue: TRANSIT_DAYS_MAX, unitCode: 'DAY' },
     },
   };
@@ -110,7 +110,6 @@ export function organizationJsonLd(policy: StorePolicy = DEFAULT_POLICY): WithCo
     alternateName: BRAND,
     url: `${SITE_ORIGIN}/`,
     logo: { '@type': 'ImageObject', url: LOGO_URL, width: '256', height: '250' },
-    address: { '@type': 'PostalAddress', ...ORG_ADDRESS },
     ...(SOCIAL_PROFILES.length ? { sameAs: [...SOCIAL_PROFILES] } : {}),
     hasMerchantReturnPolicy: returnPolicyJsonLd(policy),
   };

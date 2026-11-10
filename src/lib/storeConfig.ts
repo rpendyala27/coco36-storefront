@@ -34,16 +34,32 @@ export function getStoreConfig(): StoreConfig {
   return cache;
 }
 
-/** Fetch once, cache process-wide. Falls back to DEFAULT_CONFIG on any error. */
+function asConfig(value: unknown): Partial<StoreConfig> | null {
+  if (!value || typeof value !== 'object') return null;
+  return value as Partial<StoreConfig>;
+}
+
+/**
+ * Admin public config (shipping, returns, ordering) plus handlingDays from
+ * this app's /api/public/config, which reads delivery_zones with the service
+ * role. A missing or failed zone read keeps DEFAULT_CONFIG.handlingDays.
+ */
 export function loadStoreConfig(): Promise<StoreConfig> {
   if (inflight) return inflight;
-  inflight = fetch(`${API_URL}/api/public/config`)
-    .then((r) => (r.ok ? r.json() : null))
-    .then((d) => {
-      if (d && typeof d.freeShippingPaise === 'number') cache = { ...DEFAULT_CONFIG, ...d };
-      return cache;
-    })
-    .catch(() => cache);
+  inflight = Promise.all([
+    fetch(`${API_URL}/api/public/config`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    fetch('/api/public/config').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+  ]).then(([adminRaw, zoneRaw]) => {
+    const admin = asConfig(adminRaw);
+    const zone = asConfig(zoneRaw);
+    const next: StoreConfig = { ...DEFAULT_CONFIG };
+    if (admin && typeof admin.freeShippingPaise === 'number') Object.assign(next, admin);
+    if (typeof zone?.handlingDays === 'number' && Number.isInteger(zone.handlingDays) && zone.handlingDays >= 1) {
+      next.handlingDays = zone.handlingDays;
+    }
+    cache = next;
+    return cache;
+  }).catch(() => cache);
   return inflight;
 }
 

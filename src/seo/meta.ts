@@ -6,10 +6,11 @@ import { GUIDES_HUB, guidePath, type GuideLink } from '../content/guideIndex.js'
 import {
   breadcrumbJsonLd, faqJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
 } from './jsonld.js';
-import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
+import { INFO_PAGES, infoPage, policyFaqs } from '../content/infoPages.js';
 import { productPage } from '../content/productPages.js';
 import { richPlain } from '../content/richText.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
+import { freeShippingOnLabel } from '../content/policyLabels.js';
 import { DESCRIPTION_MAX, TITLE_MAX, clip, composeProductDescription, firstThatFits, fitWithin, stripMarkdown } from './text.js';
 
 /**
@@ -116,7 +117,7 @@ export function staticPageMeta(pathname: string, policy: StorePolicy = DEFAULT_P
     const crumbs = staticPageCrumbs(pathname);
     const faqs = pathname === '/faq' ? policyFaqs(policy) : null;
     return {
-      title: e.title,
+      title: infoPage(pathname)?.titleFor?.(policy) ?? e.title,
       description: e.description(policy),
       path: pathname,
       ...(e.noindex ? { robots: NOINDEX } : {}),
@@ -145,7 +146,7 @@ export function isStaticMetaPath(pathname: string): boolean {
 export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
   return {
     title: 'COCO36 | Baking & Pastry Ingredients Online in India',
-    description: `Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ${rupees(policy.freeShippingPaise)}.`,
+    description: `Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. ${freeShippingOnLabel(policy)}.`,
     path: '/',
     ogType: 'website',
     jsonLd: [
@@ -160,8 +161,8 @@ export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
  * Competing variants are collapsed in server/render.ts: trailing slash, empty
  * `?q=`, and legacy `?cat=` / `?category=` redirect; a non-empty `?q=` stays
  * noindex with this same canonical. `/catalog` 301s here from vercel.json.
- * The long intro (content/shopIntro.ts) is what separates this URL from the
- * homepage, which lists the same small catalogue.
+ * The catalogue paragraph under the grid (content/shopIntro.ts) is this URL's
+ * own text. The homepage lists the same small catalogue.
  */
 export function shopMeta(): PageMeta {
   return {
@@ -205,8 +206,8 @@ export function categoryMeta(c: Category, tree: CategoryTree, products: readonly
   const description = c.description
     ? clip(c.description, DESCRIPTION_MAX)
     : firstThatFits([
-        `Shop ${c.name.toLowerCase()} at COCO36${names ? `: ${names}` : ''}. Shipped across India from Visakhapatnam.`,
-        `Shop ${c.name.toLowerCase()} at COCO36. Shipped across India from Visakhapatnam.`,
+        `Shop ${c.name.toLowerCase()} at COCO36${names ? `: ${names}` : ''}. Ships across India.`,
+        `Shop ${c.name.toLowerCase()} at COCO36. Ships across India.`,
       ], DESCRIPTION_MAX);
   return {
     title: buyTitle(c.name),

@@ -15,13 +15,12 @@ export const LEGAL_NAME  = 'COCO36 Foods Pvt Ltd';
 export const LOGO_URL    = `${SITE_ORIGIN}/coco36-floral.png`;   // 256×250
 export const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/og.png`;          // 1200×630
 
-/** settings.seller.* — city/state/pincode only; the street line stays on invoices. */
-export const ORG_ADDRESS = {
-  addressLocality: 'Visakhapatnam',
-  addressRegion:   'Andhra Pradesh',
-  postalCode:      '530045',
-  addressCountry:  'IN',
-} as const;
+/**
+ * The only public place the registered city is named. /terms only.
+ * Street line stays on invoices. Do not reuse this string elsewhere.
+ */
+export const REGISTERED_OFFICE_LINE =
+  'Registered office: Visakhapatnam, Andhra Pradesh 530045, India.';
 
 /**
  * Official social profiles: Organization.sameAs + the footer links.
@@ -35,11 +34,43 @@ export const SOCIAL_LINKS: readonly { label: string; url: string }[] = [
 ];
 export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url);
 
-/** Shipping dispatch point and the public courier wording. The aggregator is not named on the storefront. */
-export const SHIPS_FROM    = 'Visakhapatnam, Andhra Pradesh';
+/** Public courier wording. The aggregator is not named on the storefront. */
 export const CARRIER       = 'our courier partners';
-/** "Ships in 2 business days" — the dispatch promise shown on every PDP. */
-export const HANDLING_DAYS_MAX = 2;
+
+/**
+ * Fallback dispatch window, used only when `delivery_zones.handling_days`
+ * for the enabled India country row cannot be read. Matches that live value.
+ * Do not also edit HANDLING_DAYS_MAX: it is derived from this string.
+ */
+export const DISPATCH_WINDOW = '1';
+
+/** Numeric bounds for structured data. "2" stays min 0 / max 2. "2–4" is min 2 / max 4. */
+export function dispatchDayBounds(window: string = DISPATCH_WINDOW): { min: number; max: number } {
+  const nums = window.split(/[–-]/).map((part) => Number(part.trim())).filter((n) => Number.isFinite(n) && n > 0);
+  if (nums.length === 0) return { min: 0, max: 2 };
+  if (nums.length === 1) return { min: 0, max: nums[0] };
+  return { min: Math.min(...nums), max: Math.max(...nums) };
+}
+
+/** Highest dispatch day, derived from DISPATCH_WINDOW (the fallback). */
+export const HANDLING_DAYS_MAX = dispatchDayBounds().max;
+
+/** Singular only for exactly 1. Ranges ("2–4") and every other count stay plural. */
+export function isSingularDispatch(window: string): boolean {
+  return window.trim() === '1';
+}
+
+/** "1 business day" or "2 business days" or "2–4 business days". */
+export function businessDayPhrase(window: string = DISPATCH_WINDOW): string {
+  return `${window} business ${isSingularDispatch(window) ? 'day' : 'days'}`;
+}
+
+/** Live handling_days when the policy has one; otherwise the fallback window. */
+export function dispatchWindow(policy?: { handlingDays?: number } | null): string {
+  const n = policy?.handlingDays;
+  if (typeof n === 'number' && Number.isInteger(n) && n >= 1) return String(n);
+  return DISPATCH_WINDOW;
+}
 
 /**
  * Delivery estimates published on /shipping. They are estimates, not
@@ -59,6 +90,8 @@ export interface StorePolicy {
   flatShippingPaise: number;   // shipping.standard_fee_paise
   codSurchargePaise: number;   // shipping.cod_extra_paise
   returnWindowDays:  number;   // returns.window_days
+  /** delivery_zones.handling_days for country IN. Fallback: DISPATCH_WINDOW. */
+  handlingDays: number;
 }
 
 export const DEFAULT_POLICY: StorePolicy = {
@@ -66,6 +99,7 @@ export const DEFAULT_POLICY: StorePolicy = {
   flatShippingPaise: 9900,   // ₹99
   codSurchargePaise: 5000,   // ₹50
   returnWindowDays:  7,
+  handlingDays: Number(DISPATCH_WINDOW),
 };
 
 /** ₹ amount for copy: 120000 → "₹1,200". */

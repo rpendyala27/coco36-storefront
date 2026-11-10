@@ -4,6 +4,7 @@ import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
 } from '../src/lib/categoryTree.js';
 import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
+import { readHandlingDays } from './dispatchZone.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
@@ -68,6 +69,7 @@ function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
     flatShippingPaise: num(SETTINGS_KEYS.flatShippingPaise, DEFAULT_POLICY.flatShippingPaise),
     codSurchargePaise: num(SETTINGS_KEYS.codSurchargePaise, DEFAULT_POLICY.codSurchargePaise),
     returnWindowDays:  num(SETTINGS_KEYS.returnWindowDays,  DEFAULT_POLICY.returnWindowDays),
+    handlingDays: DEFAULT_POLICY.handlingDays,
   };
 }
 
@@ -89,10 +91,12 @@ async function fetchCatalog(): Promise<Catalog> {
       return null;
     }),
   ]);
+  const policy = policyFrom(settings);
+  policy.handlingDays = await readHandlingDays(process.env, fetch);
   return {
     products: applyClaims(rows.map(mapSupabaseProduct), claimRows ? claimsFromRows(claimRows) : null),
     tree: buildTree(cats.map(mapCategoryRow)),
-    policy: policyFrom(settings),
+    policy,
   };
 }
 
