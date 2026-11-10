@@ -3,8 +3,8 @@ import { businessDayPhrase, DEFAULT_POLICY, dispatchWindow, type StorePolicy } f
 
 /**
  * /guides/how-to-buy-wholesale-baking-ingredients-india
- * Payment sentences are on the page and still awaiting the owner's OK.
- * Dispatch time is DISPATCH_WINDOW, never a typed number.
+ * Payment wording is the approved trade terms. Dispatch days come from the
+ * India delivery zone (fallback DISPATCH_WINDOW), never a typed 2–4.
  */
 
 export const WHOLESALE_GUIDE_PATH = '/guides/how-to-buy-wholesale-baking-ingredients-india';
@@ -16,6 +16,10 @@ export const WHOLESALE_GUIDE_DESCRIPTION =
 export function wholesaleDispatchSentence(policy: Pick<StorePolicy, 'handlingDays'> = DEFAULT_POLICY): string {
   return `We dispatch orders within ${businessDayPhrase(dispatchWindow(policy))}; bulk and trade orders take 2–3 weeks.`;
 }
+
+/** Approved payment terms. Same sentences on the guide, the FAQ, and the trade strip. */
+export const WHOLESALE_PAYMENT =
+  'Pay in full when you place the order, for your first orders. Credit only if agreed in writing later, once there is a trading history. This page does not by itself grant credit. The quote will state the payment terms that apply to that order.';
 
 const TRIAL = 'Trial packs available once launch stock lands (from early December).';
 const DISPATCH = wholesaleDispatchSentence();
@@ -94,7 +98,7 @@ export const WHOLESALE_GUIDE: BakingNote = {
     {
       heading: 'Payment',
       blocks: [
-        { type: 'p', text: 'Pay in full when you place the order, for your first orders. Credit only if agreed in writing later, once there is a trading history. This page does not by itself grant credit. The quote will state the payment terms that apply to that order.' },
+        { type: 'p', text: WHOLESALE_PAYMENT },
       ],
     },
     {
@@ -116,7 +120,7 @@ export const WHOLESALE_GUIDE: BakingNote = {
     { q: 'Can I get a free sample?', a: `No. There are no free samples. ${TRIAL} Those trial packs are paid, at the sizes in the table above.` },
     { q: 'What is the minimum order?', a: 'It depends on the product. The wholesale minimums are 5 kg for couverture, Dutch-process cocoa powder and cocoa butter, and 10 kg for coconut sugar and palm jaggery. Minimums for other products are on request. A paid trial pack is smaller, and comes before the first wholesale order.' },
     { q: 'When can I place a wholesale order?', a: `The shop opens in the first week of December 2026, and ordering is off until then. You can send a [Trade enquiry](/trade#enquire) now. ${TRIAL}` },
-    { q: 'How do I pay?', a: 'Pay in full when you place the order, for first orders. Credit only if agreed in writing later. The quote will state the payment terms that apply to that order.' },
+    { q: 'How do I pay?', a: WHOLESALE_PAYMENT },
     { q: 'How long does delivery take?', a: `${DISPATCH} Courier transit after dispatch follows the estimates on the shipping policy. The lead time on your quote is the one to rely on for that order.` },
     { q: 'Do you supply couverture and Dutch-process cocoa now?', a: 'Couverture and Dutch-process cocoa powder are coming soon to the COCO36 shop, as are cocoa butter, coconut sugar and palm jaggery. Send an enquiry if those are the lines you want to plan around.' },
   ],
