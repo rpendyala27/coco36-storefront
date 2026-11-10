@@ -11,7 +11,8 @@ import { formatMoney } from '../lib/currency';
 import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
-import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { useStoreConfig } from '../lib/storeConfig';
+import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../content/policyLabels';
 import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
 import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex';
@@ -249,7 +250,7 @@ export const ProductDetail = () => {
           {/* Ship note */}
           <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
             <Truck size={15} strokeWidth={1.75} className="text-brand-leaf" />
-            Ships across India in <span className="text-brand-forest font-medium">2 business days</span> · Free shipping over {freeShippingLabel(cfg)} · {cfg.returnWindowDays}-day quality guarantee
+            <span className="text-brand-forest font-medium">{shipsInLabel()}</span> · {freeShippingOnLabel(cfg)} · {reportIssuesLabel(cfg)}
           </p>
 
           {page && page.sections.length > 0 && (

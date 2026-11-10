@@ -379,7 +379,7 @@ export const Shop = () => {
             <div className="mt-4">
               <h1 className="font-display text-3xl md:text-5xl leading-[1.05] text-brand-forest">Shop all ingredients</h1>
               <p className="mt-3 max-w-3xl text-[16px] leading-relaxed text-brand-ink/80">{SHOP_LEDE}</p>
-              <ShopPromises />
+              <ShopPromises policy={cfg} />
               <div className="mt-6 max-w-xl">
                 <SearchBox variant="hero" initialValue={search} products={PRODUCTS} onSubmitQuery={runSearch} />
               </div>

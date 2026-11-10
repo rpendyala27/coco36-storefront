@@ -10,6 +10,7 @@ import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
 import { productPage } from '../content/productPages.js';
 import { richPlain } from '../content/richText.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
+import { freeShippingOnLabel } from '../content/policyLabels.js';
 import { DESCRIPTION_MAX, TITLE_MAX, clip, composeProductDescription, firstThatFits, fitWithin, stripMarkdown } from './text.js';
 
 /**
@@ -145,7 +146,7 @@ export function isStaticMetaPath(pathname: string): boolean {
 export function homeMeta(policy: StorePolicy = DEFAULT_POLICY): PageMeta {
   return {
     title: 'COCO36 | Baking & Pastry Ingredients Online in India',
-    description: `Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. Free shipping over ${rupees(policy.freeShippingPaise)}.`,
+    description: `Origin ingredients for bakers and pastry chefs in India: vanilla, cane sugars, speciality flours and finishing salt. ${freeShippingOnLabel(policy)}.`,
     path: '/',
     ogType: 'website',
     jsonLd: [

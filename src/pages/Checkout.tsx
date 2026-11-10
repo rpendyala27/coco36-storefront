@@ -680,7 +680,7 @@ export const Checkout = () => {
               {/* Trust cluster — reduces amygdala-driven suspicion at the decision point */}
               <div className="flex items-center justify-center gap-4 text-[10px] uppercase tracking-wide text-brand-muted font-medium">
                 <span className="inline-flex items-center gap-1"><Lock size={11} /> Secure</span>
-                <span className="inline-flex items-center gap-1"><RotateCcw size={11} /> 7-day returns</span>
+                <span className="inline-flex items-center gap-1"><RotateCcw size={11} /> {cfg.returnWindowDays}-day returns</span>
               </div>
 
               <p className="text-[11px] text-brand-muted text-center opacity-70">

@@ -7,7 +7,7 @@ import { imageUrl } from '../lib/img.js';
 import { productPath } from '../lib/productPath.js';
 import { stripMarkdown } from './text.js';
 import {
-  BRAND, DEFAULT_POLICY, HANDLING_DAYS_MAX, LEGAL_NAME, LOGO_URL,
+  BRAND, DEFAULT_POLICY, LEGAL_NAME, LOGO_URL, dispatchDayBounds,
   SITE_ORIGIN, SOCIAL_PROFILES, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, absUrl,
 } from './site.js';
 
@@ -71,7 +71,7 @@ function productSku(p: Product): string | undefined {
 }
 /**
  * Domestic shipping: flat fee below the free-shipping threshold, free at or
- * above it. Handling time is the "ships in 2 business days" promise.
+ * above it. Handling time follows DISPATCH_WINDOW.
  * Transit time is the envelope published on /shipping (3–10 business days,
  * metro through remote). It is an estimate, not a guaranteed delivery date.
  */
@@ -88,7 +88,7 @@ export function shippingJsonLd(pricePaise: number, policy: StorePolicy = DEFAULT
     shippingOrigin: { '@type': 'DefinedRegion', addressCountry: 'IN' },
     deliveryTime: {
       '@type': 'ShippingDeliveryTime',
-      handlingTime: { '@type': 'QuantitativeValue', minValue: 0, maxValue: HANDLING_DAYS_MAX, unitCode: 'DAY' },
+      handlingTime: { '@type': 'QuantitativeValue', minValue: dispatchDayBounds().min, maxValue: dispatchDayBounds().max, unitCode: 'DAY' },
       transitTime: { '@type': 'QuantitativeValue', minValue: TRANSIT_DAYS_MIN, maxValue: TRANSIT_DAYS_MAX, unitCode: 'DAY' },
     },
   };

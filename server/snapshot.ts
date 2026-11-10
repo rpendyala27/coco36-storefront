@@ -10,7 +10,7 @@ import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/conte
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
 import { richHtml } from '../src/content/richText.js';
-import { SHOP_LEDE, SHOP_PROMISES, shopSeoBelowGrid } from '../src/content/shopIntro.js';
+import { SHOP_LEDE, shopPromises, shopSeoBelowGrid } from '../src/content/shopIntro.js';
 import { COMING_SOON, COMING_SOON_NOTE } from '../src/content/comingSoon.js';
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../src/lib/supportContact.js';
 import {
@@ -123,7 +123,7 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
     breadcrumbs([{ name: 'Home', path: '/' }, { name: 'Shop', path: '/shop' }]),
     '<h1>Shop all ingredients</h1>',
     `<p>${esc(SHOP_LEDE)}</p>`,
-    `<ul>${SHOP_PROMISES.map((item) => `<li>${esc(item.label)}</li>`).join('')}</ul>`,
+    `<ul>${shopPromises(ctx.policy).map((item) => `<li>${esc(item.label)}</li>`).join('')}</ul>`,
     productList(ctx.products) || '<p>New lots are on their way.</p>',
     '<h2>Coming soon</h2>',
     `<ul>${COMING_SOON.map((item) => `<li>${esc(item.name)}: ${esc(COMING_SOON_NOTE)}</li>`).join('')}</ul>`,

@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { HANDLING_DAYS_MAX, type StorePolicy } from '../seo/site.js';
+import { DEFAULT_POLICY, DISPATCH_WINDOW, type StorePolicy } from '../seo/site.js';
 import {
   businessDaysLine, cancellationLine, changeOfMindLine, contactLine, cutoffLine,
   deliveryEstimateLine, dispatchLine, emailReplyLine, refundLine, remedyLine,
@@ -154,7 +154,7 @@ export const INFO_PAGES: InfoPage[] = [
         heading: 'How an order leaves',
         paragraphs: [
           `${dispatchLine()} We ship across India. ${shippingPriceLine(policy)}`,
-          `${businessDaysLine()} ${cutoffLine()} Two business days is when the order is dispatched, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
+          `${businessDaysLine()} ${cutoffLine()} ${DISPATCH_WINDOW} business days is when the order is dispatched, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
         ],
       },
       {
@@ -191,7 +191,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/faq',
     title: 'Frequently Asked Questions about COCO36 Orders | COCO36',
-    description: (policy) => `How COCO36 shipping works: dispatch within ${HANDLING_DAYS_MAX} business days, ships across India, free on orders of ${rupeesLabel(policy)} or more, and the ${policy.returnWindowDays}-day report window.`,
+    description: (policy) => `How COCO36 shipping works: dispatch within ${DISPATCH_WINDOW} business days, ships across India, free on orders of ${rupeesLabel(policy)} or more, and the ${policy.returnWindowDays}-day report window.`,
     crumb: 'FAQ',
     eyebrow: 'Help',
     h1: 'Orders, shipping and returns',
@@ -207,8 +207,8 @@ export const INFO_PAGES: InfoPage[] = [
   },
   {
     path: '/shipping',
-    title: 'Shipping across India within Two Business Days | COCO36',
-    description: (policy) => `COCO36 ships across India within ${HANDLING_DAYS_MAX} business days via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
+    title: `Shipping across India within ${DISPATCH_WINDOW} Business Days | COCO36`,
+    description: (policy) => `COCO36 ships across India within ${DISPATCH_WINDOW} business days via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
     crumb: 'Shipping',
     eyebrow: 'Delivery',
     h1: 'Shipping across India',
@@ -218,12 +218,12 @@ export const INFO_PAGES: InfoPage[] = [
         paragraphs: [
           `${dispatchLine()} We ship across India.`,
           `${businessDaysLine()} ${cutoffLine()}`,
-          'Two business days is when the order is dispatched. It is not a date for when the parcel reaches you.',
+          `${DISPATCH_WINDOW} business days is when the order is dispatched. It is not a date for when the parcel reaches you.`,
         ],
         bullets: [
           'Ships across India.',
           'Handed to our courier partners.',
-          `Dispatched within ${HANDLING_DAYS_MAX} business days, using the 12 PM IST cutoff.`,
+          `Dispatched within ${DISPATCH_WINDOW} business days, using the 12 PM IST cutoff.`,
         ],
       },
       {
@@ -301,7 +301,7 @@ export function infoPage(path: string): InfoPage | undefined {
 export function infoTodos(path: string): string[] {
   const page = infoPage(path);
   if (!page) return [];
-  return page.sections({ freeShippingPaise: 120000, flatShippingPaise: 9900, codSurchargePaise: 0, returnWindowDays: 7 })
+  return page.sections(DEFAULT_POLICY)
     .map((s) => s.todo)
     .filter((t): t is string => !!t);
 }

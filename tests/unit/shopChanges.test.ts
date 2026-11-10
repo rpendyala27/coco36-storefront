@@ -6,7 +6,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { render, setTemplate } from '../../server/render';
 import { resetCatalogCache } from '../../server/catalog';
 import { COMING_SOON, COMING_SOON_NOTE } from '../../src/content/comingSoon';
-import { SHOP_LEDE, SHOP_PROMISES } from '../../src/content/shopIntro';
+import { SHOP_LEDE, shopPromises } from '../../src/content/shopIntro';
+import { DEFAULT_POLICY } from '../../src/seo/site';
 import { NOTIFY_BUTTON } from '../../src/content/notifyCopy';
 import { NotifyForm, type NotifyFields } from '../../src/components/NotifyMe';
 import { TradeBulkLink } from '../../src/components/TradeBulkLink';
@@ -41,7 +42,7 @@ describe('shop intro snapshot', () => {
     expect(ledeAt).toBeGreaterThan(0);
     expect(gridAt).toBeGreaterThan(ledeAt);
     expect(seoAt).toBeGreaterThan(gridAt);
-    for (const item of SHOP_PROMISES) expect(r.body).toContain(item.label);
+    for (const item of shopPromises(DEFAULT_POLICY)) expect(r.body).toContain(item.label);
     expect(r.body.toLowerCase()).not.toContain('homepage is a shorter introduction');
     for (const item of COMING_SOON) {
       expect(r.body).toContain(item.name);

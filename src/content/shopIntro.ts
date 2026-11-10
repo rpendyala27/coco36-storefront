@@ -1,18 +1,22 @@
+import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from './policyLabels.js';
+import { DEFAULT_POLICY, type StorePolicy } from '../seo/site.js';
+
 /**
  * /shop copy. The line and the promise row sit above the product grid.
- * The catalogue paragraph sits below the grid. The old "homepage is a
- * shorter introduction" paragraph and the shipping/returns paragraph are
- * gone: shipping facts on this page are the four promise labels.
+ * The catalogue paragraph sits below the grid. Promise numbers come from
+ * policy labels, not from text typed here.
  */
 export const SHOP_LEDE =
   'Specialty baking and pastry ingredients, sourced direct from origin, for bakers and pastry chefs across India';
 
-export const SHOP_PROMISES = [
-  { id: 'origin', label: 'Sourced direct from origin' },
-  { id: 'dispatch', label: 'Ships across India in 2 business days' },
-  { id: 'shipping', label: 'Free shipping over ₹1,200' },
-  { id: 'claims', label: '7-day damage claims' },
-] as const;
+export function shopPromises(policy: StorePolicy = DEFAULT_POLICY) {
+  return [
+    { id: 'origin' as const, label: 'Sourced direct from origin' },
+    { id: 'dispatch' as const, label: shipsInLabel() },
+    { id: 'shipping' as const, label: freeShippingOnLabel(policy) },
+    { id: 'claims' as const, label: reportIssuesLabel(policy) },
+  ];
+}
 
 /** Descriptive catalogue copy, rendered under the product grid. */
 export function shopSeoBelowGrid(): string[] {

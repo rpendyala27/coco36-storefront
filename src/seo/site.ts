@@ -36,8 +36,25 @@ export const SOCIAL_PROFILES: readonly string[] = SOCIAL_LINKS.map((s) => s.url)
 
 /** Public courier wording. The aggregator is not named on the storefront. */
 export const CARRIER       = 'our courier partners';
-/** "Ships in 2 business days" — the dispatch promise shown on every PDP. */
-export const HANDLING_DAYS_MAX = 2;
+
+/**
+ * The one dispatch window. There is no admin setting for this yet.
+ * A single number today ("2"). Set it to a range ("2–4") later and every
+ * dispatch sentence, short label, and the JSON-LD handling max follow.
+ * Do not also edit HANDLING_DAYS_MAX: it is derived from this string.
+ */
+export const DISPATCH_WINDOW = '2';
+
+/** Numeric bounds for structured data. "2" stays min 0 / max 2. "2–4" is min 2 / max 4. */
+export function dispatchDayBounds(window: string = DISPATCH_WINDOW): { min: number; max: number } {
+  const nums = window.split(/[–-]/).map((part) => Number(part.trim())).filter((n) => Number.isFinite(n) && n > 0);
+  if (nums.length === 0) return { min: 0, max: 2 };
+  if (nums.length === 1) return { min: 0, max: nums[0] };
+  return { min: Math.min(...nums), max: Math.max(...nums) };
+}
+
+/** Highest dispatch day, derived from DISPATCH_WINDOW. */
+export const HANDLING_DAYS_MAX = dispatchDayBounds().max;
 
 /**
  * Delivery estimates published on /shipping. They are estimates, not

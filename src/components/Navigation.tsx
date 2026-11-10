@@ -4,7 +4,8 @@ import { Menu, Search, ShoppingBag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useStoreConfig, freeShippingLabel } from '../lib/storeConfig';
+import { useStoreConfig } from '../lib/storeConfig';
+import { freeShippingOnLabel } from '../content/policyLabels';
 import { useSearchIndex } from '../hooks/useProducts';
 import { SearchBox } from './SearchBox';
 import { ProfileDropdown } from './ProfileDropdown';
@@ -57,7 +58,7 @@ export const Navigation: React.FC = () => {
             </span>
             {/* Right — value props (md+) */}
             <span className="hidden md:flex items-center gap-2.5 whitespace-nowrap text-white/60 shrink-0">
-              <span className="text-white/90">Free shipping over {freeShippingLabel(cfg)}</span>
+              <span className="text-white/90">{freeShippingOnLabel(cfg)}</span>
               <span className="hidden lg:inline text-white/25">·</span>
               <span className="hidden lg:inline">Bulk &amp; trade</span>
               <span className="text-white/25">·</span>
