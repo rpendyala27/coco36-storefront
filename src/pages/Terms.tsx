@@ -43,7 +43,7 @@ export const Terms = () => {
 
       <Section id="shipping" title="Shipping">
         <p>
-          We ship through Shiprocket. ETAs shown at checkout are estimates;
+          We ship through our courier partners. ETAs shown at checkout are estimates;
           delays caused by courier or weather are outside our control. Live
           tracking is available from your account once an AWB is assigned.
         </p>
@@ -51,12 +51,11 @@ export const Terms = () => {
 
       <Section id="returns" title="Returns and refunds">
         <ul className="list-disc pl-6 space-y-1">
-          <li>We accept returns only for items that arrive damaged, wrong (not what you ordered) or past their best-before date.</li>
-          <li>Tell us within {returnWindowDays} days of delivery, with your order number and photos of the item and its packaging. We will then refund or replace the affected item.</li>
-          <li>We can't take back items that arrive in good condition, for example a change of mind. Food can't be resold once it has left us.</li>
-          <li>If we need the item back to check it, we will tell you how to send it.</li>
-          <li>Approved refunds for prepaid orders are issued to the original payment method within 5–7 business days.</li>
-          <li>COD refunds are issued by bank transfer once we confirm bank details.</li>
+          <li>We accept returns only for items that arrive damaged, wrong, missing or expired.</li>
+          <li>Report it within {returnWindowDays} days of delivery, with your order number and photos of the item and its packaging.</li>
+          <li>We do not accept change-of-mind returns.</li>
+          <li>If the item is in stock we will send a replacement; otherwise we will refund you.</li>
+          <li>Refunds go back to the original payment method. Your bank usually takes 5–7 business days to show the refund.</li>
         </ul>
       </Section>
 

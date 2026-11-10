@@ -1,6 +1,7 @@
 import {
-  CARRIER, DEFAULT_POLICY, HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy, rupees,
+  DEFAULT_POLICY, HANDLING_DAYS_MAX, SHIPS_FROM, type StorePolicy, rupees,
 } from '../seo/site.js';
+import { COURIER_PARTNERS } from './orderFacts.js';
 import { GUIDE_LINKS, type GuideLink } from './guideIndex.js';
 
 export { GUIDE_LINKS, GUIDES_HUB, guidePath, productsForGuide, type GuideLink } from './guideIndex.js';
@@ -291,7 +292,7 @@ export const guideBySlug = (slug: string) => GUIDES.find((g) => g.slug === slug)
 export function deliveryFaq(policy: StorePolicy = DEFAULT_POLICY): Faq {
   return {
     q: 'Do you deliver across India?',
-    a: `Yes. Orders are usually dispatched within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM}, through ${CARRIER}, to serviceable pincodes across India. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged, wrong or expired, tell us within ${policy.returnWindowDays} days of delivery.`,
+    a: `Yes. Orders are usually dispatched within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM}, through ${COURIER_PARTNERS}, to serviceable pincodes across India. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged, wrong, missing or expired, tell us within ${policy.returnWindowDays} days of delivery.`,
   };
 }
 

@@ -221,6 +221,35 @@ describe('server-rendered pages', () => {
     expect(r.body).toContain('href="/shop"');
   });
 
+  it('no public page names Shiprocket, and home and terms mention missing items', async () => {
+    const paths = [
+      '/',
+      '/shop',
+      '/shop/category/vanilla',
+      '/shop/madagascar-bourbon-vanilla-beans',
+      '/terms',
+      '/privacy',
+      '/about',
+      '/contact',
+      '/faq',
+      '/shipping',
+      '/returns',
+      '/ingredients',
+      '/ingredients/vanilla',
+    ];
+    for (const p of paths) {
+      const r = await render(p, '', 'coco36.com');
+      expect(r.status, p).toBe(200);
+      expect(r.body, p).not.toMatch(/Shiprocket/i);
+    }
+    const home = await render('/', '', 'coco36.com');
+    const terms = await render('/terms', '', 'coco36.com');
+    expect(home.body).toContain('missing');
+    expect(terms.body).toContain('missing');
+    expect(home.body).toContain('our courier partners');
+    expect(terms.body).toContain('our courier partners');
+  });
+
   it('privacy title is in the 50–59 character band', async () => {
     const r = await render('/privacy', '', 'coco36.com');
     expect(title(r.body)).toBe('How COCO36 Foods Protects Your Personal Data | COCO36');

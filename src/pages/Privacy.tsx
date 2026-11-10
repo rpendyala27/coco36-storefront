@@ -32,7 +32,7 @@ export const Privacy = () => {
 
       <Section title="Why we use it">
         <ul className="list-disc pl-6 space-y-1">
-          <li>Fulfil your order, payments via Razorpay, shipping via Shiprocket.</li>
+          <li>Fulfil your order, payments via Razorpay, shipping via our courier partners.</li>
           <li>Send transactional email via Resend (order placed, packed, shipped).</li>
           <li>Customer support and dispute resolution.</li>
           <li>Improve the product, debug errors, fix broken flows.</li>
@@ -42,7 +42,7 @@ export const Privacy = () => {
       <Section title="Sharing">
         <p>
           We share the minimum needed with our payment processor (Razorpay),
-          courier aggregator (Shiprocket), email sender (Resend), and image
+          courier partners, email sender (Resend), and image
           CDN (Cloudinary). We do not sell personal data.
         </p>
       </Section>

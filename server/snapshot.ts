@@ -14,8 +14,9 @@ import {
 } from '../src/content/guides.js';
 import { PHASES } from '../src/data/thirtySixSteps.js';
 import {
-  CARRIER, HANDLING_DAYS_MAX, LEGAL_NAME, SHIPS_FROM, type StorePolicy, rupees,
+  LEGAL_NAME, SHIPS_FROM, type StorePolicy, rupees,
 } from '../src/seo/site.js';
+import { policyBlurb } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
 import { esc } from './html.js';
 
@@ -86,8 +87,7 @@ function productList(products: readonly Product[]): string {
 const guideList = (guides: readonly Guide[]) =>
   `<ul>${guides.map((g) => `<li>${a(guidePath(g), g.name)}: ${esc(g.blurb)}</li>`).join('')}</ul>`;
 
-const deliveryLine = (policy: StorePolicy) =>
-  `Ships within ${HANDLING_DAYS_MAX} business days from ${SHIPS_FROM} via ${CARRIER}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong or expired items can be reported within ${policy.returnWindowDays} days of delivery.`;
+const deliveryLine = (policy: StorePolicy) => policyBlurb(policy);
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 

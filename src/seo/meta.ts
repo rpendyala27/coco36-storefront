@@ -84,7 +84,7 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
   },
   '/terms': {
     title: 'Terms of Sale, Shipping & Returns | COCO36',
-    description: (p) => `Terms of sale for COCO36: prices in INR including GST, Razorpay payments, Shiprocket shipping across India and our ${p.returnWindowDays}-day returns window.`,
+    description: (p) => `Terms of sale for COCO36: prices in INR including GST, Razorpay payments, shipping across India via our courier partners and our ${p.returnWindowDays}-day returns window.`,
     crumb: 'Terms of sale',
   },
   // ── Not for the index: thin, transactional or not-yet-built pages ──
