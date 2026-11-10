@@ -87,6 +87,19 @@ describe('server-rendered pages', () => {
     expect(robots(r.body)).toBe('noindex');
   });
 
+  it('retired bean-to-bar kit: 301 to /shop, including slash and www', async () => {
+    for (const [path, host] of [
+      ['/shop/bean-to-bar-kit', 'coco36.com'],
+      ['/shop/bean-to-bar-kit/', 'coco36.com'],
+      ['/shop/bean-to-bar-kit', 'www.coco36.com'],
+      ['/shop/Bean-to-Bar-Kit/', 'www.coco36.com'],
+    ] as const) {
+      const r = await render(path, '', host);
+      expect(r.status, `${host}${path}`).toBe(301);
+      expect(r.headers.Location, `${host}${path}`).toBe('https://coco36.com/shop');
+    }
+  });
+
   it('unknown URL: 404 noindex, no canonical', async () => {
     const r = await render('/no-such-page', '', 'coco36.com');
     expect(r.status).toBe(404);

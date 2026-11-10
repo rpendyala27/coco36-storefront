@@ -5,6 +5,7 @@ import { shopIntro } from '../../src/content/shopIntro';
 import { buildTree } from '../../src/lib/categoryTree';
 import { DEFAULT_POLICY } from '../../src/seo/site';
 import { DESCRIPTION_MAX, TITLE_MAX } from '../../src/seo/text';
+import type { Product } from '../../src/types';
 import { sitemapEntries } from '../../server/sitemap';
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
@@ -91,5 +92,23 @@ describe('SEO copy bounds', () => {
     expect(paths).toContain('/privacy');
     expect(paths).toContain('/terms');
     expect(paths).not.toContain('/cart');
+    expect(paths).not.toContain('/recipes');
+    expect(paths).not.toContain('/shop/bean-to-bar-kit');
+  });
+
+  it('sitemap denies /recipes and /shop/bean-to-bar-kit even if a product would emit that slug', () => {
+    const kit = {
+      id: 'bean-to-bar-kit',
+      name: 'Bean-to-Bar Kit',
+      brand: 'COCO36', origin: '', tag: '', image: '', category: 'Mixes & Kits',
+      description: '', sizes: [], updatedAt: '2026-11-01T00:00:00Z',
+    } satisfies Product;
+    const paths = sitemapEntries({
+      products: [kit], tree: buildTree([]), policy: DEFAULT_POLICY,
+    }).map((e) => e.path);
+    expect(paths).not.toContain('/recipes');
+    expect(paths).not.toContain('/shop/bean-to-bar-kit');
+    expect(paths).toContain('/shop');
+    expect(paths).toContain('/');
   });
 });

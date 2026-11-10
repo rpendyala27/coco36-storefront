@@ -10,12 +10,26 @@
   },
   "redirects": [
     {
+      "source": "/shop/bean-to-bar-kit",
+      "has": [{ "type": "host", "value": "www.coco36.com" }],
+      "destination": "https://coco36.com/shop",
+      "statusCode": 301
+    },
+    {
+      "source": "/shop/bean-to-bar-kit/",
+      "has": [{ "type": "host", "value": "www.coco36.com" }],
+      "destination": "https://coco36.com/shop",
+      "statusCode": 301
+    },
+    {
       "source": "/:path(.*)",
       "has": [{ "type": "host", "value": "www.coco36.com" }],
       "destination": "https://coco36.com/:path",
       "statusCode": 301
     },
     { "source": "/index.html", "destination": "/", "statusCode": 301 },
+    { "source": "/shop/bean-to-bar-kit", "destination": "/shop", "statusCode": 301 },
+    { "source": "/shop/bean-to-bar-kit/", "destination": "/shop", "statusCode": 301 },
     { "source": "/catalog", "destination": "/shop", "statusCode": 301 },
     { "source": "/traceability", "destination": "/36-steps", "statusCode": 301 },
     { "source": "/cms", "destination": "/", "statusCode": 301 }
