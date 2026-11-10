@@ -52,11 +52,12 @@ function mockCatalog(settings: { key: string; value: number }[]) {
 
 describe('policy label templates', () => {
   it('builds the short labels from the shared values, including a dispatch range', () => {
-    expect(DISPATCH_WINDOW).toBe('2');
-    expect(HANDLING_DAYS_MAX).toBe(2);
-    expect(dispatchDayBounds()).toEqual({ min: 0, max: 2 });
+    expect(DISPATCH_WINDOW).toBe('1');
+    expect(HANDLING_DAYS_MAX).toBe(1);
+    expect(dispatchDayBounds()).toEqual({ min: 0, max: 1 });
     expect(dispatchDayBounds('2–4')).toEqual({ min: 2, max: 4 });
-    expect(shipsInLabel()).toBe('Ships in 2 business days');
+    expect(shipsInLabel()).toBe('Ships in 1 business day');
+    expect(shipsInLabel('2')).toBe('Ships in 2 business days');
     expect(shipsInLabel('2–4')).toBe('Ships in 2–4 business days');
     expect(freeShippingOnLabel(DEFAULT_POLICY)).toBe('Free shipping on ₹1,200+');
     expect(freeShippingOnLabel(ALT)).toBe('Free shipping on ₹2,500+');
@@ -64,20 +65,20 @@ describe('policy label templates', () => {
     expect(reportIssuesLabel(ALT)).toBe('Report issues within 14 days');
     expect(shopPromises(ALT).map((item) => item.label)).toEqual([
       'Sourced direct from origin',
-      'Ships in 2 business days',
+      'Ships in 1 business day',
       'Free shipping on ₹2,500+',
       'Report issues within 14 days',
     ]);
-    expect(dispatchLine()).toContain('within 2 business days');
+    expect(dispatchLine()).toContain('within 1 business day');
     expect(policyBlurb(ALT)).toContain('₹2,500');
     expect(policyBlurb(ALT)).toContain('14 days');
-    expect(deliveryFaq(ALT).a).toContain('within 2 business days');
+    expect(deliveryFaq(ALT).a).toContain('within 1 business day');
     expect(deliveryFaq(ALT).a).toContain('₹2,500');
     expect(deliveryFaq(ALT).a).toContain('14 days');
     expect(homeMeta(ALT).description).toContain('Free shipping on ₹2,500+');
     const shipping = shippingJsonLd(100, ALT);
     const delivery = shipping.deliveryTime as { handlingTime?: { minValue?: number; maxValue?: number } };
-    expect(delivery.handlingTime).toMatchObject({ minValue: 0, maxValue: 2 });
+    expect(delivery.handlingTime).toMatchObject({ minValue: 0, maxValue: 1 });
   });
 
   it('rendered shop, home, shipping, faq, terms and product JSON-LD follow a changed setting', async () => {
@@ -95,24 +96,24 @@ describe('policy label templates', () => {
       expect(r.body, page).not.toContain('within 7 days');
     }
     const shop = html.get('/shop')!;
-    expect(shop).toContain('Ships in 2 business days');
+    expect(shop).toContain('Ships in 1 business day');
     expect(shop).toContain('Free shipping on ₹2,500+');
     expect(shop).toContain('Report issues within 14 days');
     for (const page of ['/', '/faq', '/returns', '/terms', '/about', '/shop/madagascar-bourbon-vanilla-beans']) {
       expect(html.get(page), page).toContain('14 days');
     }
     for (const page of ['/', '/faq', '/terms', '/about', '/shop/madagascar-bourbon-vanilla-beans']) {
-      expect(html.get(page), page).toContain('within 2 business days');
+      expect(html.get(page), page).toContain('within 1 business day');
     }
     expect(html.get('/shipping')).toContain('Free shipping on orders of ₹2,500 or more');
-    expect(html.get('/shipping')).toContain('within 2 business days');
+    expect(html.get('/shipping')).toContain('within 1 business day');
+    expect(html.get('/shipping')).toContain('within 1 Business Day');
     expect(html.get('/faq')).toContain('₹2,500');
     expect(html.get('/')).toContain('Free shipping on ₹2,500+');
     const product = html.get('/shop/madagascar-bourbon-vanilla-beans')!;
     expect(product).toContain('"merchantReturnDays":14');
-    expect(product).toContain('"maxValue":2');
     const handling = product.match(/"handlingTime":\{[^}]+\}/)?.[0] ?? '';
     expect(handling).toContain('"minValue":0');
-    expect(handling).toContain('"maxValue":2');
+    expect(handling).toContain('"maxValue":1');
   });
 });

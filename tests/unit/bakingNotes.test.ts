@@ -5,7 +5,6 @@ import { BAKING_NOTES, COUVERTURE_BUYING_GUIDE_PUBLISH_DATE, formatPublishDate }
 import { WHOLESALE_GUIDE_PATH, wholesaleDispatchSentence } from '../../src/content/wholesaleGuide';
 import { bulkGuideHref } from '../../src/content/bulkGuideLink';
 import { PRODUCT_PAGE_SLUGS } from '../../src/content/productPages';
-import { DISPATCH_WINDOW } from '../../src/seo/site';
 import { filterIndexNowUrls } from '../../server/indexnow';
 import { DESCRIPTION_MAX, TITLE_MAX, stripMarkdown } from '../../src/seo/text';
 import { render, setTemplate } from '../../server/render';
@@ -418,7 +417,7 @@ describe('ingredient notes', () => {
     expect(text).toContain('Pay in full when you place the order, for your first orders.');
     expect(text).toContain('Credit only if agreed in writing later');
     expect(text).toContain(wholesaleDispatchSentence());
-    expect(text).toContain(`within ${DISPATCH_WINDOW} business days`);
+    expect(text).toContain('within 1 business day');
     expect(text).not.toMatch(/₹/);
     expect(text).not.toMatch(/Visakhapatnam|Vizag/);
     expect(text).not.toMatch(/FSSAI/i);

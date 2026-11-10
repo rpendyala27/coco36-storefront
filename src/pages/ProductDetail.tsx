@@ -13,6 +13,7 @@ import { useProduct, useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../content/policyLabels';
+import { dispatchWindow } from '../seo/site';
 import { bulkGuideHref } from '../content/bulkGuideLink';
 import { useSeo } from '../lib/seo';
 import { goneMeta, notFoundMeta, productCrumbs, productMeta } from '../seo/meta';
@@ -251,7 +252,7 @@ export const ProductDetail = () => {
           {/* Ship note */}
           <p className="flex items-center gap-2 text-[13px] text-brand-muted mt-5">
             <Truck size={15} strokeWidth={1.75} className="text-brand-leaf" />
-            <span className="text-brand-forest font-medium">{shipsInLabel()}</span> · {freeShippingOnLabel(cfg)} · {reportIssuesLabel(cfg)}
+            <span className="text-brand-forest font-medium">{shipsInLabel(dispatchWindow(cfg))}</span> · {freeShippingOnLabel(cfg)} · {reportIssuesLabel(cfg)}
           </p>
 
           {page && page.sections.length > 0 && (

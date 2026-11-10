@@ -1,5 +1,5 @@
 import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from './policyLabels.js';
-import { DEFAULT_POLICY, type StorePolicy } from '../seo/site.js';
+import { DEFAULT_POLICY, dispatchWindow, type StorePolicy } from '../seo/site.js';
 
 /**
  * /shop copy. The line and the promise row sit above the product grid.
@@ -12,7 +12,7 @@ export const SHOP_LEDE =
 export function shopPromises(policy: StorePolicy = DEFAULT_POLICY) {
   return [
     { id: 'origin' as const, label: 'Sourced direct from origin' },
-    { id: 'dispatch' as const, label: shipsInLabel() },
+    { id: 'dispatch' as const, label: shipsInLabel(dispatchWindow(policy)) },
     { id: 'shipping' as const, label: freeShippingOnLabel(policy) },
     { id: 'claims' as const, label: reportIssuesLabel(policy) },
   ];

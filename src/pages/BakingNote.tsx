@@ -2,6 +2,8 @@ import { Fragment, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { bakingNoteByPath, formatPublishDate, type NoteBlock, type NoteSection } from '../content/bakingNotes';
+import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../content/wholesaleGuide';
+import { useStoreConfig } from '../lib/storeConfig';
 import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 import { parseRich, type RichNode } from '../content/richText';
 import { useSeo } from '../lib/seo';
@@ -16,7 +18,12 @@ import { notFoundMeta } from '../seo/meta';
 export function BakingNote() {
   const { slug } = useParams<{ slug?: string }>();
   const path = slug ? `/guides/${slug}` : '/guides';
-  const note = bakingNoteByPath(path);
+  const cfg = useStoreConfig();
+  const note = useMemo(() => {
+    const found = bakingNoteByPath(path);
+    if (found && path === WHOLESALE_GUIDE_PATH) return wholesaleGuide(cfg);
+    return found;
+  }, [path, cfg]);
   useSeo(useMemo(() => (note ? bakingNoteMeta(note) : notFoundMeta()), [note]));
 
   if (!note) {

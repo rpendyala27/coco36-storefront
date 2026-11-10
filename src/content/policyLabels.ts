@@ -1,4 +1,4 @@
-import { DISPATCH_WINDOW, type StorePolicy, rupees } from '../seo/site.js';
+import { businessDayPhrase, DISPATCH_WINDOW, type StorePolicy, rupees } from '../seo/site.js';
 
 /**
  * The three short promises. Wording lives only here.
@@ -8,7 +8,7 @@ import { DISPATCH_WINDOW, type StorePolicy, rupees } from '../seo/site.js';
  */
 
 export function shipsInLabel(window: string = DISPATCH_WINDOW): string {
-  return `Ships in ${window} business days`;
+  return `Ships in ${businessDayPhrase(window)}`;
 }
 
 export function freeShippingOnLabel(policy: Pick<StorePolicy, 'freeShippingPaise'>): string {

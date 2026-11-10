@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { DEFAULT_POLICY, DISPATCH_WINDOW, type StorePolicy } from '../seo/site.js';
+import { businessDayPhrase, DEFAULT_POLICY, dispatchWindow, type StorePolicy } from '../seo/site.js';
 import {
   businessDaysLine, cancellationLine, changeOfMindLine, contactLine, cutoffLine,
   deliveryEstimateLine, dispatchLine, emailReplyLine, refundLine, remedyLine,
@@ -26,8 +26,10 @@ export interface InfoLink { href: string; label: string }
 
 export interface InfoPage {
   path: string;
-  /** <title>, 50–59 characters. */
+  /** <title>, 50–59 characters. At the fallback dispatch window. */
   title: string;
+  /** When set, the live title follows store policy (shipping uses handling days). */
+  titleFor?: (policy: StorePolicy) => string;
   description: (policy: StorePolicy) => string;
   crumb: string;
   eyebrow: string;
@@ -50,6 +52,12 @@ const RELATED: InfoLink[] = [
 
 const relatedExcept = (path: string) => RELATED.filter((l) => l.href !== path);
 
+export function shippingPageTitle(policy: StorePolicy = DEFAULT_POLICY): string {
+  const window = dispatchWindow(policy);
+  const unit = window.trim() === '1' ? 'Business Day' : 'Business Days';
+  return `Shipping across India within ${window} ${unit} | COCO36`;
+}
+
 /**
  * Questions the shipping and returns facts actually answer.
  * Visible FAQ and FAQPage JSON-LD both call this.
@@ -58,7 +66,7 @@ export function policyFaqs(policy: StorePolicy): { q: string; a: string }[] {
   return [
     {
       q: 'Where do COCO36 orders ship from, and how soon do they leave?',
-      a: `${dispatchLine()} ${businessDaysLine()} ${cutoffLine()} We ship across India.`,
+      a: `${dispatchLine(policy)} ${businessDaysLine()} ${cutoffLine(policy)} We ship across India.`,
     },
     {
       q: 'How much does shipping cost?',
@@ -153,8 +161,8 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: 'How an order leaves',
         paragraphs: [
-          `${dispatchLine()} We ship across India. ${shippingPriceLine(policy)}`,
-          `${businessDaysLine()} ${cutoffLine()} ${DISPATCH_WINDOW} business days is when the order is dispatched, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
+          `${dispatchLine(policy)} We ship across India. ${shippingPriceLine(policy)}`,
+          `${businessDaysLine()} ${cutoffLine(policy)} ${businessDayPhrase(dispatchWindow(policy))} is when the order is dispatched, not a promised delivery date. Times after dispatch are estimates, and they are on the shipping page.`,
         ],
       },
       {
@@ -179,7 +187,7 @@ export const INFO_PAGES: InfoPage[] = [
       {
         paragraphs: [
           `Questions about an order, a product or a delivery come to ${SUPPORT_EMAIL} and to ${SUPPORT_PHONE_DISPLAY}. Use either. If the question is about an order you have already placed, include the order number so we can find it.`,
-          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong, missing, or expired or near expiry. ${returnsLine(policy)} ${dispatchLine()} ${shippingPriceLine(policy)}`,
+          `Write or call about an order that has shipped, an ingredient in the catalogue, or an item that arrived damaged, wrong, missing, or expired or near expiry. ${returnsLine(policy)} ${dispatchLine(policy)} ${shippingPriceLine(policy)}`,
           `${supportHoursLine()} ${emailReplyLine()}`,
           'The catalogue is specialty baking and pastry ingredients sourced direct from origin, for bakers, pastry chefs and chocolatiers. We ship across India.',
           'If you are deciding what to buy, the shop lists every ingredient, and the ingredient guides explain vanilla, cocoa and chocolate, sugars, flours, and spices and salt. This page is how to reach a person. The FAQ, shipping page and returns page say the same things about orders.',
@@ -191,7 +199,7 @@ export const INFO_PAGES: InfoPage[] = [
   {
     path: '/faq',
     title: 'Frequently Asked Questions about COCO36 Orders | COCO36',
-    description: (policy) => `How COCO36 shipping works: dispatch within ${DISPATCH_WINDOW} business days, ships across India, free on orders of ${rupeesLabel(policy)} or more, and the ${policy.returnWindowDays}-day report window.`,
+    description: (policy) => `How COCO36 shipping works: dispatch within ${businessDayPhrase(dispatchWindow(policy))}, ships across India, free on orders of ${rupeesLabel(policy)} or more, and the ${policy.returnWindowDays}-day report window.`,
     crumb: 'FAQ',
     eyebrow: 'Help',
     h1: 'Orders, shipping and returns',
@@ -207,8 +215,9 @@ export const INFO_PAGES: InfoPage[] = [
   },
   {
     path: '/shipping',
-    title: `Shipping across India within ${DISPATCH_WINDOW} Business Days | COCO36`,
-    description: (policy) => `COCO36 ships across India within ${DISPATCH_WINDOW} business days via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
+    title: shippingPageTitle(DEFAULT_POLICY),
+    titleFor: shippingPageTitle,
+    description: (policy) => `COCO36 ships across India within ${businessDayPhrase(dispatchWindow(policy))} via our courier partners. Free on orders of ${rupeesLabel(policy)} or more; ${feeLabel(policy)} below that.`,
     crumb: 'Shipping',
     eyebrow: 'Delivery',
     h1: 'Shipping across India',
@@ -216,14 +225,14 @@ export const INFO_PAGES: InfoPage[] = [
       {
         heading: 'When an order ships',
         paragraphs: [
-          `${dispatchLine()} We ship across India.`,
-          `${businessDaysLine()} ${cutoffLine()}`,
-          `${DISPATCH_WINDOW} business days is when the order is dispatched. It is not a date for when the parcel reaches you.`,
+          `${dispatchLine(policy)} We ship across India.`,
+          `${businessDaysLine()} ${cutoffLine(policy)}`,
+          `${businessDayPhrase(dispatchWindow(policy))} is when the order is dispatched. It is not a date for when the parcel reaches you.`,
         ],
         bullets: [
           'Ships across India.',
           'Handed to our courier partners.',
-          `Dispatched within ${DISPATCH_WINDOW} business days, using the 12 PM IST cutoff.`,
+          `Dispatched within ${businessDayPhrase(dispatchWindow(policy))}, using the 12 PM IST cutoff.`,
         ],
       },
       {

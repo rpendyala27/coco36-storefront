@@ -6,7 +6,7 @@ import { GUIDES_HUB, guidePath, type GuideLink } from '../content/guideIndex.js'
 import {
   breadcrumbJsonLd, faqJsonLd, organizationJsonLd, productJsonLd, websiteJsonLd, type Crumb,
 } from './jsonld.js';
-import { INFO_PAGES, policyFaqs } from '../content/infoPages.js';
+import { INFO_PAGES, infoPage, policyFaqs } from '../content/infoPages.js';
 import { productPage } from '../content/productPages.js';
 import { richPlain } from '../content/richText.js';
 import { DEFAULT_OG_IMAGE, DEFAULT_POLICY, type StorePolicy, rupees } from './site.js';
@@ -117,7 +117,7 @@ export function staticPageMeta(pathname: string, policy: StorePolicy = DEFAULT_P
     const crumbs = staticPageCrumbs(pathname);
     const faqs = pathname === '/faq' ? policyFaqs(policy) : null;
     return {
-      title: e.title,
+      title: infoPage(pathname)?.titleFor?.(policy) ?? e.title,
       description: e.description(policy),
       path: pathname,
       ...(e.noindex ? { robots: NOINDEX } : {}),

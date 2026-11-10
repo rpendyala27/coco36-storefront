@@ -1,5 +1,5 @@
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY } from '../lib/supportContact.js';
-import { CARRIER, DISPATCH_WINDOW, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, rupees } from '../seo/site.js';
+import { businessDayPhrase, CARRIER, DEFAULT_POLICY, dispatchWindow, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, rupees } from '../seo/site.js';
 
 /**
  * Order facts for public pages. The courier is never named; use CARRIER
@@ -10,11 +10,11 @@ export const COURIER_PARTNERS = CARRIER;
 
 /** Shared homepage, shop, product and terms blurb. Courier-neutral, and the same returns facts as /returns. */
 export function policyBlurb(policy: StorePolicy): string {
-  return `Ships across India within ${DISPATCH_WINDOW} business days via ${COURIER_PARTNERS}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong, missing or expired items can be reported within ${policy.returnWindowDays} days of delivery, with your order number and photos. We do not accept change-of-mind returns. If the item is in stock we send a replacement; otherwise we refund a prepaid order to the original payment method. ${codRefundLine()} Your bank usually takes 5–7 business days to show the refund.`;
+  return `Ships across India within ${businessDayPhrase(dispatchWindow(policy))} via ${COURIER_PARTNERS}. Free shipping on orders of ${rupees(policy.freeShippingPaise)} or more (${rupees(policy.flatShippingPaise)} below that). Damaged, wrong, missing or expired items can be reported within ${policy.returnWindowDays} days of delivery, with your order number and photos. We do not accept change-of-mind returns. If the item is in stock we send a replacement; otherwise we refund a prepaid order to the original payment method. ${codRefundLine()} Your bank usually takes 5–7 business days to show the refund.`;
 }
 
-export function dispatchLine(): string {
-  return `Ships across India within ${DISPATCH_WINDOW} business days, via ${COURIER_PARTNERS}.`;
+export function dispatchLine(policy: StorePolicy = DEFAULT_POLICY): string {
+  return `Ships across India within ${businessDayPhrase(dispatchWindow(policy))}, via ${COURIER_PARTNERS}.`;
 }
 
 export function shippingPriceLine(policy: StorePolicy): string {
@@ -25,8 +25,8 @@ export function businessDaysLine(): string {
   return 'Business days are Monday to Saturday, excluding Sundays and national holidays.';
 }
 
-export function cutoffLine(): string {
-  return `Orders placed by 12 PM IST on a business day are dispatched within ${DISPATCH_WINDOW} business days. Orders placed after the cutoff count from the next business day.`;
+export function cutoffLine(policy: StorePolicy = DEFAULT_POLICY): string {
+  return `Orders placed by 12 PM IST on a business day are dispatched within ${businessDayPhrase(dispatchWindow(policy))}. Orders placed after the cutoff count from the next business day.`;
 }
 
 export function deliveryEstimateLine(): string {

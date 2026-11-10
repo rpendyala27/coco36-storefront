@@ -7,7 +7,7 @@ import { imageUrl } from '../lib/img.js';
 import { productPath } from '../lib/productPath.js';
 import { stripMarkdown } from './text.js';
 import {
-  BRAND, DEFAULT_POLICY, LEGAL_NAME, LOGO_URL, dispatchDayBounds,
+  BRAND, DEFAULT_POLICY, LEGAL_NAME, LOGO_URL, dispatchDayBounds, dispatchWindow,
   SITE_ORIGIN, SOCIAL_PROFILES, TRANSIT_DAYS_MAX, TRANSIT_DAYS_MIN, type StorePolicy, absUrl,
 } from './site.js';
 
@@ -88,7 +88,12 @@ export function shippingJsonLd(pricePaise: number, policy: StorePolicy = DEFAULT
     shippingOrigin: { '@type': 'DefinedRegion', addressCountry: 'IN' },
     deliveryTime: {
       '@type': 'ShippingDeliveryTime',
-      handlingTime: { '@type': 'QuantitativeValue', minValue: dispatchDayBounds().min, maxValue: dispatchDayBounds().max, unitCode: 'DAY' },
+      handlingTime: {
+        '@type': 'QuantitativeValue',
+        minValue: dispatchDayBounds(dispatchWindow(policy)).min,
+        maxValue: dispatchDayBounds(dispatchWindow(policy)).max,
+        unitCode: 'DAY',
+      },
       transitTime: { '@type': 'QuantitativeValue', minValue: TRANSIT_DAYS_MIN, maxValue: TRANSIT_DAYS_MAX, unitCode: 'DAY' },
     },
   };

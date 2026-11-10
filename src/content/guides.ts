@@ -1,5 +1,5 @@
 import {
-  DEFAULT_POLICY, DISPATCH_WINDOW, type StorePolicy, rupees,
+  DEFAULT_POLICY, businessDayPhrase, dispatchWindow, type StorePolicy, rupees,
 } from '../seo/site.js';
 import { COURIER_PARTNERS } from './orderFacts.js';
 import { GUIDE_LINKS, type GuideLink } from './guideIndex.js';
@@ -292,7 +292,7 @@ export const guideBySlug = (slug: string) => GUIDES.find((g) => g.slug === slug)
 export function deliveryFaq(policy: StorePolicy = DEFAULT_POLICY): Faq {
   return {
     q: 'Do you deliver across India?',
-    a: `Yes. We ship across India. Orders are usually dispatched within ${DISPATCH_WINDOW} business days, through ${COURIER_PARTNERS}, to serviceable pincodes. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged, wrong, missing or expired, tell us within ${policy.returnWindowDays} days of delivery.`,
+    a: `Yes. We ship across India. Orders are usually dispatched within ${businessDayPhrase(dispatchWindow(policy))}, through ${COURIER_PARTNERS}, to serviceable pincodes. Shipping is free on orders of ${rupees(policy.freeShippingPaise)} or more and ${rupees(policy.flatShippingPaise)} below that. If an item arrives damaged, wrong, missing or expired, tell us within ${policy.returnWindowDays} days of delivery.`,
   };
 }
 

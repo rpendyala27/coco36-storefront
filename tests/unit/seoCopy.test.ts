@@ -30,7 +30,7 @@ describe('SEO copy bounds', () => {
       freeShippingOnLabel(DEFAULT_POLICY),
       reportIssuesLabel(DEFAULT_POLICY),
     ]);
-    expect(shipsInLabel()).toBe('Ships in 2 business days');
+    expect(shipsInLabel()).toBe('Ships in 1 business day');
     expect(freeShippingOnLabel(DEFAULT_POLICY)).toBe('Free shipping on ₹1,200+');
     expect(reportIssuesLabel(DEFAULT_POLICY)).toBe('Report issues within 7 days');
     const below = shopSeoBelowGrid().join(' ');

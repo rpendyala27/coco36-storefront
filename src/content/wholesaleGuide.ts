@@ -1,5 +1,5 @@
 import type { BakingNote } from './bakingNotes.js';
-import { DISPATCH_WINDOW, DEFAULT_POLICY } from '../seo/site.js';
+import { businessDayPhrase, DEFAULT_POLICY, dispatchWindow, type StorePolicy } from '../seo/site.js';
 
 /**
  * /guides/how-to-buy-wholesale-baking-ingredients-india
@@ -13,8 +13,8 @@ export const WHOLESALE_GUIDE_PATH = '/guides/how-to-buy-wholesale-baking-ingredi
 export const WHOLESALE_GUIDE_DESCRIPTION =
   'How wholesale ordering works at COCO36: enquire, trial pack, first order, scale up. For bakeries, cafés and chocolatiers in India, from early December.';
 
-export function wholesaleDispatchSentence(): string {
-  return `We dispatch orders within ${DISPATCH_WINDOW} business days; bulk and trade orders take 2–3 weeks.`;
+export function wholesaleDispatchSentence(policy: Pick<StorePolicy, 'handlingDays'> = DEFAULT_POLICY): string {
+  return `We dispatch orders within ${businessDayPhrase(dispatchWindow(policy))}; bulk and trade orders take 2–3 weeks.`;
 }
 
 const TRIAL = 'Trial packs available once launch stock lands (from early December).';
@@ -134,3 +134,18 @@ export const WHOLESALE_GUIDE: BakingNote = {
     { href: '/returns', label: 'Returns' },
   ],
 };
+
+/** Same page, with the live handling_days sentence when it differs from the fallback. */
+export function wholesaleGuide(policy: Pick<StorePolicy, 'handlingDays'> = DEFAULT_POLICY): BakingNote {
+  const sentence = wholesaleDispatchSentence(policy);
+  if (sentence === DISPATCH) return WHOLESALE_GUIDE;
+  const swap = (text: string) => text.split(DISPATCH).join(sentence);
+  return {
+    ...WHOLESALE_GUIDE,
+    sections: WHOLESALE_GUIDE.sections.map((section) => ({
+      ...section,
+      blocks: section.blocks.map((block) => (block.type === 'p' ? { ...block, text: swap(block.text) } : block)),
+    })),
+    faqs: WHOLESALE_GUIDE.faqs.map((faq) => ({ ...faq, a: swap(faq.a) })),
+  };
+}

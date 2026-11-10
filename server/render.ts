@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { categoryPath, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { bakingNoteByPath } from '../src/content/bakingNotes.js';
+import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../src/content/wholesaleGuide.js';
 import { RECIPES_HUB_PATH, recipeBySlug } from '../src/content/recipes.js';
 import { guideBySlug } from '../src/content/guides.js';
 import { categoryListingMeta } from '../src/content/categoryPages.js';
@@ -132,7 +133,8 @@ export async function render(pathname: string, search: string, host: string): Pr
   if (note) {
     let ctx = emptyCtx();
     try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (baking note)', err); }
-    return withHost(page(200, bakingNoteMeta(note), bakingNoteSnapshot(ctx, note)));
+    const live = note.path === WHOLESALE_GUIDE_PATH ? wholesaleGuide(ctx.policy) : note;
+    return withHost(page(200, bakingNoteMeta(live), bakingNoteSnapshot(ctx, live)));
   }
 
   // Recipes. Copy does not depend on the catalogue. Unknown slugs fall through
