@@ -1,26 +1,42 @@
 name: IndexNow
 
-# After Vercel marks a deployment successful. Only a Production deployment
-# asks coco36.com to submit its sitemap. Preview deployments skip this job.
+# After Vercel marks a Production deployment successful, or when someone runs
+# this workflow by hand from main. Preview deployments skip the job.
 # The key stays in the Vercel Production env; this workflow never sees it.
+# The last successful sitemap snapshot is an Actions artifact (indexnow-state).
+# That uses the built-in GITHUB_TOKEN. Rohan does not create a secret for it.
 # IndexNow errors are warnings. They do not fail the Vercel build.
 
 on:
   deployment_status:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Submit every current sitemap URL
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
   contents: read
+  actions: write
 
 jobs:
   ping:
-    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Ask production to submit sitemap URLs
+      - name: Ask production to submit changed sitemap URLs
+        env:
+          INDEXNOW_FULL: ${{ inputs.full }}
         run: |
           set +e
+          mkdir -p .indexnow/upload
           echo "Waiting for https://coco36.com/sitemap.xml"
           ready=0
           for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
@@ -51,9 +67,55 @@ jobs:
             exit 0
           fi
 
+          # Newest non-expired artifact from a previous successful ping.
+          # A missing artifact is the first run: the production route submits
+          # the whole sitemap. A failed download does not fail the deploy.
+          previous=null
+          arts=$(mktemp)
+          art_code=$(curl -sS --max-time 20 -o "$arts" -w '%{http_code}' \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=indexnow-state&per_page=100")
+          if [ "$art_code" = "200" ]; then
+            art_id=$(jq -r '[.artifacts[]? | select(.name == "indexnow-state" and .expired == false)] | sort_by(.created_at) | last | .id // empty' "$arts")
+            if [ -n "$art_id" ]; then
+              zip=$(mktemp)
+              dl=$(curl -sS -L --max-time 30 -o "$zip" -w '%{http_code}' \
+                -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${art_id}/zip")
+              if [ "$dl" = "200" ] && unzip -qo "$zip" -d .indexnow/prev; then
+                found=$(find .indexnow/prev -name state.json -type f | head -n 1)
+                if [ -n "$found" ] && jq -e '.submittedAt and (.entries | type == "array")' "$found" >/dev/null; then
+                  previous=$(cat "$found")
+                  echo "IndexNow restored state from artifact ${art_id}"
+                else
+                  echo "::warning::IndexNow state artifact was unreadable. This run submits the full sitemap."
+                fi
+              else
+                echo "::warning::IndexNow could not download state artifact ${art_id} (HTTP ${dl}). This run submits the full sitemap."
+              fi
+              rm -f "$zip"
+            else
+              echo "IndexNow has no stored state. This run submits the full sitemap."
+            fi
+          else
+            echo "::warning::IndexNow could not list state artifacts (HTTP ${art_code}). This run submits the full sitemap."
+          fi
+          rm -f "$arts"
+
+          force=false
+          if [ "${INDEXNOW_FULL}" = "true" ]; then
+            force=true
+            echo "IndexNow full submit requested."
+          fi
+          if ! jq -n --argjson previous "$previous" --argjson force "$force" '{previous:$previous, force:$force}' > .indexnow/request.json; then
+            echo "::warning::IndexNow could not build the submit request. No POST. The Vercel build is unaffected."
+            exit 0
+          fi
+
           # Retry only while the production alias may still be the previous
-          # deployment (HTML). A JSON answer is this code: stop, even if the
-          # key is not configured yet.
+          # deployment (HTML). A JSON answer is this code: stop.
           for _ in 1 2 3 4 5 6; do
             hdr=$(mktemp)
             body=$(mktemp)
@@ -61,17 +123,36 @@ jobs:
               -X POST \
               -H "Authorization: Bearer ${token}" \
               -H "Accept: application/json" \
+              -H "Content-Type: application/json" \
+              --data-binary @.indexnow/request.json \
               https://coco36.com/api/indexnow-submit)
             ctype=$(grep -i '^content-type:' "$hdr" | head -n 1 | tr -d '\r')
-            echo "indexnow-submit HTTP ${code} ${ctype}"
+            echo "indexnow-submit route HTTP ${code} ${ctype}"
             case "$ctype" in
               *[Jj][Ss][Oo][Nn]*)
-                jq -c '{pinged,reason,status,count}' "$body" 2>/dev/null || echo "indexnow-submit returned JSON that did not parse"
+                reason=$(jq -r '.reason // empty' "$body" 2>/dev/null)
+                status=$(jq -r '.status // empty' "$body" 2>/dev/null)
                 pinged=$(jq -r '.pinged // false' "$body" 2>/dev/null)
-                rm -f "$hdr" "$body"
-                if [ "$pinged" != "true" ]; then
-                  echo "::warning::IndexNow did not submit (see the JSON above). The Vercel build is unaffected."
+                count=$(jq -r '.count // 0' "$body" 2>/dev/null)
+                jq -c '{pinged,reason,status,count}' "$body" 2>/dev/null || echo "indexnow-submit returned JSON that did not parse"
+                if [ "$reason" = "unchanged" ]; then
+                  echo "IndexNow: no sitemap changes since the last successful ping; no POST"
+                elif [ -n "$status" ] && [ "$status" != "null" ]; then
+                  echo "IndexNow HTTP ${status}"
+                else
+                  echo "IndexNow HTTP none (${reason:-unknown})"
                 fi
+                if [ "$pinged" = "true" ] && { [ "$status" = "200" ] || [ "$status" = "202" ]; }; then
+                  if jq -e '.nextState.submittedAt and (.nextState.entries | type == "array")' "$body" >/dev/null; then
+                    jq '.nextState' "$body" > .indexnow/upload/state.json
+                    echo "IndexNow submitted ${count} URL(s). State will be stored after this step."
+                  else
+                    echo "::warning::IndexNow HTTP ${status} but no state was returned. Stored state was not updated."
+                  fi
+                elif [ "$reason" != "unchanged" ]; then
+                  echo "::warning::IndexNow did not succeed (HTTP ${status:-none}). Stored state was not updated. The Vercel build is unaffected."
+                fi
+                rm -f "$hdr" "$body"
                 exit 0
                 ;;
             esac
@@ -80,3 +161,13 @@ jobs:
           done
           echo "::warning::IndexNow submit did not reach the production function. The Vercel build is unaffected."
           exit 0
+
+      - name: Store the sitemap snapshot
+        if: hashFiles('.indexnow/upload/state.json') != ''
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: indexnow-state
+          path: .indexnow/upload/state.json
+          retention-days: 90
+          if-no-files-found: ignore

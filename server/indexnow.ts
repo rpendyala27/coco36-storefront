@@ -40,13 +40,27 @@ export interface TextResult {
   body: string;
 }
 
-export type SubmitReason = 'submitted' | 'not-production' | 'unset-key' | 'no-urls' | 'error';
+export type SubmitReason = 'submitted' | 'unchanged' | 'not-production' | 'unset-key' | 'no-urls' | 'error';
+
+/** One sitemap URL remembered from the last successful IndexNow ping. */
+export interface SitemapEntry {
+  loc: string;
+  lastmod: string | null;
+}
+
+/** Last successful ping. Stored by the GitHub Action; absent on the first run. */
+export interface IndexNowState {
+  submittedAt: string;
+  entries: SitemapEntry[];
+}
 
 export interface SubmitResult {
   pinged: boolean;
   reason: SubmitReason;
   urls: string[];
   status?: number;
+  /** Present only after IndexNow returns 200 or 202. The caller persists this. */
+  nextState: IndexNowState | null;
 }
 
 export interface IndexNowJwk extends JsonWebKey {
@@ -100,7 +114,8 @@ export function keyFileResult(file: string | null, env: IndexNowEnv): TextResult
         'Content-Type': PLAIN,
         'Cache-Control': 'public, max-age=3600',
       },
-      body: `${key}\n`,
+      // IndexNow requires the file to be the key alone: no newline, no spaces.
+      body: key,
     };
   }
   return {
@@ -160,11 +175,101 @@ function isBlockedPath(path: string): boolean {
 }
 
 export function sitemapLocs(xml: string): string[] {
-  const locs: string[] = [];
-  for (const match of xml.matchAll(/<loc>([^<]*)<\/loc>/gi)) {
-    locs.push(decodeXml(match[1].trim()));
+  return sitemapEntriesFromXml(xml).map((entry) => entry.loc);
+}
+
+/** `<url>` blocks from a sitemap, including an optional `<lastmod>`. */
+export function sitemapEntriesFromXml(xml: string): SitemapEntry[] {
+  const entries: SitemapEntry[] = [];
+  for (const match of xml.matchAll(/<url>([\s\S]*?)<\/url>/gi)) {
+    const block = match[1];
+    const loc = block.match(/<loc>([^<]*)<\/loc>/i);
+    if (!loc) continue;
+    const lastmod = block.match(/<lastmod>([^<]*)<\/lastmod>/i);
+    entries.push({
+      loc: decodeXml(loc[1].trim()),
+      lastmod: lastmod ? decodeXml(lastmod[1].trim()) || null : null,
+    });
   }
-  return locs;
+  return entries;
+}
+
+/** Drop anything that must not be stored or submitted, and remember lastmod. */
+export function keptSitemapEntries(entries: readonly SitemapEntry[]): SitemapEntry[] {
+  const out: SitemapEntry[] = [];
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const loc = normalizeApexUrl(entry.loc);
+    if (!loc || seen.has(loc)) continue;
+    seen.add(loc);
+    const lastmod = entry.lastmod?.trim() || null;
+    out.push({ loc, lastmod });
+  }
+  return out.slice(0, 10_000);
+}
+
+/**
+ * Which URLs to POST.
+ * No stored state, or `force`, submits the whole current sitemap.
+ * Otherwise: lastmod strictly newer than the last success, plus URLs added
+ * since that snapshot, plus URLs removed from it (IndexNow accepts deletions).
+ */
+export function urlsToSubmit(
+  current: readonly SitemapEntry[],
+  previous: IndexNowState | null,
+  force: boolean,
+): string[] {
+  if (force || !previous) return current.map((entry) => entry.loc);
+  const last = Date.parse(previous.submittedAt);
+  if (!Number.isFinite(last)) return current.map((entry) => entry.loc);
+  const prev = new Map(previous.entries.map((entry) => [entry.loc, entry.lastmod]));
+  const currentLocs = new Set(current.map((entry) => entry.loc));
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (loc: string) => {
+    const normalized = normalizeApexUrl(loc);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    out.push(normalized);
+  };
+  for (const entry of current) {
+    if (!prev.has(entry.loc)) {
+      add(entry.loc);
+      continue;
+    }
+    const modified = lastmodMs(entry.lastmod);
+    if (modified != null && modified > last) add(entry.loc);
+  }
+  for (const entry of previous.entries) {
+    if (!currentLocs.has(entry.loc)) add(entry.loc);
+  }
+  return out;
+}
+
+/** A date-only lastmod is midnight UTC. Same-day values are not "newer". */
+function lastmodMs(value: string | null): number | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? `${trimmed}T00:00:00.000Z` : trimmed;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** Accept only a state object we are willing to diff against. Anything else is a first run. */
+export function parseIndexNowState(value: unknown): IndexNowState | null {
+  if (!value || typeof value !== 'object') return null;
+  const submittedAt = (value as { submittedAt?: unknown }).submittedAt;
+  const entries = (value as { entries?: unknown }).entries;
+  if (typeof submittedAt !== 'string' || !Number.isFinite(Date.parse(submittedAt))) return null;
+  if (!Array.isArray(entries)) return null;
+  const kept = keptSitemapEntries(entries.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const loc = (entry as { loc?: unknown }).loc;
+    const lastmod = (entry as { lastmod?: unknown }).lastmod;
+    if (typeof loc !== 'string') return [];
+    return [{ loc, lastmod: typeof lastmod === 'string' ? lastmod : null }];
+  }));
+  return { submittedAt: new Date(Date.parse(submittedAt)).toISOString(), entries: kept };
 }
 
 function decodeXml(value: string): string {
@@ -192,21 +297,27 @@ export function indexNowBody(key: string, urlList: readonly string[]): {
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+const none = (reason: SubmitReason, status?: number): SubmitResult => ({
+  pinged: false, reason, urls: [], status, nextState: null,
+});
+
 /**
- * Fetch the live apex sitemap and POST it to IndexNow.
+ * Fetch the live apex sitemap and POST the URLs that changed since `previous`.
+ * With no previous state, or `force`, the whole current sitemap is submitted.
  * Returns without calling fetch unless this process is production and a key is set.
- * Network and protocol errors are caught and reported; they do not throw.
+ * `nextState` is set only when IndexNow returns 200 or 202. Errors do not throw.
  */
 export async function submitIndexNow(options: {
   env: IndexNowEnv;
   fetchImpl?: FetchLike;
   sleep?: (ms: number) => Promise<void>;
+  previous?: IndexNowState | null;
+  force?: boolean;
+  now?: number;
 }): Promise<SubmitResult> {
-  if (options.env.VERCEL_ENV !== 'production') {
-    return { pinged: false, reason: 'not-production', urls: [] };
-  }
+  if (options.env.VERCEL_ENV !== 'production') return none('not-production');
   const key = configuredKey(options.env);
-  if (!key) return { pinged: false, reason: 'unset-key', urls: [] };
+  if (!key) return none('unset-key');
 
   const fetchImpl = options.fetchImpl ?? fetch;
   const wait = options.sleep ?? sleep;
@@ -218,10 +329,15 @@ export async function submitIndexNow(options: {
     });
     if (sitemapRes.status !== 200) {
       console.error(`[indexnow] sitemap HTTP ${sitemapRes.status}`);
-      return { pinged: false, reason: 'error', urls: [] };
+      return none('error');
     }
-    const urls = filterIndexNowUrls(sitemapLocs(await sitemapRes.text())).slice(0, 10_000);
-    if (urls.length === 0) return { pinged: false, reason: 'no-urls', urls: [] };
+    const current = keptSitemapEntries(sitemapEntriesFromXml(await sitemapRes.text()));
+    if (current.length === 0) return none('no-urls');
+    const urls = urlsToSubmit(current, options.previous ?? null, options.force === true);
+    if (urls.length === 0) {
+      console.log('[indexnow] no changes since the last successful ping; no POST');
+      return { pinged: false, reason: 'unchanged', urls: [], nextState: null };
+    }
 
     const body = JSON.stringify(indexNowBody(key, urls));
     let status = await postIndexNow(fetchImpl, body);
@@ -231,14 +347,23 @@ export async function submitIndexNow(options: {
     }
     if (status === 200 || status === 202) {
       console.log(`[indexnow] submitted ${urls.length} URLs (HTTP ${status})`);
-      return { pinged: true, reason: 'submitted', urls, status };
+      return {
+        pinged: true,
+        reason: 'submitted',
+        urls,
+        status,
+        nextState: {
+          submittedAt: new Date(options.now ?? Date.now()).toISOString(),
+          entries: current,
+        },
+      };
     }
-    // 403 means the key file was rejected. Do not retry it.
+    // 403 means the key file was rejected. Do not retry it, and do not advance state.
     console.error(`[indexnow] api.indexnow.org HTTP ${status}`);
-    return { pinged: false, reason: 'error', urls, status };
+    return { pinged: false, reason: 'error', urls, status, nextState: null };
   } catch (err) {
     console.error('[indexnow] submit failed', err instanceof Error ? err.name : 'error');
-    return { pinged: false, reason: 'error', urls: [] };
+    return none('error');
   }
 }
 
@@ -257,8 +382,9 @@ export type AuthDecision = 'ok' | 'not-production' | 'unset-key' | 'unauthorized
 /**
  * Production route gate. Preview / local / CI never get past the env check,
  * so they do not fetch GitHub's keys and do not ping. A bearer token is either
- * INDEXNOW_SUBMIT_SECRET (optional) or a GitHub Actions OIDC token for a
- * production deployment_status run on this repo's main branch.
+ * INDEXNOW_SUBMIT_SECRET (optional) or a GitHub Actions OIDC token for this
+ * repo's main branch. Accepted events are deployment_status (after production
+ * deploys) and workflow_dispatch (a manual full submit).
  */
 export async function authorizeSubmit(
   authorization: string | undefined,
@@ -337,7 +463,7 @@ export function verifyOidcClaims(token: string, keys: readonly IndexNowJwk[], no
   if (!audOk) return false;
   if (payload.repository !== OIDC_REPO) return false;
   if (payload.ref !== 'refs/heads/main') return false;
-  if (payload.event_name !== 'deployment_status') return false;
+  if (payload.event_name !== 'deployment_status' && payload.event_name !== 'workflow_dispatch') return false;
   const now = Math.floor(nowMs / 1000);
   if (typeof payload.exp !== 'number' || payload.exp < now - 30) return false;
   if (typeof payload.nbf === 'number' && payload.nbf > now + 30) return false;

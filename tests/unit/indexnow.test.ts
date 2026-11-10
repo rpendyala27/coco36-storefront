@@ -6,8 +6,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import keyHandler from '../../api/indexnow-key';
 import submitHandler from '../../api/indexnow-submit';
 import {
-  authorizeSubmit, configuredKey, filterIndexNowUrls, handleKeyRequest, submitIndexNow, verifyOidcClaims,
-  type IndexNowJwk,
+  authorizeSubmit, configuredKey, filterIndexNowUrls, handleKeyRequest, parseIndexNowState, submitIndexNow,
+  urlsToSubmit, verifyOidcClaims,
+  type IndexNowJwk, type SitemapEntry,
 } from '../../server/indexnow';
 
 /**
@@ -94,11 +95,13 @@ describe('key file', () => {
     expect(query.statusCode).toBe(200);
     expect(query.headers.get('content-type')).toBe('text/plain; charset=utf-8');
     expect(query.headers.get('cache-control')).toBe('public, max-age=3600');
-    expect(query.body()).toBe(`${KEY}\n`);
+    expect(query.body()).toBe(KEY);
+    expect(query.body()?.endsWith('\n')).toBe(false);
+    expect(query.body()?.trim()).toBe(query.body());
 
     const direct = handleKeyRequest(`/${KEY}.txt`, 'GET', { INDEXNOW_KEY: KEY });
     expect(direct.status).toBe(200);
-    expect(direct.body).toBe(`${KEY}\n`);
+    expect(direct.body).toBe(KEY);
 
     const head = mockRes();
     await keyHandler({ url: `/api/indexnow-key?file=${KEY}`, method: 'HEAD' } as never, head as never);
@@ -172,7 +175,112 @@ describe('URL list', () => {
       env: { VERCEL_ENV: 'production', INDEXNOW_KEY: KEY },
       fetchImpl,
     });
-    expect(result).toMatchObject({ pinged: false, reason: 'no-urls', urls: [] });
+    expect(result).toMatchObject({ pinged: false, reason: 'no-urls', urls: [], nextState: null });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('submits the whole sitemap only when there is no stored state, then only changes', async () => {
+    const previous = {
+      submittedAt: '2026-11-01T00:00:00.000Z',
+      entries: [
+        { loc: 'https://coco36.com/', lastmod: '2026-10-01' },
+        { loc: 'https://coco36.com/shop', lastmod: '2026-10-01' },
+        { loc: 'https://coco36.com/about', lastmod: null },
+        { loc: 'https://coco36.com/old-page', lastmod: '2026-09-01' },
+        { loc: 'https://coco36.com/recipes', lastmod: '2026-09-01' },
+      ],
+    };
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset>
+  <url><loc>https://coco36.com/</loc><lastmod>2026-11-02</lastmod></url>
+  <url><loc>https://coco36.com/shop</loc><lastmod>2026-10-01</lastmod></url>
+  <url><loc>https://coco36.com/about</loc></url>
+  <url><loc>https://coco36.com/guides/new-guide</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://www.coco36.com/shop</loc></url>
+  <url><loc>https://coco36.com/cart</loc></url>
+  <url><loc>https://coco36.com/recipes</loc></url>
+  <url><loc>https://coco36.com/shop/bean-to-bar-kit</loc></url>
+</urlset>`;
+    const changed = [
+      'https://coco36.com/',
+      'https://coco36.com/guides/new-guide',
+      'https://coco36.com/old-page',
+    ];
+    const posts: unknown[] = [];
+    const fetchImpl = vi.fn(async (input: string, init?: RequestInit) => {
+      if (String(input).endsWith('/sitemap.xml')) return new Response(xml, { status: 200 });
+      posts.push(JSON.parse(String(init?.body)));
+      return new Response('', { status: 403 });
+    });
+    const failed = await submitIndexNow({
+      env: { VERCEL_ENV: 'production', INDEXNOW_KEY: KEY },
+      previous,
+      fetchImpl,
+      now: Date.parse('2026-11-10T12:00:00.000Z'),
+    });
+    expect(failed.pinged).toBe(false);
+    expect(failed.status).toBe(403);
+    expect(failed.nextState).toBeNull();
+    expect(posts).toEqual([{
+      host: 'coco36.com',
+      key: KEY,
+      keyLocation: `https://coco36.com/${KEY}.txt`,
+      urlList: changed,
+    }]);
+
+    posts.length = 0;
+    const fetchOk = vi.fn(async (input: string, init?: RequestInit) => {
+      if (String(input).endsWith('/sitemap.xml')) return new Response(xml, { status: 200 });
+      posts.push(JSON.parse(String(init?.body)));
+      return new Response('', { status: 202 });
+    });
+    const ok = await submitIndexNow({
+      env: { VERCEL_ENV: 'production', INDEXNOW_KEY: KEY },
+      previous,
+      fetchImpl: fetchOk,
+      now: Date.parse('2026-11-10T12:00:00.000Z'),
+    });
+    expect(ok.pinged).toBe(true);
+    expect(ok.status).toBe(202);
+    expect(ok.nextState).toEqual({
+      submittedAt: '2026-11-10T12:00:00.000Z',
+      entries: [
+        { loc: 'https://coco36.com/', lastmod: '2026-11-02' },
+        { loc: 'https://coco36.com/shop', lastmod: '2026-10-01' },
+        { loc: 'https://coco36.com/about', lastmod: null },
+        { loc: 'https://coco36.com/guides/new-guide', lastmod: '2026-11-09' },
+      ],
+    });
+
+    const sameDay: SitemapEntry[] = [{ loc: 'https://coco36.com/shop', lastmod: '2026-11-10' }];
+    const held = {
+      submittedAt: '2026-11-10T15:00:00.000Z',
+      entries: sameDay,
+    };
+    expect(urlsToSubmit(sameDay, held, false)).toEqual([]);
+    expect(urlsToSubmit(sameDay, held, true)).toEqual(['https://coco36.com/shop']);
+    expect(parseIndexNowState({ submittedAt: 'not-a-date', entries: [] })).toBeNull();
+  });
+
+  it('makes no POST when nothing changed', async () => {
+    const entries = [
+      { loc: 'https://coco36.com/', lastmod: '2026-11-01' },
+      { loc: 'https://coco36.com/about', lastmod: null },
+    ];
+    const xml = `<urlset>
+      <url><loc>https://coco36.com/</loc><lastmod>2026-11-01</lastmod></url>
+      <url><loc>https://coco36.com/about</loc></url>
+    </urlset>`;
+    const fetchImpl = vi.fn(async (input: string) => {
+      expect(String(input)).toBe('https://coco36.com/sitemap.xml');
+      return new Response(xml, { status: 200 });
+    });
+    const result = await submitIndexNow({
+      env: { VERCEL_ENV: 'production', INDEXNOW_KEY: KEY },
+      previous: { submittedAt: '2026-11-02T00:00:00.000Z', entries },
+      fetchImpl,
+    });
+    expect(result).toMatchObject({ pinged: false, reason: 'unchanged', urls: [], nextState: null });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
@@ -303,6 +411,7 @@ describe('submit authorization', () => {
     expect(verifyOidcClaims(token(claims()), [jwk], now)).toBe(true);
     expect(verifyOidcClaims(token(claims(), other), [jwk], now)).toBe(false);
     expect(verifyOidcClaims(token(claims({ repository: 'other/repo' })), [jwk], now)).toBe(false);
+    expect(verifyOidcClaims(token(claims({ event_name: 'workflow_dispatch' })), [jwk], now)).toBe(true);
     expect(verifyOidcClaims(token(claims({ event_name: 'pull_request' })), [jwk], now)).toBe(false);
     expect(verifyOidcClaims(token(claims({ ref: 'refs/heads/feature' })), [jwk], now)).toBe(false);
     expect(verifyOidcClaims(token(claims({ aud: 'https://example.com' })), [jwk], now)).toBe(false);
@@ -371,6 +480,11 @@ describe('routes that must stay as they are', () => {
     expect(workflow).not.toContain('pull_request:');
     expect(workflow).toContain("github.event.deployment.environment == 'Production'");
     expect(workflow).toContain('https://coco36.com/api/indexnow-submit');
+    expect(workflow).toContain('workflow_dispatch:');
+    expect(workflow).toContain('full:');
+    expect(workflow).toContain('indexnow-state');
+    expect(workflow).toContain('IndexNow HTTP');
+    expect(workflow).toContain('no sitemap changes since the last successful ping; no POST');
     expect(workflow).not.toContain('api.indexnow.org');
     expect(workflow).toContain('exit 0');
     expect(workflow).not.toContain('npm run build');

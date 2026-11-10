@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { authorizeSubmit, submitIndexNow } from '../server/indexnow.js';
+import { authorizeSubmit, parseIndexNowState, submitIndexNow } from '../server/indexnow.js';
 
 /**
  * Production-only IndexNow submit. Called after a production deploy is live
@@ -29,12 +29,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       });
       return;
     }
-    const result = await submitIndexNow({ env: process.env });
+    const payload = await readJson(req);
+    const result = await submitIndexNow({
+      env: process.env,
+      previous: parseIndexNowState(payload.previous),
+      force: payload.force === true,
+    });
     sendJson(res, 200, {
       pinged: result.pinged,
       reason: result.reason,
       status: result.status ?? null,
       count: result.urls.length,
+      nextState: result.nextState,
     });
   } catch (err) {
     console.error('[indexnow] submit route failed', err instanceof Error ? err.name : 'error');
@@ -52,4 +58,18 @@ function header(req: IncomingMessage, name: string): string | undefined {
   const value = req.headers[name];
   if (Array.isArray(value)) return value[0];
   return value;
+}
+
+async function readJson(req: IncomingMessage): Promise<{ previous?: unknown; force?: unknown }> {
+  const asAsync = req as unknown as AsyncIterable<unknown> | undefined;
+  if (!asAsync || typeof asAsync[Symbol.asyncIterator] !== 'function') return {};
+  const chunks: Buffer[] = [];
+  for await (const chunk of asAsync) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
+  }
+  const raw = Buffer.concat(chunks).toString('utf8').trim();
+  if (!raw) return {};
+  const parsed = JSON.parse(raw) as unknown;
+  if (!parsed || typeof parsed !== 'object') return {};
+  return parsed as { previous?: unknown; force?: unknown };
 }
