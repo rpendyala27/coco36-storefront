@@ -55,7 +55,8 @@ export const Terms = () => {
           <li>Report it within {returnWindowDays} days of delivery, with your order number and photos of the item and its packaging.</li>
           <li>We do not accept change-of-mind returns.</li>
           <li>If the item is in stock we will send a replacement; otherwise we will refund you.</li>
-          <li>Refunds go back to the original payment method. Your bank usually takes 5–7 business days to show the refund.</li>
+          <li>Refunds for prepaid orders go back to the original payment method. Your bank usually takes 5–7 business days to show the refund.</li>
+          <li>Refunds for cash-on-delivery orders are made by bank transfer (we will ask for bank details), since there is no original online payment method.</li>
         </ul>
       </Section>
 

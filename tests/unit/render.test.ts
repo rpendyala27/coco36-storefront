@@ -246,6 +246,7 @@ describe('server-rendered pages', () => {
     const terms = await render('/terms', '', 'coco36.com');
     expect(home.body).toContain('missing');
     expect(terms.body).toContain('missing');
+    expect(terms.body).toContain('Refunds for cash-on-delivery orders are made by bank transfer');
     expect(home.body).toContain('our courier partners');
     expect(terms.body).toContain('our courier partners');
   });
