@@ -247,6 +247,10 @@ export function bakingNoteSnapshot(_ctx: SnapshotCtx, note: BakingNote): string 
     ].filter(Boolean).join('\n')),
     library,
     faqs,
+    ...(note.closing ?? []).map((section) => [
+      section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
+      ...section.blocks.map(renderNoteBlock),
+    ].filter(Boolean).join('\n')),
     `<nav aria-label="Related pages"><ul>${note.related.map((l) => `<li>${a(l.href, l.label)}</li>`).join('')}</ul></nav>`,
     '</article>',
   ].join('\n'), { omitDispatchCity: true });
