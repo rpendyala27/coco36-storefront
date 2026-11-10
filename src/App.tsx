@@ -36,6 +36,7 @@ const Track              = lazy(() => import('./pages/Track').then(m => ({ defau
 const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const InfoPage           = lazy(() => import('./pages/Info').then(m => ({ default: m.InfoPage })));
+const BakingNote         = lazy(() => import('./pages/BakingNote').then(m => ({ default: m.BakingNote })));
 const CartPage           = lazy(() => import('./pages/Cart').then(m => ({ default: m.CartPage })));
 
 function ScrollToTop() {
@@ -150,6 +151,9 @@ export default function App() {
               <Route path="/shop/:id" element={<ProductDetail />} />
               <Route path="/ingredients" element={<Guides />} />
               <Route path="/ingredients/:slug" element={<Guide />} />
+              {/* Ingredient Notes. /ingredients stays the family library. */}
+              <Route path="/guides" element={<BakingNote />} />
+              <Route path="/guides/:slug" element={<BakingNote />} />
               <Route path="/quick-order" element={<QuickOrder />} />
               <Route path="/36-steps" element={<ThirtySixSteps />} />
               {/* Lot passport: answers "not found" until SHOW_LOT_PASSPORT is on (database-side). */}
@@ -241,6 +245,7 @@ export default function App() {
               <div>
                 <h4 className="text-xs uppercase tracking-widest font-bold text-brand-leaf-bright mb-5">Guides</h4>
                 <ul className="space-y-3 text-sm text-white/70">
+                  <li><a href="/guides" className="hover:text-brand-leaf-bright transition-colors">Ingredient notes</a></li>
                   {GUIDE_LINKS.map((g) => (
                     <li key={g.slug}><a href={guidePath(g)} className="hover:text-brand-leaf-bright transition-colors">{g.name}</a></li>
                   ))}

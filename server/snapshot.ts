@@ -5,8 +5,10 @@ import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
 import { categoryPage } from '../src/content/categoryPages.js';
+import type { BakingNote, NoteBlock } from '../src/content/bakingNotes.js';
 import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPages.js';
 import { linkifyHtml } from '../src/content/linkify.js';
+import { richHtml } from '../src/content/richText.js';
 import { shopIntro } from '../src/content/shopIntro.js';
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../src/lib/supportContact.js';
 import {
@@ -18,6 +20,7 @@ import {
 } from '../src/seo/site.js';
 import { policyBlurb } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
+import { bakingNoteCrumbs } from '../src/seo/bakingNoteMeta.js';
 import { esc } from './html.js';
 
 /**
@@ -39,14 +42,15 @@ const a = (href: string, text: string) => `<a href="${esc(href)}">${esc(text)}</
 const stockedCategories = (ctx: SnapshotCtx) =>
   ctx.tree.roots.filter((c) => productsInCategory(c, ctx.tree, ctx.products).length > 0);
 
-function layout(ctx: SnapshotCtx, main: string): string {
+function layout(ctx: SnapshotCtx, main: string, opts?: { omitDispatchCity?: boolean }): string {
   const nav = [
-    a('/shop', 'Shop'), a('/ingredients', 'Ingredient guides'), a('/36-steps', '36 Steps'),
+    a('/shop', 'Shop'), a('/guides', 'Notes'), a('/ingredients', 'Ingredient guides'), a('/36-steps', '36 Steps'),
     a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'), a('/impact', 'Impact'),
   ];
   const foot = [
     a('/shop', 'All ingredients'),
     ...stockedCategories(ctx).map((c) => a(categoryPath(c), c.name)),
+    a('/guides', 'Ingredient notes'),
     ...GUIDES.map((g) => a(guidePath(g), `${g.name} guide`)),
     a('/36-steps', '36 Steps'), a('/partnerships', 'Partnerships'), a('/trade', 'Trade & wholesale'),
     a('/impact', 'Impact'), a('/about', 'About'), a('/contact', 'Contact'), a('/faq', 'FAQ'),
@@ -57,7 +61,7 @@ function layout(ctx: SnapshotCtx, main: string): string {
     `<header><p>${a('/', 'COCO36 — From crop to craft')}</p><nav aria-label="Main"><ul>${nav.map((l) => `<li>${l}</li>`).join('')}</ul></nav></header>`,
     `<main>${main}</main>`,
     `<footer><nav aria-label="Footer"><ul>${foot.map((l) => `<li>${l}</li>`).join('')}</ul></nav>`,
-    `<p>© ${new Date().getUTCFullYear()} ${esc(LEGAL_NAME)} · ${esc(SHIPS_FROM)}, India</p></footer>`,
+    `<p>© ${new Date().getUTCFullYear()} ${esc(LEGAL_NAME)} · ${opts?.omitDispatchCity ? 'India' : `${esc(SHIPS_FROM)}, India`}</p></footer>`,
     '</div>',
   ].join('\n');
 }
@@ -189,6 +193,45 @@ export function guidesHubSnapshot(ctx: SnapshotCtx): string {
     `<p>${esc(GUIDES_HUB.intro)}</p>`,
     guideList(GUIDES),
   ].join('\n'));
+}
+
+function renderNoteBlock(block: NoteBlock): string {
+  if (block.type === 'p') return `<p>${richHtml(block.text, esc)}</p>`;
+  if (block.type === 'h3') return `<h3>${esc(block.text)}</h3>`;
+  if (block.type === 'ul' || block.type === 'ol') {
+    const tag = block.type;
+    return `<${tag}>${block.items.map((item) => `<li>${richHtml(item, esc)}</li>`).join('')}</${tag}>`;
+  }
+  const head = block.headers.map((h) => `<th scope="col">${esc(h)}</th>`).join('');
+  const body = block.rows.map((row) => `<tr>${row.map((cell) => `<td>${richHtml(cell, esc)}</td>`).join('')}</tr>`).join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+/**
+ * /guides cluster. omitDispatchCity keeps the dispatch city out of these
+ * pages; the family guides at /ingredients are unchanged.
+ */
+export function bakingNoteSnapshot(_ctx: SnapshotCtx, note: BakingNote): string {
+  const library = note.path === '/guides'
+    ? `<h2>The ingredient library</h2><ul>${GUIDES.map((g) => `<li>${a(guidePath(g), g.name)}: ${esc(g.blurb)}</li>`).join('')}</ul>`
+    : '';
+  const faqs = note.faqs.length
+    ? `<h2>Frequently asked questions</h2>\n${note.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${richHtml(f.a, esc)}</p>`).join('\n')}`
+    : '';
+  return layout(_ctx, [
+    breadcrumbs(bakingNoteCrumbs(note)),
+    '<article>',
+    '<p>Ingredient notes</p>',
+    `<h1>${esc(note.h1)}</h1>`,
+    ...note.sections.map((section) => [
+      section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
+      ...section.blocks.map(renderNoteBlock),
+    ].filter(Boolean).join('\n')),
+    library,
+    faqs,
+    `<nav aria-label="Related pages"><ul>${note.related.map((l) => `<li>${a(l.href, l.label)}</li>`).join('')}</ul></nav>`,
+    '</article>',
+  ].join('\n'), { omitDispatchCity: true });
 }
 
 /** H1 + lede for static routes — mirrors each page's hero copy. */

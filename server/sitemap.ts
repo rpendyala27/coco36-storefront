@@ -1,5 +1,6 @@
 import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
+import { BAKING_NOTES } from '../src/content/bakingNotes.js';
 import { GUIDES, GUIDES_HUB, guidePath } from '../src/content/guides.js';
 import { SITE_ORIGIN } from '../src/seo/site.js';
 import { esc } from './html.js';
@@ -10,7 +11,8 @@ import type { Catalog } from './catalog.js';
  * an hour). Lists only URLs we want indexed and that answer 200:
  *   - home, /shop, category pages that have at least one live product
  *   - every live product (status='active', deleted_at null) at its clean URL
- *   - ingredient guides + hub, and the real content pages
+ *   - ingredient guides + hub (/ingredients), the Ingredient Notes (/guides),
+ *     and the real content pages
  * Left out on purpose: archived/deleted products, empty categories, /recipes
  * (noindex stub), /cart (real page, noindex — the bag is not a landing page),
  * and utility pages (/auth, /quick-order, /checkout, /account, /track).
@@ -49,6 +51,12 @@ export function sitemapEntries(cat: Catalog): Entry[] {
     ...cat.products.map((p) => ({ path: productPath(p), changefreq: 'weekly', priority: 0.8, lastmod: day(p.updatedAt) })),
     { path: GUIDES_HUB.path, changefreq: 'monthly', priority: 0.6 },
     ...GUIDES.map((g) => ({ path: guidePath(g), changefreq: 'monthly', priority: 0.7 })),
+    ...BAKING_NOTES.map((n) => ({
+      path: n.path,
+      changefreq: 'monthly',
+      priority: n.path === '/guides' ? 0.6 : 0.7,
+      lastmod: n.updated,
+    })),
     ...CONTENT_PAGES,
   ].filter(unique);
 }

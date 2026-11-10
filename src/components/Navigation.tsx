@@ -13,6 +13,7 @@ import { ProfileDropdown } from './ProfileDropdown';
 // has real content; the ingredient guides take its slot.
 const NAV_LINKS = [
   { to: '/shop',         label: 'Shop' },
+  { to: '/guides',       label: 'Notes' },
   { to: '/ingredients',  label: 'Guides' },
   { to: '/36-steps',     label: '36 Steps' },
   { to: '/partnerships', label: 'Partnerships' },
