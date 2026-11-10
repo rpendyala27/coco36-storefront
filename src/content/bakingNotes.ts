@@ -1,5 +1,6 @@
 /**
- * /guides, the December Ingredient Notes cluster, and the couverture buying guide.
+ * /guides, the December Ingredient Notes cluster, the couverture buying guide,
+ * and the Christmas chocolate baking guide.
  * The wording is the drafted copy. Bracketed [CONFIRM] lines on untested
  * kitchen steps are omitted and are not in the FAQ or JSON-LD either.
  * Image suggestions and the draft's JSON-LD blocks are metadata, not body copy.
@@ -69,6 +70,11 @@ export interface BakingNote {
   published?: string;
   sections: NoteSection[];
   faqs: NoteFaq[];
+  /**
+   * Shown after the FAQ. Used when the draft places sources after the
+   * questions, so the visible page and the snapshot keep that order.
+   */
+  closing?: NoteSection[];
   related: NoteLink[];
   recipe?: NoteRecipe;
 }
@@ -114,6 +120,7 @@ export const BAKING_NOTES: BakingNote[] = [
             '**[Pistachio paste for baking, gelato, viennoiserie and mithai](/guides/pistachio-paste-dubai-chocolate-at-home)**\nUnsweetened paste versus sweetened cream — for gelato, frangipane, entremets and mithai, with a Dubai-style bar as one method.',
           ] },
           { type: 'p', text: '**[Best couverture chocolate brands in India (2027 buying guide)](/guides/best-couverture-chocolate-india)**\nImported professional lines and Indian makers — cocoa percentage, format and the job, and how to tell couverture from compound. COCO36 couverture is coming soon to the COCO36 shop.' },
+          { type: 'p', text: '**[Chocolate and cocoa for Christmas baking in India: plum cake, brownies, ganache and gifts](/guides/christmas-chocolate-baking)**\nWhich chocolate and cocoa to use for Indian Christmas baking — plum cake, brownies, ganache, hot chocolate and gift boxes — plus tips for a warm kitchen. Dutch-process cocoa, couverture and pistachio paste are coming soon to the COCO36 shop.' },
           { type: 'p', text: 'Also browse our longer [ingredient library](/ingredients) (vanilla, cocoa & chocolate, sugars & jaggery, flours, spices & salt) and the [shop](/shop).' },
           { type: 'p', text: 'New guides publish here first. Product pages for December heroes go live only when stock and copy are approved — guides never invent availability.' },
         ],
@@ -125,6 +132,7 @@ export const BAKING_NOTES: BakingNote[] = [
       { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
       { href: '/guides/pistachio-paste-dubai-chocolate-at-home', label: 'Pistachio paste' },
       { href: '/guides/best-couverture-chocolate-india', label: 'Couverture brands' },
+      { href: '/guides/christmas-chocolate-baking', label: 'Christmas baking' },
       { href: '/ingredients', label: 'Ingredient library' },
       { href: '/shop', label: 'Shop' },
     ],
@@ -660,6 +668,119 @@ export const BAKING_NOTES: BakingNote[] = [
       { href: '/guides/couverture-vs-compound', label: 'Couverture vs compound' },
       { href: '/ingredients/cocoa-chocolate', label: 'Cocoa and chocolate' },
       { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
+      { href: '/shop', label: 'Browse the shop' },
+    ],
+  },
+  {
+    path: '/guides/christmas-chocolate-baking',
+    title: 'Christmas Chocolate Baking in India | COCO36',
+    description: 'Which chocolate and cocoa to use for Indian Christmas baking — plum cake, brownies, ganache, hot chocolate and gift boxes — plus tips for a warm kitchen.',
+    schemaDescription: 'Which chocolate and cocoa to use for Indian Christmas baking — plum cake, brownies, ganache, hot chocolate and gift boxes — plus tips for a warm kitchen.',
+    h1: 'Chocolate and cocoa for Christmas baking in India: plum cake, brownies, ganache and gifts',
+    crumb: 'Christmas baking',
+    updated: '2026-11-10',
+    sections: [
+      {
+        blocks: [
+          { type: 'p', text: 'For Christmas baking in India, use [dark muscovado](/shop/dark-muscovado-cane-sugar) in plum or rum cake, Dutch-process cocoa in brownies and hot chocolate, and a mid-cocoa dark couverture for ganache and truffles. For gift boxes, choose couverture when you want gloss and snap, and compound when you need an easier coating in a warm kitchen.' },
+          { type: 'p', text: 'Indian Christmas baking is led by plum cake — often called rum cake when the fruit is soaked in spirits — and it sits alongside brownies, chocolate truffles, hot chocolate and boxed sweets made for gifting. This guide is about which chocolate or cocoa suits each job, not a claim that one brand is best, and not a set of prices. Dutch-process cocoa, couverture and pistachio paste are coming soon to the COCO36 shop. Until the shop opens in the first week of December 2026, use this guide with ingredients you already have.' },
+          { type: 'p', text: 'The longer explainers are already live: [couverture vs compound](/guides/couverture-vs-compound), [natural (non-alkalised) vs Dutch-process cocoa](/guides/natural-vs-dutch-cocoa), [best couverture chocolate brands in India](/guides/best-couverture-chocolate-india), and [cocoa and chocolate](/ingredients/cocoa-chocolate).' }
+        ],
+      },
+      {
+        heading: 'Plum cake and rum cake',
+        blocks: [
+          { type: 'p', text: 'In much of India, “Christmas cake” means a dark, spiced fruit cake — plum cake — made with soaked dried fruit, nuts, warm spices and a caramel or brown-sugar base. The fruit may be soaked in rum, brandy or wine, or in tea or orange juice if you prefer a cake without alcohol. A classic plum cake gets its colour and depth from caramel, spices and a dark unrefined sugar; chocolate is optional.' },
+          { type: 'p', text: '[Dark muscovado cane sugar](/shop/dark-muscovado-cane-sugar) works well in this batter: it is an unrefined cane sugar that keeps more of its molasses, so it is darker, stickier and deeper in flavour than ordinary brown sugar. That molasses note sits comfortably with cinnamon, clove, nutmeg, ginger and soaked fruit. See [jaggery, muscovado and unrefined sugars](/ingredients/sugars-jaggery) for how dark muscovado differs from light muscovado and from jaggery.' },
+          { type: 'p', text: 'If you want a chocolate plum cake, add a little Dutch-process cocoa or chopped dark chocolate to a formula you already know. Keep the muscovado and the soaked fruit as the base; too much cocoa will dull the spice and fruit. Weigh everything, including the drained fruit.' }
+        ],
+      },
+      {
+        heading: 'Brownies',
+        blocks: [
+          { type: 'p', text: 'Brownies are a common Christmas traybake and an easy item to pack into a gift tin. For a dark, fudgy crumb and a cocoa flavour that is rounded rather than sharp, **Dutch-process cocoa** is the usual choice. It has reduced acidity compared with natural (non-alkalised) cocoa, and it generally gives a darker colour and a milder taste. Brownies are more forgiving on lift than a soda-leavened cake, but the flavour and colour still change if you swap the cocoa. The full reasoning is in [natural (non-alkalised) vs Dutch-process cocoa](/guides/natural-vs-dutch-cocoa).' },
+          { type: 'p', text: 'Use unsweetened Dutch-process cocoa, sifted, and weigh it. A standard fudgy cocoa brownie is built on butter, sugar, cocoa, eggs and a modest amount of maida. If you fold in chopped dark chocolate, a mid-cocoa couverture (around the mid-50s to 70%) melts into fudgy pockets; compound chips behave differently because the fat is not cocoa butter. A starting formula is in the [fudgy Dutch-process cocoa brownie](/recipes/fudgy-dutch-cocoa-brownies) recipe.' },
+          { type: 'p', text: 'COCO36 will stock Dutch-process cocoa only, not natural (non-alkalised) cocoa. Dutch-process cocoa is coming soon to the COCO36 shop.' }
+        ],
+      },
+      {
+        heading: 'Ganache and truffles',
+        blocks: [
+          { type: 'p', text: 'A chocolate truffle is typically a ball of set ganache, rolled in cocoa, chopped nuts or coconut, or dipped in a thin chocolate shell. Ganache itself is only chocolate and cream (sometimes a little butter or salt). For a ganache that emulsifies cleanly and tastes of cocoa butter, use **dark couverture**, not compound. A mid-cocoa dark (around 55–70%) is the usual workhorse: high enough for a proper chocolate flavour, not so high that the ganache becomes harsh or brittle.' },
+          { type: 'p', text: 'Ratios are by weight. A **2:1** mix of dark couverture to cream sets firm enough to roll into truffles or to use as a tart filling. A **1:1** mix stays softer, and is better as a glaze or a looser filling. Fresh cream sold in India is often lower in fat than the “heavy cream” in many imported recipes, so the same ratio may set a little softer; if truffles will not hold, use slightly less cream next time, or chill the batch longer. The method is in the [dark couverture ganache](/recipes/dark-couverture-ganache) recipe. Brand options, formats and how to read a pack are in the [2027 couverture buying guide](/guides/best-couverture-chocolate-india).' },
+          { type: 'p', text: 'COCO36 couverture is coming soon to the COCO36 shop. Until then, buy a couverture you can actually get, and read the ingredient list: cocoa mass, sugar, cocoa butter — not a named vegetable fat as the principal fat.' }
+        ],
+      },
+      {
+        heading: 'Hot chocolate',
+        blocks: [
+          { type: 'p', text: 'For a homemade Christmas hot chocolate, Dutch-process cocoa is the straightforward pantry option: it usually dissolves more cooperatively in milk and tastes less sharp than natural (non-alkalised) cocoa. Whisk the unsweetened powder with a little cold milk and your sugar first, then add the rest of the hot milk so it does not lump. Sweetness is separate; the powder is not a premix.' },
+          { type: 'p', text: 'For a thicker cup, melt a small amount of dark chocolate, or whisk in a spoon of leftover ganache, after the cocoa and milk are already smooth. That is café-style hot chocolate, not a different kind of cocoa. There is no need to invent a spice blend, but a pinch of cinnamon or a scraping of vanilla sits naturally with Indian Christmas baking; see [vanilla](/ingredients/vanilla) and [spices and salt](/ingredients/spices-salt).' }
+        ],
+      },
+      {
+        heading: 'Gift boxes: couverture or compound?',
+        blocks: [
+          { type: 'p', text: 'Homemade truffles, dipped biscuits, bark and moulded chocolates are a large part of Indian Christmas and Secret Santa gifting, alongside bought hampers. The chocolate you choose should match the job and the kitchen, not a rule that compound is “bad.”' },
+          { type: 'p', text: '**Use couverture** when the gift’s identity is a thin, glossy shell, a clean snap, or a ganache that should taste of cocoa butter: moulded pieces, enrobed truffles, a carefully dipped biscuit. You will need to temper it, and you will need a cooler room than a sunlit afternoon kitchen.' },
+          { type: 'p', text: '**Use compound** when you are coating a large number of pieces, the room is warm, or you only need a chocolate flavour and a coating that sets without tempering. Compound is the honest choice for volume work. It is not the same material as couverture, and it should not be described as couverture on a label or a gift tag. The side-by-side is in [couverture vs compound](/guides/couverture-vs-compound).' },
+          { type: 'p', text: 'Pack gifts so they do not sit in a hot car. A cool bag and a firm box will do more for homemade chocolate than a ribbon alone.' }
+        ],
+      },
+      {
+        heading: 'Tips for a warm kitchen',
+        blocks: [
+          { type: 'p', text: 'Christmas in much of India is mild or warm, not a cold midwinter bake. Cocoa butter is sensitive to that.' },
+          { type: 'ul', items: [
+            'Work in the coolest room you have, and prefer morning bakes for anything that must set or be tempered.',
+            'Store chocolate and cocoa airtight, cool and dry, away from masala and steam. A reasonably cool room is usually kinder than the fridge; chocolate taken out of a fridge can collect condensation and show sugar bloom. If you must refrigerate it, wrap it well and let it warm inside the wrapping before you open it.',
+            'Set ganache and truffles in the fridge, then bring them back only as long as you need to roll or dip them. Warm hands will melt a 2:1 ganache quickly; a small scoop and light-touch rolling help.',
+            'Weigh ingredients. Cups of muscovado, cocoa and soaked fruit pack unevenly, especially in humid weather.',
+            'For plum cake, cool the cake completely before wrapping or feeding it, so steam does not turn the crumb wet.',
+          ] }
+        ],
+      },
+    ],
+    faqs: [
+      { q: 'Should I use couverture or compound for a Christmas gift box?', a: 'Use couverture for moulded or enrobed chocolates where gloss, snap and cocoa-butter flavour matter, and be prepared to temper it in a cool room. Use compound when you want a coating that sets without tempering, especially in a warm kitchen or for a large batch. Do not call compound “couverture.”' },
+      { q: 'Which cocoa should I use for brownies and hot chocolate?', a: 'Dutch-process cocoa is the usual choice for a darker brownie and a smoother hot chocolate. Natural (non-alkalised) cocoa is more acidic and tastes sharper. COCO36 will stock Dutch-process cocoa only. Dutch-process cocoa is coming soon to the COCO36 shop.' },
+      { q: 'Can I add chocolate to plum cake?', a: 'Yes, in a small amount, if you want a chocolate plum cake. Keep dark muscovado, spices and soaked fruit as the base, and add a little Dutch-process cocoa or chopped dark chocolate to a formula you already trust. Too much cocoa will mask the fruit.' },
+      { q: 'Why did my ganache split?', a: 'The cream was probably too hot, the chocolate was not chopped evenly, or the kitchen was warm and the emulsion was stirred too hard. Let it cool slightly, then stir in a spoon of cold cream, or warm the bowl very gently over a bain-marie and stir from the centre until it comes back together.' },
+      { q: 'Does COCO36 sell these ingredients yet?', a: '[Dark muscovado](/shop/dark-muscovado-cane-sugar) already has a product page. Dutch-process cocoa, couverture and pistachio paste are coming soon to the COCO36 shop. The shop opens in the first week of December 2026. Check each page for what is actually listed; this guide does not invent stock.' },
+    ],
+    closing: [
+      {
+        heading: 'Sources for search intent',
+        blocks: [
+          { type: 'p', text: 'Checked on 10 November 2026. These sources show what Indian bakers and shoppers look for at Christmas; they are not a ranking of bakeries or a claim that COCO36 has tested their recipes.' },
+          { type: 'ol', items: [
+            '[The Hindu, “Tis the time for bells, baubles and plum cakes” (21 December 2024)](https://www.thehindu.com/food/features/tis-the-time-for-bells-baubles-and-plum-cakes/article69012677.ece) — plum cake as the main Indian Christmas bake, including chocolate-ganache and brownie variations at bakeries.',
+            '[Winni, “Whiff and demand of Plum Cakes sees an increase YOY”](https://www.winni.in/celebrate-relations/whiff-and-demand-of-plum-cakes-sees-an-increase-yoy/) — seasonal demand for plum cake, including gifting.',
+            '[Tarla Dalal, Indian-style Christmas plum cake](https://www.tarladalal.com/eggless-plum-cake-indian-style-christmas-plum-cake-41307r) and [Fun FOOD Frolic, Christmas fruit / rum cake](https://www.funfoodfrolic.com/christmascake/) — typical plum-cake and rum-soaked-fruit methods in Indian home baking.',
+            '[The Artistic Cook, chocolate plum cake using rum](https://theartisticcook.com/chocolate-plum-cake-using-rum/) — chocolate as a variation on plum cake, including dark muscovado in the batter.',
+            '[NDTV Food, plum cake brownie with espresso ganache](https://food.ndtv.com/food-drinks/how-to-make-a-plum-cake-brownie-with-espresso-ganache-for-christmas-9823951) — brownies and ganache appearing in Indian Christmas food coverage.',
+            '[Carve Your Craving, homemade chocolate truffles](https://carveyourcraving.com/homemade-chocolate-truffles/) — truffles as a homemade Christmas gift in an Indian kitchen.',
+            '[Flaneur, Christmas chocolate gift guide](https://theflaneur.in/blogs/christmas-chocolate/) — gift boxes, hampers, homemade truffles and hot-chocolate jars as Christmas chocolate gifts in India.',
+            '[Chocolics, Christmas and New Year chocolate gift hampers 2026](https://www.chocolics.com/christmas-chocolate-gift-boxes-new-year-hampers/) and [Jus’Trufs Christmas goodies](https://justrufs.com/page/christmas-goodies) — commercial gift-box and hamper intent (truffles, plum cake, cocoa boxes).',
+            '[Times of India, Christmas hot chocolate](https://recipes.timesofindia.com/web-stories/christmas-special-hot-chocolate-recipe/photostory/88385131.cms), [Tarla Dalal, Indian-style hot chocolate](https://www.tarladalal.com/hot-chocolate-4746r) and [NDTV, masala hot chocolate](https://food.ndtv.com/webstories/food/christmas-special-masala-hot-chocolate-4500) — homemade hot chocolate as a festive drink.',
+          ] }
+        ],
+      },
+    ],
+    related: [
+      { href: '/guides', label: 'Guides hub' },
+      { href: '/guides/couverture-vs-compound', label: 'Couverture vs compound' },
+      { href: '/guides/natural-vs-dutch-cocoa', label: 'Natural (non-alkalised) vs Dutch' },
+      { href: '/guides/best-couverture-chocolate-india', label: 'Couverture brands' },
+      { href: '/ingredients', label: 'Ingredient library' },
+      { href: '/ingredients/cocoa-chocolate', label: 'Cocoa and chocolate' },
+      { href: '/ingredients/sugars-jaggery', label: 'Sugars and jaggery' },
+      { href: '/ingredients/vanilla', label: 'Vanilla' },
+      { href: '/ingredients/spices-salt', label: 'Spices and salt' },
+      { href: '/shop/dark-muscovado-cane-sugar', label: 'Dark muscovado cane sugar' },
+      { href: '/recipes/fudgy-dutch-cocoa-brownies', label: 'Fudgy Dutch-process cocoa brownies' },
+      { href: '/recipes/dark-couverture-ganache', label: 'Dark couverture ganache' },
+      { href: '/recipes/pistachio-frangipane', label: 'Pistachio frangipane' },
       { href: '/shop', label: 'Browse the shop' },
     ],
   },

@@ -1,7 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
-import { bakingNoteByPath, formatPublishDate, type NoteBlock } from '../content/bakingNotes';
+import { bakingNoteByPath, formatPublishDate, type NoteBlock, type NoteSection } from '../content/bakingNotes';
 import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
 import { parseRich, type RichNode } from '../content/richText';
 import { useSeo } from '../lib/seo';
@@ -39,16 +39,7 @@ export function BakingNote() {
           <p className="mt-4 text-sm text-brand-muted">Published <time dateTime={note.published}>{formatPublishDate(note.published)}</time></p>
         )}
 
-        {note.sections.map((section, i) => (
-          <section key={section.heading ?? i} className={section.heading ? 'mt-10' : 'mt-5'}>
-            {section.heading && (
-              <h2 className="font-display text-2xl md:text-3xl text-brand-forest mb-3">{section.heading}</h2>
-            )}
-            {section.blocks.map((block, j) => (
-              <Fragment key={j}><Block block={block} /></Fragment>
-            ))}
-          </section>
-        ))}
+        <NoteSections sections={note.sections} />
 
         {note.path === '/guides' && (
           <section className="mt-10" aria-labelledby="ingredient-library">
@@ -78,6 +69,8 @@ export function BakingNote() {
           </section>
         )}
 
+        {note.closing && note.closing.length > 0 && <NoteSections sections={note.closing} />}
+
         <nav aria-label="Related pages" className="mt-12">
           <h2 className="eyebrow mb-4">On this site</h2>
           <ul className="flex flex-wrap gap-2">
@@ -90,6 +83,23 @@ export function BakingNote() {
         </nav>
       </article>
     </div>
+  );
+}
+
+function NoteSections({ sections }: { sections: NoteSection[] }) {
+  return (
+    <>
+      {sections.map((section, i) => (
+        <section key={section.heading ?? i} className={section.heading ? 'mt-10' : 'mt-5'}>
+          {section.heading && (
+            <h2 className="font-display text-2xl md:text-3xl text-brand-forest mb-3">{section.heading}</h2>
+          )}
+          {section.blocks.map((block, j) => (
+            <Fragment key={j}><Block block={block} /></Fragment>
+          ))}
+        </section>
+      ))}
+    </>
   );
 }
 

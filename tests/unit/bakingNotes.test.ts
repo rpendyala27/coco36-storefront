@@ -21,6 +21,19 @@ const RETARGETED = [
   '/shop/pistachio-paste',
 ];
 
+/**
+ * Linked from the Christmas guide on purpose.
+ * The three recipe URLs are built in a parallel PR and 404 on this branch.
+ * Dark muscovado has a product page, but this suite's catalogue is empty, so
+ * /shop/<slug> is not 200 here. Neither case should be rewritten to /shop.
+ */
+const LINKED_AHEAD = new Set([
+  '/recipes/fudgy-dutch-cocoa-brownies',
+  '/recipes/dark-couverture-ganache',
+  '/recipes/pistachio-frangipane',
+  '/shop/dark-muscovado-cane-sugar',
+]);
+
 const decode = (s: string) => s
   .replace(/&quot;/g, '"')
   .replace(/&#39;/g, "'")
@@ -171,9 +184,11 @@ describe('ingredient notes', () => {
     for (const missing of RETARGETED) expect(hrefs, missing).not.toContain(missing);
     expect(hrefs).toContain('/shop');
     for (const href of hrefs) {
+      if (LINKED_AHEAD.has(href)) continue;
       const status = (await render(href, '', 'coco36.com')).status;
       expect(status, href).toBe(200);
     }
+    for (const href of LINKED_AHEAD) expect(hrefs, href).toContain(href);
   });
 
   it('keeps the pistachio URL and publishes the repositioned title, meta and article', async () => {
@@ -295,5 +310,90 @@ describe('ingredient notes', () => {
     expect(paths).not.toContain('/cart');
     expect(paths).toContain('/recipes');
     expect(paths).not.toContain('/shop/bean-to-bar-kit');
+  });
+
+  it('publishes the Christmas baking guide with the draft title, FAQ, and links', async () => {
+    const path = '/guides/christmas-chocolate-baking';
+    const note = BAKING_NOTES.find((n) => n.path === path);
+    expect(note).toBeTruthy();
+    expect(note!.published).toBeUndefined();
+    const r = await render(path, '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(titleOf(r.body)).toBe('Christmas Chocolate Baking in India | COCO36');
+    expect(canonicalOf(r.body)).toBe(`https://coco36.com${path}`);
+    expect(r.body.match(/<h1[\s>]/g)?.length).toBe(1);
+    expect(r.body).toContain(`<h1>${note!.h1}</h1>`);
+    const desc = decode(r.body.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? '');
+    expect(desc).toBe(note!.description);
+    expect(decode(r.body.match(/property="og:title" content="([^"]*)"/)?.[1] ?? '')).toBe(note!.title);
+    expect(decode(r.body.match(/property="og:description" content="([^"]*)"/)?.[1] ?? '')).toBe(note!.description);
+    expect(r.body).toContain('property="og:type" content="article"');
+    const blocks = jsonLd(r.body);
+    const types = blocks.map((b) => b['@type']);
+    expect(types).toContain('Article');
+    expect(types).toContain('FAQPage');
+    expect(types).toContain('BreadcrumbList');
+    const article = blocks.find((b) => b['@type'] === 'Article') as {
+      headline?: string; description?: string; datePublished?: string; mainEntityOfPage?: string;
+    };
+    expect(article.headline).toBe(note!.h1);
+    expect(article.description).toBe(note!.description);
+    expect(article.datePublished).toBeUndefined();
+    expect(article.mainEntityOfPage).toBe(`https://coco36.com${path}`);
+    const faq = blocks.find((b) => b['@type'] === 'FAQPage') as {
+      mainEntity: { name: string; acceptedAnswer: { text: string } }[];
+    };
+    expect(faq.mainEntity.map((q) => q.name)).toEqual(note!.faqs.map((f) => f.q));
+    expect(faq.mainEntity.map((q) => q.acceptedAnswer.text)).toEqual(note!.faqs.map((f) => stripMarkdown(f.a)));
+    const text = visible(r.body);
+    const faqAt = text.indexOf('Frequently asked questions');
+    const sourcesAt = text.indexOf('Sources for search intent');
+    expect(faqAt).toBeGreaterThan(-1);
+    expect(sourcesAt).toBeGreaterThan(faqAt);
+    expect(text.indexOf('For Christmas baking in India, use')).toBeGreaterThan(-1);
+    expect(text.indexOf('For Christmas baking in India, use')).toBeLessThan(faqAt);
+    for (const href of [
+      '/guides/couverture-vs-compound',
+      '/guides/natural-vs-dutch-cocoa',
+      '/guides/best-couverture-chocolate-india',
+      '/ingredients/cocoa-chocolate',
+      '/ingredients/sugars-jaggery',
+      '/ingredients/vanilla',
+      '/ingredients/spices-salt',
+      '/ingredients',
+      '/shop/dark-muscovado-cane-sugar',
+      '/recipes/fudgy-dutch-cocoa-brownies',
+      '/recipes/dark-couverture-ganache',
+      '/recipes/pistachio-frangipane',
+    ]) expect(r.body, href).toContain(`href="${href}"`);
+    expect(text).toContain('coming soon to the COCO36 shop');
+    expect(text).toContain('COCO36 will stock Dutch-process cocoa only, not natural (non-alkalised) cocoa.');
+    expect(text).not.toMatch(/₹/);
+    expect(text).not.toMatch(/Visakhapatnam|Vizag/);
+    expect(text).not.toMatch(/FSSAI licen[cs]e/i);
+    expect(text).not.toContain('FSSAI repack');
+    for (const url of [
+      'https://www.thehindu.com/food/features/tis-the-time-for-bells-baubles-and-plum-cakes/article69012677.ece',
+      'https://www.winni.in/celebrate-relations/whiff-and-demand-of-plum-cakes-sees-an-increase-yoy/',
+      'https://www.tarladalal.com/eggless-plum-cake-indian-style-christmas-plum-cake-41307r',
+      'https://www.funfoodfrolic.com/christmascake/',
+      'https://theartisticcook.com/chocolate-plum-cake-using-rum/',
+      'https://food.ndtv.com/food-drinks/how-to-make-a-plum-cake-brownie-with-espresso-ganache-for-christmas-9823951',
+      'https://carveyourcraving.com/homemade-chocolate-truffles/',
+      'https://theflaneur.in/blogs/christmas-chocolate/',
+      'https://www.chocolics.com/christmas-chocolate-gift-boxes-new-year-hampers/',
+      'https://justrufs.com/page/christmas-goodies',
+      'https://recipes.timesofindia.com/web-stories/christmas-special-hot-chocolate-recipe/photostory/88385131.cms',
+      'https://www.tarladalal.com/hot-chocolate-4746r',
+      'https://food.ndtv.com/webstories/food/christmas-special-masala-hot-chocolate-4500',
+    ]) expect(r.body, url).toContain(url);
+
+    const hub = await render('/guides', '', 'coco36.com');
+    expect(hub.body).toContain('href="/guides/christmas-chocolate-baking"');
+    expect(visible(hub.body)).toContain('Chocolate and cocoa for Christmas baking in India: plum cake, brownies, ganache and gifts');
+
+    const paths = sitemapEntries({ products: [], tree: buildTree([]), policy: DEFAULT_POLICY }).map((e) => e.path);
+    expect(paths).toContain(path);
+    expect(paths.filter((p) => p === path)).toHaveLength(1);
   });
 });
