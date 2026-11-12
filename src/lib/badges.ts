@@ -1,4 +1,4 @@
-import { isFssaiClaim } from './fssai';
+import { isFssaiClaim } from './fssai.js';
 
 /**
  * Designation badges and the sold-out pill.

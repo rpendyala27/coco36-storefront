@@ -1,5 +1,5 @@
 import type { Product } from '../types';
-import { COMING_SOON_SLUG } from './badges';
+import { COMING_SOON_SLUG } from './badges.js';
 
 /** Active products tagged coming-soon. Anon reads already hide inactive rows. */
 export function comingSoonProducts(products: readonly Product[]): Product[] {

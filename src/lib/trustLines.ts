@@ -1,4 +1,4 @@
-import { businessDayPhrase, rupees } from '../seo/site';
+import { businessDayPhrase, rupees } from '../seo/site.js';
 
 /**
  * The trust band's plain lines. The three numbers come from live config.

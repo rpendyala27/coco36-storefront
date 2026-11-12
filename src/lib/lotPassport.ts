@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { parseLotCode } from './lotCode';
 
-export { certLabel } from './certLabel';
+export { certLabel } from './certLabel.js';
 
 /**
  * The public lot page (/lot/<COCO36 lot code>, e.g. /lot/C36-MUSL-20261203-01,

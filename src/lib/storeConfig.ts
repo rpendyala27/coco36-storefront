@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { API_URL } from './supabase';
-import { DEFAULT_POLICY, type StorePolicy } from '../seo/site';
+import { API_URL } from './supabase.js';
+import { DEFAULT_POLICY, type StorePolicy } from '../seo/site.js';
 
 /**
  * Store policy the storefront displays — fetched from the admin so the

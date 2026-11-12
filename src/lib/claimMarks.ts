@@ -1,5 +1,5 @@
-import { certLabel } from './certLabel';
-import { isFssaiClaim } from './fssai';
+import { certLabel } from './certLabel.js';
+import { isFssaiClaim } from './fssai.js';
 
 /**
  * Trust-band marks from public.product_claims(). Fail closed: a missing or

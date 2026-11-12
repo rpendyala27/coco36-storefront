@@ -1,5 +1,5 @@
 import type { Product } from '../types';
-import { COMING_SOON_SLUG, OUT_OF_STOCK_SLUG, displayBadgeLabel } from './badges';
+import { COMING_SOON_SLUG, OUT_OF_STOCK_SLUG, displayBadgeLabel } from './badges.js';
 
 /**
  * Browse tiles from designation tags on live products.
