@@ -21,13 +21,16 @@ vi.mock('@sentry/node', () => ({
 
 describe('sentry scrub', () => {
   it('redacts notify emails and phones and leaves the product name', () => {
+    // Built at runtime so the source file does not contain a token-shaped literal.
+    const fakeJwt = ['eyJaaaaaaaa', 'bbbbbbbb', 'cccccccc'].join('.');
+    const sentryToken = ['sntrys', 'exampletokenvalue'].join('_');
     const event = {
       message: 'Notify failed for baker@example.com',
       request: {
         url: 'https://coco36.com/shop?sentry_test=super-secret&q=vanilla',
         headers: {
           'x-sentry-test': 'super-secret',
-          authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature',
+          authorization: 'Bearer placeholder',
           cookie: 'session=abc',
         },
         data: {
@@ -42,9 +45,9 @@ describe('sentry scrub', () => {
         data: { phone: '9876543210', company: '' },
       }],
       extra: {
-        SUPABASE_SERVICE_ROLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signature',
-        SENTRY_AUTH_TOKEN: 'sntrys_exampletokenvalue',
-        note: 'call +91 98765 43210 today',
+        SUPABASE_SERVICE_ROLE_KEY: 'placeholder-service-role',
+        SENTRY_AUTH_TOKEN: 'placeholder-auth-token',
+        note: `call +91 98765 43210 today ${fakeJwt} ${sentryToken}`,
       },
     };
 
@@ -64,7 +67,7 @@ describe('sentry scrub', () => {
     expect(event.breadcrumbs[0].data.phone).toBe('[Redacted]');
     expect(event.extra.SUPABASE_SERVICE_ROLE_KEY).toBe('[Redacted]');
     expect(event.extra.SENTRY_AUTH_TOKEN).toBe('[Redacted]');
-    expect(event.extra.note).toBe('call [Redacted] today');
+    expect(event.extra.note).toBe('call [Redacted] today [Redacted] [Redacted]');
   });
 
   it('keeps a chunk-load error and does not redact unrelated numbers', () => {
@@ -229,7 +232,7 @@ describe('sentry vite build', () => {
 
   it('ties the upload to the Vercel commit and environment when the token is present', () => {
     const settings = sentryViteSettings({
-      SENTRY_AUTH_TOKEN: 'sntrys_example',
+      SENTRY_AUTH_TOKEN: 'build-token-example',
       SENTRY_ORG: 'coco36',
       SENTRY_PROJECT: 'coco36-storefront',
       VERCEL_GIT_COMMIT_SHA: 'deadbeef',
@@ -240,7 +243,7 @@ describe('sentry vite build', () => {
     expect(settings.pluginOptions).toMatchObject({
       org: 'coco36',
       project: 'coco36-storefront',
-      authToken: 'sntrys_example',
+      authToken: 'build-token-example',
       disable: false,
       release: { name: 'deadbeef', inject: true, setCommits: false, deploy: { env: 'preview' } },
       sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map', './dist-server/**/*.map'] },

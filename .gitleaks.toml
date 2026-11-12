@@ -4,5 +4,8 @@ title = "coco36-storefront"
 useDefault = true
 
 [allowlist]
-description = "Shared catalogue fixture id in unit tests"
-regexes = ['''6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01''']
+description = "Unit-test fixtures, not credentials. The JWT-shaped string is an incomplete placeholder that an earlier commit used to test scrubbing."
+regexes = [
+  '''6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01''',
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJyb2xlIjoic2VydmljZV9yb2xlIn0\.signature''',
+]
