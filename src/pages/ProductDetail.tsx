@@ -157,7 +157,7 @@ export const ProductDetail = () => {
                 : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
               {soldOut && <div aria-hidden className="absolute inset-0 bg-white/55" />}
             </div>
-            <DesignationBadges chips={designationChips} variant="overlay" className="absolute top-3.5 left-3.5" />
+            <DesignationBadges chips={designationChips} variant="overlay" className="absolute top-3.5 left-3.5 right-3.5 md:right-auto" />
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">

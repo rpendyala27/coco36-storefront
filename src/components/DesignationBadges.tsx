@@ -8,7 +8,8 @@ function toneClass(chip: BadgeChip): string {
 
 /**
  * Designation chips, plus the sold-out pill when the badge rules include it.
- * `card` uses a short label below the `md` breakpoint. PDP uses the full label.
+ * Phone-width cards shorten New and Limited. Coming Soon stays the full label
+ * at the same size and may wrap. PDP always uses the full label.
  */
 export function DesignationBadges({
   chips,
@@ -28,11 +29,13 @@ export function DesignationBadges({
       : 'flex flex-row flex-wrap md:flex-col gap-1 md:gap-1.5 items-start pointer-events-none';
   return (
     <div className={`${layout} ${className}`}>
-      {chips.map((chip) => (
+      {chips.map((chip) => {
+        const comingSoon = chip.slug === 'coming-soon';
+        return (
         <span
           key={`${chip.role}:${chip.slug}:${chip.label}`}
-          className={`font-display font-bold uppercase rounded-full ${toneClass(chip)} ${compact
-            ? 'text-[10px] md:text-[11px] leading-none md:leading-normal tracking-[0.06em] md:tracking-[0.1em] px-2 py-1 md:px-3 md:py-1.5'
+          className={`font-display font-bold uppercase rounded-full ${toneClass(chip)} ${comingSoon ? 'max-w-full whitespace-normal' : 'whitespace-nowrap'} ${compact
+            ? `text-[10px] md:text-[11px] ${comingSoon ? 'leading-tight' : 'leading-none'} md:leading-normal tracking-[0.06em] md:tracking-[0.1em] px-2 py-1 md:px-3 md:py-1.5`
             : 'text-[11px] leading-normal tracking-[0.1em] px-3 py-1.5'}`}
         >
           {compact ? (
@@ -42,7 +45,8 @@ export function DesignationBadges({
             </>
           ) : chip.label}
         </span>
-      ))}
+        );
+      })}
     </div>
   );
 }

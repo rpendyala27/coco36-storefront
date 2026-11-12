@@ -94,24 +94,32 @@ describe('designation badges', () => {
     expect(displayBadgeLabel('Coming Soon…')).toBe('Coming Soon');
   });
 
-  it('uses a real mobile short label for coming-soon', () => {
-    expect(shortBadgeLabel('coming-soon', 'Coming Soon..')).toBe('Soon');
+  it('keeps the full Coming Soon label at the card font size, including on phone-width cards and the PDP', () => {
+    expect(shortBadgeLabel('coming-soon', 'Coming Soon..')).toBe('Coming Soon');
+    expect(shortBadgeLabel('coming-soon', 'Coming Soon..')).not.toBe('Soon');
     expect(shortBadgeLabel('coming-soon', 'Coming Soon..')).not.toBe('Coming');
     expect(shortBadgeLabel('new-arrival', 'New Arrival')).toBe('New');
     expect(shortBadgeLabel('limited-edition', 'Limited Edition')).toBe('Limited');
     expect(OUT_OF_STOCK_SHORT).toBe('Sold out');
-    const markup = html(createElement(DesignationBadges, {
-      variant: 'card',
-      chips: productBadges(product({
-        id: 'p', name: 'Tahitian Vanilla Beans',
-        sizes: [{ id: 'v', label: '10 beans', priceInPaise: 1, inStock: false }],
-        tags: [tag('coming-soon', 'Coming Soon..', 'designation')],
-      })),
+    const chips = productBadges(product({
+      id: 'p', name: 'Tahitian Vanilla Beans',
+      sizes: [{ id: 'v', label: '10 beans', priceInPaise: 1, inStock: false }],
+      tags: [tag('coming-soon', 'Coming Soon..', 'designation')],
     }));
-    expect(markup).toContain('Soon');
-    expect(markup).toContain('Coming Soon');
-    expect(markup).not.toContain('Coming Soon..');
-    expect(markup).not.toContain(OUT_OF_STOCK_LABEL);
+    const card = html(createElement(DesignationBadges, { variant: 'card', chips }));
+    const overlay = html(createElement(DesignationBadges, { variant: 'overlay', chips }));
+    const inline = html(createElement(DesignationBadges, { variant: 'inline', chips }));
+    for (const markup of [card, overlay, inline]) {
+      expect(markup).toContain('Coming Soon');
+      expect(markup).not.toContain('>Soon<');
+      expect(markup).not.toContain('Coming Soon..');
+      expect(markup).not.toContain(OUT_OF_STOCK_LABEL);
+    }
+    expect(card).toContain('text-[10px]');
+    expect(card).toContain('whitespace-normal');
+    expect(card).not.toMatch(/text-\[9px\]|text-\[8px\]/);
+    expect(overlay).toContain('text-[11px]');
+    expect(inline).toContain('text-[11px]');
   });
 
   it('follows the coming-soon and out-of-stock slugs when the admin label changes', () => {

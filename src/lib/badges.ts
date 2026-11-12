@@ -16,11 +16,10 @@ export const BADGE_CAP = 2;
 export const OUT_OF_STOCK_LABEL = 'Out of stock';
 export const OUT_OF_STOCK_SHORT = 'Sold out';
 
-/** Phone-width card chips. Coming Soon must not fall back to the first word. */
+/** Phone-width card chips. Coming Soon keeps its full label, not a shorter word. */
 export const SHORT_BADGE_LABELS: Record<string, string> = {
   'new-arrival': 'New',
   'limited-edition': 'Limited',
-  'coming-soon': 'Soon',
 };
 
 const TRAILING_PUNCT = /[\s.…!?,;:]+$/u;
@@ -31,9 +30,10 @@ export function displayBadgeLabel(label: string): string {
 }
 
 export function shortBadgeLabel(slug: string, label: string): string {
+  const shown = displayBadgeLabel(label);
+  if (slug === COMING_SOON_SLUG) return shown;
   const mapped = SHORT_BADGE_LABELS[slug];
   if (mapped) return mapped;
-  const shown = displayBadgeLabel(label);
   return shown.split(/\s+/)[0] || shown;
 }
 

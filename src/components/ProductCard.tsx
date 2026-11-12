@@ -105,9 +105,9 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
           {isOutOfStock && <div aria-hidden className="absolute inset-0 bg-white/55" />}
         </Link>
         {/* Phone-width cards shorten New and Limited. Coming Soon stays the
-            full label. The sold-out wash stays on the image when Coming Soon
-            has taken the pill's place. */}
-        <DesignationBadges chips={badgeItems} variant="card" className="absolute top-2.5 left-2.5 md:top-3.5 md:left-3.5" />
+            full label and may use the card width. The sold-out wash stays on
+            the image when Coming Soon has taken the pill's place. */}
+        <DesignationBadges chips={badgeItems} variant="card" className="absolute top-2.5 left-2.5 right-2.5 md:right-auto md:top-3.5 md:left-3.5" />
       </div>
 
       {/* Body */}
