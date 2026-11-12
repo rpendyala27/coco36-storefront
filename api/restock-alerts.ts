@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { authorizeJob } from '../server/notify.js';
 import { restockEmailEnabled, restockFrom, runRestock } from '../server/restock.js';
 import { sendResend } from '../server/resendMail.js';
+import { reportServerException, withSentry } from '../server/sentry.js';
 import {
   claimSignup, listStock, listUnsent, lookupAuthEmail, markSignupSent, releaseSignup,
   serviceCredentials, type ServiceEnv,
@@ -13,7 +14,7 @@ import { SITE_ORIGIN } from '../src/seo/site.js';
  * Same secret as the CSV export. The flag defaults off, so calling this
  * from a preview (or after merge, until the owner sets the env) sends nothing.
  */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -59,11 +60,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     });
     res.statusCode = 200;
     res.end(JSON.stringify(result));
-  } catch {
+  } catch (err) {
+    await reportServerException(err);
     res.statusCode = 503;
     res.end(JSON.stringify({ sent: 0, reason: 'unavailable' }));
   }
 }
+
+export default withSentry(handler);
 
 function header(req: IncomingMessage, name: string): string | undefined {
   const value = req.headers[name];

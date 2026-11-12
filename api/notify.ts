@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { clientIp, handleNotify, insertSignup, type NotifyEnv } from '../server/notify.js';
+import { withSentry } from '../server/sentry.js';
 
 const store = new Map<string, number[]>();
 
@@ -8,7 +9,7 @@ const store = new Map<string, number[]>();
  * Inserts with SUPABASE_SERVICE_ROLE_KEY only. That key is server-only.
  * A missing key or a failed insert shows an error. A duplicate does not.
  */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   if (req.method !== 'POST') {
@@ -27,9 +28,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     });
     send(res, result.status, result.body);
   } catch {
+    // Bad JSON is a client error. A failed insert returns 503 from
+    // handleNotify and does not throw, so this wrapper does not change it.
     send(res, 400, { ok: false, error: 'Enter a valid email address.' });
   }
 }
+
+export default withSentry(handler);
 
 function send(res: ServerResponse, status: number, body: unknown): void {
   res.statusCode = status;

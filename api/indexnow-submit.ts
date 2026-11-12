@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { authorizeSubmit, parseIndexNowState, submitIndexNow } from '../server/indexnow.js';
+import { reportServerException, withSentry } from '../server/sentry.js';
 
 /**
  * Production-only IndexNow submit. Called after a production deploy is live
@@ -7,7 +8,7 @@ import { authorizeSubmit, parseIndexNowState, submitIndexNow } from '../server/i
  * Preview returns 404 and does not ping. IndexNow errors are logged and
  * answered 200 so a caller never treats them as a failed deployment.
  */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   if (req.method !== 'POST') {
@@ -44,9 +45,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     });
   } catch (err) {
     console.error('[indexnow] submit route failed', err instanceof Error ? err.name : 'error');
+    await reportServerException(err);
     sendJson(res, 200, { pinged: false, reason: 'error', status: null, count: 0 });
   }
 }
+
+export default withSentry(handler);
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.statusCode = status;

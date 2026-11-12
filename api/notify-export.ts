@@ -2,13 +2,14 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { authorizeJob, type NotifyEnv } from '../server/notify.js';
 import { signupsToCsv } from '../server/notifyCsv.js';
 import { listTallies, lookupAuthEmail, serviceCredentials, type ServiceEnv } from '../server/notifyStore.js';
+import { reportServerException, withSentry } from '../server/sentry.js';
 
 /**
  * GET /api/notify-export — CSV of per-product sign-up counts.
  * Bearer NOTIFY_EXPORT_SECRET, or a Supabase user on NOTIFY_ADMIN_EMAILS.
  * Not scheduled. Reads with the service role only.
  */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Robots-Tag', 'noindex');
   if (req.method !== 'GET') {
@@ -39,11 +40,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="back-in-stock-signups.csv"');
     res.end(csv);
-  } catch {
+  } catch (err) {
+    await reportServerException(err);
     res.statusCode = 503;
     res.end('Sign-up export is not available yet.\n');
   }
 }
+
+export default withSentry(handler);
 
 function header(req: IncomingMessage, name: string): string | undefined {
   const value = req.headers[name];

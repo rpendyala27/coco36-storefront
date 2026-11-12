@@ -1,15 +1,19 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { initSentry, Sentry } from './lib/sentry';
+import { isChunkLoadError } from './lib/chunkLoad';
+import { takeSentryTestToken } from './lib/sentryTest';
 import { initAnalytics } from './lib/analytics';
 import { readConsent } from './lib/consent';
 import { isSupabaseConfigured } from './lib/supabase';
 import { SUPPORT_EMAIL } from './lib/supportContact';
 
+// Strip the test secret from the URL before Sentry or analytics can read it.
+const sentryTestToken = takeSentryTestToken();
 initSentry();
 // Returning visitors who already accepted get GA straight away; everyone else
 // waits for the cookie banner. Nothing reaches Google before that.
@@ -30,9 +34,18 @@ if (misconfigured) {
   Sentry.captureMessage('Storefront booted without Supabase credentials', 'fatal');
 }
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')!, {
+  onUncaughtError: Sentry.reactErrorHandler(),
+}).render(
   <StrictMode>
-    <Sentry.ErrorBoundary fallback={<GlobalErrorFallback />}>
+    <Sentry.ErrorBoundary
+      fallback={<GlobalErrorFallback />}
+      showDialog={false}
+      beforeCapture={(scope, error) => {
+        if (isChunkLoadError(error)) scope.setTag('chunk_load', 'true');
+      }}
+    >
+      <SentryBrowserProbe token={sentryTestToken} />
       {misconfigured ? (
         <ConfigErrorFallback />
       ) : (
@@ -45,6 +58,32 @@ createRoot(document.getElementById('root')!).render(
     </Sentry.ErrorBoundary>
   </StrictMode>,
 );
+
+/**
+ * Throws a render error only after /api/sentry-test confirms the query
+ * value matches SENTRY_TEST_SECRET. A wrong or missing value does nothing.
+ */
+function SentryBrowserProbe({ token }: { token: string | null }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!token) return undefined;
+    let cancelled = false;
+    fetch('/api/sentry-test?probe=browser', {
+      method: 'GET',
+      headers: { 'X-Sentry-Test': token },
+      cache: 'no-store',
+    })
+      .then((res) => {
+        if (!cancelled && res.status === 204) setArmed(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+  if (armed) throw new Error('Sentry browser test');
+  return null;
+}
 
 /** Shown instead of the shop when a production build has no backend credentials. */
 function ConfigErrorFallback() {

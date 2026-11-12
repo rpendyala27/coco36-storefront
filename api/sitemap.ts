@@ -1,9 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { loadCatalog } from '../server/catalog.js';
+import { reportServerException, withSentry } from '../server/sentry.js';
 import { sitemapXml } from '../server/sitemap.js';
 
 /** /sitemap.xml (vercel.json rewrite) — built from the live catalogue. */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
     const xml = sitemapXml(await loadCatalog());
     res.statusCode = 200;
@@ -13,6 +14,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   } catch (err) {
     // Never serve a partial sitemap: a 503 makes Google retry later.
     console.error('[api/sitemap]', err);
+    await reportServerException(err);
     res.statusCode = 503;
     res.setHeader('Retry-After', '300');
     res.setHeader('Cache-Control', 'no-store');
@@ -20,3 +22,5 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.end('Sitemap temporarily unavailable.');
   }
 }
+
+export default withSentry(handler);

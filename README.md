@@ -31,8 +31,34 @@ See `.env.example`.
 | `VITE_API_URL` | admin API base, `https://admin.coco36.com` |
 | `VITE_RAZORPAY_KEY_ID` | Razorpay public key id |
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics (loaded only after cookie consent) |
-| `VITE_SENTRY_DSN` | optional |
+| `VITE_SENTRY_DSN` | public browser DSN only. Omit and the browser sends nothing |
 | `APP_URL` | site origin for server-rendered canonical URLs |
+| `SENTRY_DSN` | server DSN. Omit and `/api` sends nothing |
+| `SENTRY_AUTH_TOKEN` | build-time source map upload. Never a `VITE_` name |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | `coco36` and `coco36-storefront` |
+| `SENTRY_TEST_SECRET` | server-only. Unset, the test route is 404 |
+
+`VERCEL_GIT_COMMIT_SHA` and `VERCEL_ENV` are set by Vercel. They become the
+Sentry release and environment. Do not copy them into `VITE_` names.
+
+## Sentry check
+
+After the env vars above are set on Production and Preview, confirm one
+server event and one browser event. Neither URL works for anyone who does
+not know `SENTRY_TEST_SECRET`. A wrong value, or an unset secret, is a 404
+and the page does not change.
+
+Server: `curl -D - -H "X-Sentry-Test: $SENTRY_TEST_SECRET" https://coco36.com/api/sentry-test`
+The function throws, flushes Sentry, and the platform answers 500. The issue
+title is `Sentry server test`.
+
+Browser: open `https://coco36.com/?sentry_test=$SENTRY_TEST_SECRET`. The
+query is removed before analytics or Sentry can read it. The page asks
+`/api/sentry-test?probe=browser` with the same header. Only a 204 arms a
+render error, which the top-level error boundary reports and replaces with
+the existing “Something went wrong” fallback. The issue title is
+`Sentry browser test`. Check a preview or production build; React's
+development mode can report that render error twice.
 
 ## Run
 
