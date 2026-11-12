@@ -244,24 +244,19 @@ describe('restock email', () => {
 });
 
 describe('proposal migration', () => {
-  it('is marked NEEDS-YES, is not under supabase/migrations, and documents the rollback', () => {
+  it('is only a superseded note, with no anon grant left to apply', () => {
     const file = path.resolve(__dirname, '../../proposals/NEEDS-YES-back-in-stock-signups.sql');
     const sql = readFileSync(file, 'utf8');
     expect(sql).toContain('SUPERSEDED');
     expect(sql).toContain('20261112050000_back_in_stock_signups.sql');
-    expect(sql).toContain('NEEDS-YES');
-    expect(sql).toContain('enable row level security');
-    expect(sql).toContain('grant insert');
-    expect(sql).toContain('back_in_stock_signups_one_per_email');
-    expect(sql).not.toMatch(/for select/i);
-    expect(sql).toContain('drop table if exists public.back_in_stock_signups');
     expect(sql.startsWith('--')).toBe(true);
-    const rollback = sql.slice(sql.indexOf('-- Rollback'));
-    expect(rollback.trim().startsWith('-- Rollback')).toBe(true);
-    for (const line of rollback.split('\n')) {
+    expect(file.includes(`${path.sep}supabase${path.sep}migrations${path.sep}`)).toBe(false);
+    for (const line of sql.split('\n')) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      expect(trimmed.startsWith('--')).toBe(true);
+      expect(trimmed.startsWith('--'), trimmed).toBe(true);
     }
+    expect(sql).not.toMatch(/^grant /im);
+    expect(sql).not.toMatch(/^create table/im);
   });
 });

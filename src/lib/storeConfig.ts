@@ -45,7 +45,8 @@ function asConfig(value: unknown): Partial<StoreConfig> | null {
 /**
  * Admin public config (shipping, returns, ordering) plus handlingDays from
  * this app's /api/public/config, which reads delivery_zones with the service
- * role. A missing or failed zone read keeps DEFAULT_CONFIG.handlingDays.
+ * role. A missing or null handlingDays is not sourced. The DISPATCH_WINDOW
+ * fallback must not mark the trust-band ships line.
  */
 export function loadStoreConfig(): Promise<StoreConfig> {
   if (inflight) return inflight;
@@ -62,6 +63,7 @@ export function loadStoreConfig(): Promise<StoreConfig> {
     if (typeof admin?.returnWindowDays === 'number' && Number.isInteger(admin.returnWindowDays) && admin.returnWindowDays >= 1) {
       sourced.returnWindowDays = true;
     }
+    // Only a real zone read. null, a missing field, or a non-integer is not sourced.
     if (typeof zone?.handlingDays === 'number' && Number.isInteger(zone.handlingDays) && zone.handlingDays >= 1) {
       next.handlingDays = zone.handlingDays;
       sourced.handlingDays = true;

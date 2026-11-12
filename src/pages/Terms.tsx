@@ -64,11 +64,11 @@ export const Terms = () => {
       <Section id="certifications" title="Certifications and product claims">
         <p>
           Certification marks shown on this site, such as organic, fair trade,
-          halal or kosher, are held by the partner brands whose products we
-          sell, not by COCO36 Foods Pvt Ltd, only where a valid certificate is
-          on record. Each product page lists the certifications that apply to
-          that product. Copies of the relevant certificates are available on
-          request.
+          halal or kosher, appear only where a valid certificate is on record.
+          They are held by the partner brands whose products we sell, not by
+          COCO36 Foods Pvt Ltd. Each product page lists the certifications that
+          apply to that product. Copies of the relevant certificates are
+          available on request.
         </p>
       </Section>
 

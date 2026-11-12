@@ -7,8 +7,8 @@ import { serviceCredentials } from './notifyStore.js';
 
 /**
  * Back-in-stock sign-ups. The browser posts here; this module validates,
- * rate-limits, drops the honeypot, and inserts with the anon key.
- * It never selects rows. Reads belong to the service role (export + restock).
+ * rate-limits, and drops the honeypot. Inserts use the service role only.
+ * It never selects rows, and the service role key stays on the server.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
