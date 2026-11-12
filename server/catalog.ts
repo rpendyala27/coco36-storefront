@@ -6,6 +6,7 @@ import {
 import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
 import { readHandlingDays } from './dispatchZone.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
+import { marksFromClaims, type ClaimMark } from '../src/lib/claimMarks.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
 
@@ -24,6 +25,8 @@ export interface Catalog {
   products: Product[];
   tree: CategoryTree;
   policy: StorePolicy;
+  /** Claim types product_claims() returned. Absent or empty means show none. */
+  claimMarks?: ClaimMark[];
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -97,6 +100,7 @@ async function fetchCatalog(): Promise<Catalog> {
     products: applyClaims(rows.map(mapSupabaseProduct), claimRows ? claimsFromRows(claimRows) : null),
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
+    claimMarks: claimRows ? marksFromClaims(claimRows) : [],
   };
 }
 

@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   ChevronDown, ChevronRight, X, Filter,
-  LayoutGrid, Flame, Sparkles,
+  LayoutGrid, Flame, Sparkles, Star, type LucideIcon,
 } from 'lucide-react';
 import { ProductCard } from '../components/ProductCard';
 import { SearchBox } from '../components/SearchBox';
@@ -21,6 +21,8 @@ import { SHOP_LEDE, shopSeoBelowGrid } from '../content/shopIntro';
 import { ShopPromises } from '../components/ShopPromises';
 import { ComingSoonRow } from '../components/ComingSoonRow';
 import { browseCategories, listingIntro, productsInCategory } from '../lib/catalog';
+import { designationBrowseTiles } from '../lib/designationTiles';
+import { readTagSlugs, withTagSlugs } from '../lib/shopTags';
 import { useSeo } from '../lib/seo';
 import { NOINDEX, categoryCrumbs, notFoundMeta, shopMeta } from '../seo/meta';
 import { GUIDE_LINKS, guidePath } from '../content/guideIndex';
@@ -34,11 +36,12 @@ const SORT_LABELS: Record<SortKey, string> = {
   'name':        'Name A–Z',
 };
 
-// Designation entries surfaced as browse tiles alongside categories.
-const DESIGNATIONS: { slug: string; label: string; Icon: typeof Flame }[] = [
-  { slug: 'bestseller',  label: 'Bestsellers',  Icon: Flame },
-  { slug: 'new-arrival', label: 'New arrivals', Icon: Sparkles },
-];
+const TILE_ICON: Record<string, LucideIcon> = {
+  bestseller: Flame,
+  'new-arrival': Sparkles,
+  'limited-edition': Star,
+};
+const tileIcon = (slug: string): LucideIcon => TILE_ICON[slug] ?? Sparkles;
 
 // Tag filter groups, derived from tag.kind (no hardcoded slug lists). `designation`
 // renders as badges (on the card), so it's excluded from filters.
@@ -73,12 +76,13 @@ export const Shop = () => {
 
   const [search, setSearch]           = useState(searchParams.get('q') ?? '');
   const [origins, setOrigins]         = useState<Set<string>>(new Set());
-  const [tagSlugs, setTagSlugs]       = useState<Set<string>>(new Set());
   const [maxRupees, setMaxRupees]     = useState<number | null>(null);
   const [sortKey, setSortKey]         = useState<SortKey>('recommended');
   const [sortOpen, setSortOpen]       = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [designation, setDesignation] = useState<string | null>(null); // bestseller / new-arrival browse filter
+  const [designation, setDesignation] = useState<string | null>(null); // designation browse filter
+  const tagSlugList = useMemo(() => readTagSlugs(searchParams), [searchParams]);
+  const tagSlugs = useMemo(() => new Set<string>(tagSlugList), [tagSlugList]);
 
   // `?q` → search box state.
   useEffect(() => {
@@ -208,20 +212,35 @@ export const Shop = () => {
       const sub = tree.descendantIds(id);
       const prods = PRODUCTS.filter((p) => p.categoryId && sub.has(p.categoryId));
       const availOrigins = new Set(prods.map((p) => countryOf(p.origin)));
-      const availTags = new Set(prods.flatMap((p) => (p.tags ?? []).map((t) => t.slug)));
       setOrigins((prev) => new Set([...prev].filter((o) => availOrigins.has(o))));
-      setTagSlugs((prev) => new Set([...prev].filter((s) => availTags.has(s))));
       const maxInCat = prods.reduce((m, p) => Math.max(m, minPaiseOf(p)), 0) / 100;
       setMaxRupees((prev) => (prev != null && prev < maxInCat ? prev : null));
     }
     // Category links navigate on their own (they are <Link>s); this only
     // prunes filters. Use goToCategory() where there's no link (chip removal).
   };
-  /** URL for a category view (null = all), keeping an active search. */
+  const toggleTag = (slug: string) => {
+    const next = new Set<string>(tagSlugs);
+    if (next.has(slug)) next.delete(slug); else next.add(slug);
+    setSearchParams(withTagSlugs(searchParams, next), { replace: true });
+  };
+  /** URL for a category view (null = all), keeping search and the tag facet.
+   *  Tags are pruned to what that category actually offers. */
   const hrefFor = (id: string | null) => {
     const cat = id ? tree.byId.get(id) : undefined;
     const q = search.trim();
-    return `${cat ? categoryPath(cat) : '/shop'}${q ? `?q=${encodeURIComponent(q)}` : ''}`;
+    let tags = tagSlugList;
+    if (id) {
+      const sub = tree.descendantIds(id);
+      const prods = PRODUCTS.filter((p) => p.categoryId && sub.has(p.categoryId));
+      const avail = new Set(prods.flatMap((p) => (p.tags ?? []).map((t) => t.slug)));
+      tags = tags.filter((slug) => avail.has(slug));
+    }
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    for (const slug of tags) params.append('tag', slug);
+    const qs = params.toString();
+    return `${cat ? categoryPath(cat) : '/shop'}${qs ? `?${qs}` : ''}`;
   };
   const goToCategory = (id: string | null) => {
     selectCategory(id);
@@ -255,7 +274,7 @@ export const Shop = () => {
 
   /** Reset every in-page filter (state only — the "Shop all" link navigates). */
   const resetFilters = () => {
-    setDesignation(null); setOrigins(new Set()); setTagSlugs(new Set());
+    setDesignation(null); setOrigins(new Set());
     setSearch(''); setMaxRupees(null);
   };
   const clearAll = () => {
@@ -265,22 +284,14 @@ export const Shop = () => {
 
   // Header search → fresh global search: clear facets + category, set ?q, scroll to grid.
   const runSearch = (q: string) => {
-    setDesignation(null); setOrigins(new Set()); setTagSlugs(new Set());
+    setDesignation(null); setOrigins(new Set());
     setSearch(q);
     navigate(q ? `/shop?q=${encodeURIComponent(q)}` : '/shop');
     scrollToCatalog();
   };
 
-  // Browse tiles — designation tiles (bestseller/new-arrival, imaged from a
-  // representative product) then image-led category tiles. Landing state only.
-  const designationTiles = useMemo(() =>
-    DESIGNATIONS
-      .map((d) => {
-        const rep = PRODUCTS.find((p) => p.image && (p.tags ?? []).some((t) => t.slug === d.slug));
-        return rep ? { ...d, image: rep.image } : null;
-      })
-      .filter((d): d is { slug: string; label: string; Icon: typeof Flame; image: string } => d !== null),
-    [PRODUCTS]);
+  // Browse tiles from designation tags on live products (not a fixed slug list).
+  const designationTiles = useMemo(() => designationBrowseTiles(PRODUCTS), [PRODUCTS]);
   const categoryTiles = useMemo(() => browseCategories(tree), [tree]);
   // The tile strip is the category nav now (the old pill row is gone), so it
   // stays visible whether or not something is selected.
@@ -328,7 +339,7 @@ export const Shop = () => {
   const breadcrumb   = categoryId ? tree.ancestorsOf(categoryId) : [];
   const drillChildren = categoryId ? tree.childrenOf(categoryId) : [];
   const tagLabel = (slug: string) => slugKindLabel(PRODUCTS, slug) ?? slug;
-  const designationLabel = DESIGNATIONS.find((d) => d.slug === designation)?.label ?? null;
+  const designationLabel = designationTiles.find((d) => d.slug === designation)?.label ?? null;
   const activeCount = (categoryId ? 1 : 0) + (designation ? 1 : 0) + origins.size + tagSlugs.size + (maxRupees != null && maxRupees < priceCeil ? 1 : 0);
   // "Shop all" is active only when the catalog is truly unfiltered (incl. origin/
   // tag/price/search), and clicking it resets everything.
@@ -453,11 +464,14 @@ export const Shop = () => {
             {stripStuck && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 <NavPill active={noFilters} to="/shop" onClick={resetFilters}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
-                {designationTiles.map((d) => (
-                  <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
-                    <d.Icon size={12} strokeWidth={2.5} /> {d.label}
-                  </NavPill>
-                ))}
+                {designationTiles.map((d) => {
+                  const Icon = tileIcon(d.slug);
+                  return (
+                    <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                      <Icon size={12} strokeWidth={2.5} /> {d.label}
+                    </NavPill>
+                  );
+                })}
                 {tree.roots.map((c) => {
                   const active = breadcrumb[0]?.id === c.id;
                   return (
@@ -471,11 +485,14 @@ export const Shop = () => {
                 {/* Shop all / Bestsellers / New arrivals — vertical pill stack (equal width, centred) */}
                 <div className="flex flex-col items-stretch justify-center gap-2 shrink-0">
                   <NavPill active={noFilters} to="/shop" onClick={resetFilters}><LayoutGrid size={12} strokeWidth={2.5} /> Shop all</NavPill>
-                  {designationTiles.map((d) => (
-                    <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
-                      <d.Icon size={12} strokeWidth={2.5} /> {d.label}
-                    </NavPill>
-                  ))}
+                  {designationTiles.map((d) => {
+                    const Icon = tileIcon(d.slug);
+                    return (
+                      <NavPill key={d.slug} gold active={designation === d.slug} onClick={() => (designation === d.slug ? setDesignation(null) : selectDesignation(d.slug))}>
+                        <Icon size={12} strokeWidth={2.5} /> {d.label}
+                      </NavPill>
+                    );
+                  })}
                 </div>
                 {/* Category image tiles — horizontal scroll. py-1.5/pl-1.5: interior room so the active ring-offset isn't clipped by overflow-x scroll */}
                 <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x py-1.5 pl-1.5 min-w-0">
@@ -568,7 +585,7 @@ export const Shop = () => {
               {tagGroups.map(({ kind, title, rows }) => (
                 <FacetGroup key={kind} title={title}>
                   {rows.map(([slug, { label, count }]) => (
-                    <FacetRow key={slug} label={label} count={count} checked={tagSlugs.has(slug)} onToggle={() => toggleSet(tagSlugs, slug, setTagSlugs)} />
+                    <FacetRow key={slug} label={label} count={count} checked={tagSlugs.has(slug)} onToggle={() => toggleTag(slug)} />
                   ))}
                 </FacetGroup>
               ))}
@@ -612,7 +629,7 @@ export const Shop = () => {
                 {activeCategory && <Chip label={activeCategory.name} onRemove={() => goToCategory(null)} />}
                 {designationLabel && <Chip label={designationLabel} onRemove={() => setDesignation(null)} />}
                 {[...origins].map((o) => <Chip key={o} label={o} onRemove={() => toggleSet(origins, o, setOrigins)} />)}
-                {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleSet(tagSlugs, s, setTagSlugs)} />)}
+                {[...tagSlugs].map((s) => <Chip key={s} label={tagLabel(s)} onRemove={() => toggleTag(s)} />)}
               </div>
               <div className="flex items-center gap-4 flex-shrink-0">
                 <span className="eyebrow whitespace-nowrap">{filtered.length} of {PRODUCTS.length}</span>
@@ -684,7 +701,7 @@ export const Shop = () => {
         </section>
       )}
 
-      {!categorySlug && <ComingSoonRow />}
+      {!categorySlug && <ComingSoonRow products={PRODUCTS} />}
       {!categorySlug && (
         <section aria-label="About this catalogue" className="max-w-3xl mx-auto px-6 pb-8">
           {shopSeoBelowGrid().map((paragraph) => (

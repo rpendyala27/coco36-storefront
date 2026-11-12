@@ -9,7 +9,7 @@ import { REGISTERED_OFFICE_LINE } from '../seo/site';
  * scaling beyond friends-and-family orders.
  */
 export const Terms = () => {
-  const lastUpdated = '3 November 2026';
+  const lastUpdated = '12 November 2026';
   const { returnWindowDays } = useStoreConfig();
   return (
     <div className="pt-24 pb-20 px-6 md:px-12 lg:px-20 max-w-3xl mx-auto text-brand-ink">
@@ -61,13 +61,12 @@ export const Terms = () => {
         </ul>
       </Section>
 
-      <Section id="certifications" title="Certifications and product claims">
+      <Section id="certifications" title="Marks on a product">
         <p>
-          Certification marks shown on this site, such as organic, fair trade,
-          halal or kosher, are held by the partner brands whose products we
-          sell, not by COCO36 Foods Pvt Ltd. Each product page lists the
-          certifications that apply to that product. Copies of the relevant
-          certificates are available on request.
+          A mark is shown on a product only when that product's record
+          includes it. The mark is held by the partner brand that supplies the
+          product, not by COCO36 Foods Pvt Ltd. Copies of the documents for a
+          mark are available on request.
         </p>
       </Section>
 

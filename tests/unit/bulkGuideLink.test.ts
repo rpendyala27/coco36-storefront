@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { PRODUCTS } from '../../src/data/products';
-import { COMING_SOON } from '../../src/content/comingSoon';
 import { BULK_GUIDE_ALLOWLIST, BULK_GUIDE_LABEL, bulkGuideHref } from '../../src/content/bulkGuideLink';
 import { WHOLESALE_GUIDE_PATH } from '../../src/content/wholesaleGuide';
 import { productPath } from '../../src/lib/productPath';
@@ -48,7 +47,16 @@ describe('bulk guide allowlist', () => {
       const probe: Pick<Product, 'name' | 'category'> = product ?? { name, category: 'Spices & Pantry' };
       expect(bulkGuideHref(probe), name).toBeNull();
     }
-    for (const item of COMING_SOON) {
+    for (const item of [
+      { key: 'japanese-matcha', name: 'Japanese matcha' },
+      { key: 'whole-vanilla-beans', name: 'Whole vanilla beans' },
+      { key: 'pistachio-paste', name: 'Pistachio paste' },
+      { key: 'dutch-process-cocoa-powder', name: 'Dutch-process cocoa powder' },
+      { key: 'cocoa-butter', name: 'Cocoa butter' },
+      { key: 'palm-jaggery', name: 'Palm jaggery' },
+      { key: 'couverture', name: 'Couverture' },
+      { key: 'coconut-sugar', name: 'Coconut sugar' },
+    ]) {
       expect(bulkGuideHref({ name: item.name, categorySlug: item.key }), item.key).toBeNull();
     }
     expect(bulkGuideHref({
