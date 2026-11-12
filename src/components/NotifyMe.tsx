@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { COMING_SOON_NOTE } from '../content/comingSoon';
 import {
   NOTIFY_AUDIENCES, NOTIFY_BUTTON, NOTIFY_CONFIRM, NOTIFY_EMAIL_INVALID, NOTIFY_PACKS,
@@ -48,7 +49,7 @@ export function NotifyForm({
 }: FormProps) {
   const titleId = useId();
   const emailRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (status !== 'done') emailRef.current?.focus(); }, [status]);
+  useEffect(() => { if (status !== 'done') emailRef.current?.focus({ preventScroll: true }); }, [status]);
 
   return (
     <div
@@ -184,6 +185,31 @@ interface ButtonProps {
   className?: string;
 }
 
+/**
+ * Hide document scrolling while a dialog is open. A refcount covers two open
+ * dialogs and StrictMode's setup/cleanup/setup, and restores the overflow
+ * that was there before the first lock.
+ */
+const bodyLocks = new WeakMap<object, { count: number; overflow: string }>();
+
+export function lockBodyScroll(body: { style: { overflow: string } } = document.body): () => void {
+  const state = bodyLocks.get(body) ?? { count: 0, overflow: body.style.overflow };
+  if (state.count === 0) state.overflow = body.style.overflow;
+  state.count += 1;
+  body.style.overflow = 'hidden';
+  bodyLocks.set(body, state);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    state.count -= 1;
+    if (state.count <= 0) {
+      state.count = 0;
+      body.style.overflow = state.overflow;
+    }
+  };
+}
+
 /** Opens the one-time back-in-stock form. */
 export function NotifyMe({ productKey, productName, comingSoon = false, className = '' }: ButtonProps) {
   const [open, setOpen] = useState(false);
@@ -191,12 +217,26 @@ export function NotifyMe({ productKey, productName, comingSoon = false, classNam
   const [fieldErrors, setFieldErrors] = useState<NotifyFieldErrors>({});
   const [status, setStatus] = useState<FormProps['status']>('form');
   const [message, setMessage] = useState<string | undefined>();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      if (wasOpen.current) {
+        wasOpen.current = false;
+        triggerRef.current?.focus({ preventScroll: true });
+      }
+      return;
+    }
+    wasOpen.current = true;
+    if (typeof document === 'undefined') return;
+    const release = lockBodyScroll();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      release();
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   const submit = async () => {
@@ -238,28 +278,31 @@ export function NotifyMe({ productKey, productName, comingSoon = false, classNam
     }
   };
 
+  const form = (
+    <NotifyForm
+      productName={productName}
+      comingSoon={comingSoon}
+      status={status}
+      message={message}
+      fields={fields}
+      fieldErrors={fieldErrors}
+      onChange={(patch) => setFields((prev) => ({ ...prev, ...patch }))}
+      onSubmit={() => { void submit(); }}
+      onClose={() => setOpen(false)}
+    />
+  );
+
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         className={`btn-ghost ${className}`}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
       >
         {NOTIFY_BUTTON}
       </button>
-      {open && (
-        <NotifyForm
-          productName={productName}
-          comingSoon={comingSoon}
-          status={status}
-          message={message}
-          fields={fields}
-          fieldErrors={fieldErrors}
-          onChange={(patch) => setFields((prev) => ({ ...prev, ...patch }))}
-          onSubmit={() => { void submit(); }}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      {open && typeof document !== 'undefined' && createPortal(form, document.body)}
     </>
   );
 }
