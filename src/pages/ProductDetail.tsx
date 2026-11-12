@@ -21,9 +21,10 @@ import { GUIDE_LINKS, guidePath, productsForGuide } from '../content/guideIndex'
 import { productPage } from '../content/productPages';
 import { parseRich, type RichNode } from '../content/richText';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { DesignationBadges } from '../components/DesignationBadges';
+import { GoodForChips } from '../components/GoodForChips';
 import { NotifyMe } from '../components/NotifyMe';
-import { OutOfStockPill } from '../components/OutOfStockPill';
-import { showOutOfStockPill } from '../lib/outOfStockBadge';
+import { isSoldOut, productBadges } from '../lib/badges';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -130,6 +131,8 @@ export const ProductDetail = () => {
   const dietaryTags     = (product.tags ?? []).filter((t) => t.kind === 'dietary' && !isFssaiClaim(t.slug, t.label));
   const markTags        = [...certTags, ...dietaryTags];
   const gallery         = [product.image, product.imageHover].filter(Boolean) as string[];
+  const designationChips = productBadges(product);
+  const soldOut         = isSoldOut(product.sizes);
 
   const handleAddToCart = () => selectedSize && addItem(product, selectedSize, quantity);
   const handleBuyNow    = () => { if (selectedSize) { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 150); } };
@@ -152,12 +155,9 @@ export const ProductDetail = () => {
                 ? <img src={imageUrl(gallery[activeImage], 900)} srcSet={imageSrcSet(gallery[activeImage], [600, 900, 1200])} sizes="(min-width: 1024px) 45vw, 100vw" alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                 // Light "awaiting photo" placeholder — matches the ProductCard treatment.
                 : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
+              {soldOut && <div aria-hidden className="absolute inset-0 bg-white/55" />}
             </div>
-            {showOutOfStockPill(product) && (
-              <div className="absolute top-3.5 left-3.5 z-10 pointer-events-none">
-                <OutOfStockPill />
-              </div>
-            )}
+            <DesignationBadges chips={designationChips} variant="overlay" className="absolute top-3.5 left-3.5 right-3.5 md:right-auto" />
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">
@@ -179,12 +179,9 @@ export const ProductDetail = () => {
         <div>
           <p className="eyebrow text-brand-leaf mb-3">{product.category} · {countryOf(product.origin)}</p>
           <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{page?.h1 ?? product.name}</h1>
-          {showOutOfStockPill(product) && (
-            <div className="mt-3">
-              <OutOfStockPill />
-            </div>
-          )}
+          <DesignationBadges chips={designationChips} variant="inline" />
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
+          <GoodForChips tags={product.tags} />
 
           {/* Cert + dietary marks — stamp icons, same iconography as cards + trust band */}
           {markTags.length > 0 && (

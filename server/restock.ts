@@ -4,9 +4,11 @@ import { NOTIFY_REASSURANCE } from '../src/content/notifyCopy.js';
 /**
  * One email per sign-up when that product is back in stock.
  * RESTOCK_EMAIL_ENABLED must be the string "true". Anything else, including
- * unset, sends nothing. This module does not set a Reply-To and does not
- * read or write enquiry-recipient constants (those live in coco36-next and
- * are on hold).
+ * unset, sends nothing. Leave it unset: marking a row sent updates columns
+ * the current grant does not allow. That update needs a separate NEEDS-YES
+ * grant beyond the select and insert on migration 20261112050000.
+ * This module does not set a Reply-To and does not read or write
+ * enquiry-recipient constants (those live in coco36-next and are on hold).
  */
 
 export interface RestockEnv {

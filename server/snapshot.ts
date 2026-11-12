@@ -4,6 +4,11 @@ import type { Crumb } from '../src/seo/jsonld';
 import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
 import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
+import { productBadges, useCaseTags } from '../src/lib/badges.js';
+import type { ClaimMark } from '../src/lib/claimMarks.js';
+import { comingSoonProducts } from '../src/lib/comingSoonProducts.js';
+import { shopTagPath } from '../src/lib/shopTags.js';
+import { trustLinesFromConfig } from '../src/lib/trustLines.js';
 import { categoryPage } from '../src/content/categoryPages.js';
 import { productPage } from '../src/content/productPages.js';
 import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/content/bakingNotes.js';
@@ -11,7 +16,7 @@ import { infoPage, type InfoPage, type InfoSection } from '../src/content/infoPa
 import { linkifyHtml } from '../src/content/linkify.js';
 import { richHtml } from '../src/content/richText.js';
 import { SHOP_LEDE, shopPromises, shopSeoBelowGrid } from '../src/content/shopIntro.js';
-import { COMING_SOON, COMING_SOON_NOTE } from '../src/content/comingSoon.js';
+import { COMING_SOON_NOTE } from '../src/content/comingSoon.js';
 import { SUPPORT_EMAIL, SUPPORT_PHONE_DISPLAY, SUPPORT_PHONE_TEL } from '../src/lib/supportContact.js';
 import {
   GUIDES, GUIDES_HUB, guideFaqs, guidePath, productsForGuide, type Guide,
@@ -43,6 +48,7 @@ export interface SnapshotCtx {
   products: Product[];
   tree: CategoryTree;
   policy: StorePolicy;
+  claimMarks?: readonly ClaimMark[];
 }
 
 const a = (href: string, text: string) => `<a href="${esc(href)}">${esc(text)}</a>`;
@@ -91,6 +97,38 @@ const priceFrom = (p: Product) => {
 };
 const stockNote = (p: Product) => (p.sizes.some((s) => s.inStock) ? '' : ' (out of stock)');
 
+function claimMarkList(ctx: SnapshotCtx): string {
+  const marks = ctx.claimMarks ?? [];
+  if (!marks.length) return '';
+  return `<ul>${marks.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul>`;
+}
+
+function trustLineList(ctx: SnapshotCtx): string {
+  const lines = trustLinesFromConfig(ctx.policy);
+  return `<ul>${lines.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>`;
+}
+
+function comingSoonList(ctx: SnapshotCtx): string {
+  const items = comingSoonProducts(ctx.products);
+  if (!items.length) return '';
+  return [
+    '<h2>Coming soon</h2>',
+    `<ul>${items.map((p) => `<li>${a(productPath(p), p.name)}: ${esc(COMING_SOON_NOTE)}</li>`).join('')}</ul>`,
+  ].join('\n');
+}
+
+function designationLine(p: Product): string {
+  const chips = productBadges(p);
+  if (!chips.length) return '';
+  return `<p data-designation-badges>${chips.map((c) => esc(c.label)).join(' · ')}</p>`;
+}
+
+function goodForLine(p: Product): string {
+  const uses = useCaseTags(p.tags);
+  if (!uses.length) return '';
+  return `<p>Good for ${uses.map((t) => a(shopTagPath(t.slug), t.label)).join(', ')}</p>`;
+}
+
 function productList(products: readonly Product[]): string {
   if (!products.length) return '';
   return `<ul>${products.map((p) => {
@@ -112,6 +150,8 @@ export function homeSnapshot(ctx: SnapshotCtx): string {
     '<p>Origin ingredients for bakers, pastry chefs and chocolatiers across India: vanilla, cane sugars, speciality flours, finishing salt and kits. Ships across India.</p>',
     '<h2>Featured ingredients</h2>',
     productList(featuredProducts(ctx.products)) || '<p>New lots are on their way.</p>',
+    trustLineList(ctx),
+    claimMarkList(ctx),
     `<p>${a('/shop', 'Shop all ingredients')}</p>`,
     '<h2>Shop by category</h2>',
     `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
@@ -127,9 +167,10 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
     '<h1>Shop all ingredients</h1>',
     `<p>${esc(SHOP_LEDE)}</p>`,
     `<ul>${shopPromises(ctx.policy).map((item) => `<li>${esc(item.label)}</li>`).join('')}</ul>`,
+    trustLineList(ctx),
     productList(ctx.products) || '<p>New lots are on their way.</p>',
-    '<h2>Coming soon</h2>',
-    `<ul>${COMING_SOON.map((item) => `<li>${esc(item.name)}: ${esc(COMING_SOON_NOTE)}</li>`).join('')}</ul>`,
+    comingSoonList(ctx),
+    claimMarkList(ctx),
     ...shopSeoBelowGrid().map((p) => `<p>${esc(p)}</p>`),
     '<h2>Categories</h2>',
     `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
@@ -184,7 +225,9 @@ export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): 
     breadcrumbs(crumbs),
     '<article>',
     `<h1>${esc(editorial?.h1 ?? p.name)}</h1>`,
+    designationLine(p),
     img,
+    goodForLine(p),
     `<p>${[p.brand && `By ${esc(p.brand)}`, p.origin && `Origin: ${esc(p.origin)}`].filter(Boolean).join(' · ')}</p>`,
     body,
     p.sizes.length ? `<h2>Sizes and prices</h2><ul>${p.sizes.map((s) => `<li>${esc(s.label)}${s.sku ? ` (SKU ${esc(s.sku)})` : ''}: ${esc(rupees(s.priceInPaise))} — ${s.inStock ? 'in stock' : 'out of stock'}</li>`).join('')}</ul>` : '',

@@ -1,14 +1,14 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { isComingSoonKey, comingSoonByKey } from '../src/content/comingSoon.js';
 import {
   NOTIFY_EMAIL_INVALID, NOTIFY_PHONE_INVALID, NOTIFY_RATE_LIMIT, NOTIFY_UNAVAILABLE,
 } from '../src/content/notifyCopy.js';
 import { UUID_RE } from '../src/lib/productPath.js';
+import { serviceCredentials } from './notifyStore.js';
 
 /**
  * Back-in-stock sign-ups. The browser posts here; this module validates,
- * rate-limits, drops the honeypot, and inserts with the anon key.
- * It never selects rows. Reads belong to the service role (export + restock).
+ * rate-limits, and drops the honeypot. Inserts use the service role only.
+ * It never selects rows, and the service role key stays on the server.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -26,6 +26,8 @@ export interface NotifyEnv {
   SUPABASE_ANON_KEY?: string;
   VITE_SUPABASE_URL?: string;
   VITE_SUPABASE_ANON_KEY?: string;
+  /** Server-only. Preferred for the insert. Never a VITE_* name. */
+  SUPABASE_SERVICE_ROLE_KEY?: string;
   NOTIFY_EXPORT_SECRET?: string;
   NOTIFY_ADMIN_EMAILS?: string;
 }
@@ -90,16 +92,13 @@ export function parseSignup(input: Record<string, unknown>): { honeypot: boolean
   if (/natural cocoa/i.test(productName) || /natural cocoa/i.test(productKey)) {
     return { honeypot: false, error: NOTIFY_UNAVAILABLE };
   }
-  const coming = comingSoonByKey(productKey);
+  // Same path for a product card and a coming-soon row: product_key is the
+  // product id. Retired coming-soon slugs are not accepted. Stock stays on
+  // the variant (in_stock); this table has no variant column.
   const uuid = UUID_RE.test(productKey) && productKey.length === 36;
-  if (coming) {
-    if (productName !== coming.name) return { honeypot: false, error: NOTIFY_UNAVAILABLE };
-  } else if (!uuid || !productName) {
-    return { honeypot: false, error: NOTIFY_UNAVAILABLE };
-  }
+  if (!uuid || !productName) return { honeypot: false, error: NOTIFY_UNAVAILABLE };
   if (audience && !AUDIENCES.has(audience)) return { honeypot: false, error: NOTIFY_UNAVAILABLE };
   if (pack && !PACKS.has(pack)) return { honeypot: false, error: NOTIFY_UNAVAILABLE };
-  if (!isComingSoonKey(productKey) && !uuid) return { honeypot: false, error: NOTIFY_UNAVAILABLE };
 
   return {
     honeypot: false,
@@ -148,8 +147,31 @@ export function anonCredentials(env: NotifyEnv): { url: string; key: string } | 
   return { url, key };
 }
 
-export async function insertWithAnon(env: NotifyEnv, row: SignupInsert, fetchImpl: typeof fetch): Promise<InsertResult> {
-  const creds = anonCredentials(env);
+/** Columns on back_in_stock_signups. No extras. */
+export function signupPayload(row: SignupInsert): SignupInsert {
+  return {
+    product_key: row.product_key,
+    product_name: row.product_name,
+    email: row.email,
+    phone: row.phone,
+    audience: row.audience,
+    pack_size: row.pack_size,
+  };
+}
+
+function isDuplicate(status: number, body: string): boolean {
+  if (status === 409) return true;
+  return /23505|duplicate key|unique constraint/i.test(body);
+}
+
+/**
+ * Insert with the service role only. Anon and authenticated have no rights
+ * on this table (coco36-next migration 20261112050000). A missing key or a
+ * failed insert, including a missing table, is unavailable. A unique
+ * violation is a duplicate, which the handler treats as success.
+ */
+export async function insertSignup(env: NotifyEnv, row: SignupInsert, fetchImpl: typeof fetch): Promise<InsertResult> {
+  const creds = serviceCredentials(env);
   if (!creds) return 'unavailable';
   try {
     const res = await fetchImpl(`${creds.url}/rest/v1/back_in_stock_signups`, {
@@ -160,9 +182,11 @@ export async function insertWithAnon(env: NotifyEnv, row: SignupInsert, fetchImp
         'Content-Type': 'application/json',
         Prefer: 'resolution=ignore-duplicates,return=minimal',
       },
-      body: JSON.stringify(row),
+      body: JSON.stringify(signupPayload(row)),
     });
-    if (res.ok || res.status === 409) return res.status === 409 ? 'duplicate' : 'ok';
+    if (res.ok) return 'ok';
+    const text = await res.text();
+    if (isDuplicate(res.status, text)) return 'duplicate';
     return 'unavailable';
   } catch {
     return 'unavailable';

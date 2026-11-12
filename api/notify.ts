@@ -1,12 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { clientIp, handleNotify, insertWithAnon, type NotifyEnv } from '../server/notify.js';
+import { clientIp, handleNotify, insertSignup, type NotifyEnv } from '../server/notify.js';
 
 const store = new Map<string, number[]>();
 
 /**
  * POST /api/notify — one back-in-stock sign-up.
- * Inserts with the anon key. If the table is not there yet, this fails
- * with a plain error and does not pretend the sign-up was saved.
+ * Inserts with SUPABASE_SERVICE_ROLE_KEY only. That key is server-only.
+ * A missing key or a failed insert shows an error. A duplicate does not.
  */
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
@@ -23,7 +23,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       ip: clientIp(Array.isArray(forwarded) ? forwarded[0] : forwarded),
       now: Date.now(),
       store,
-      insert: (row) => insertWithAnon(process.env as NotifyEnv, row, fetch),
+      insert: (row) => insertSignup(process.env as NotifyEnv, row, fetch),
     });
     send(res, result.status, result.body);
   } catch {

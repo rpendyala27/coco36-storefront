@@ -80,6 +80,11 @@ export async function listTallies(env: ServiceEnv, fetchImpl: typeof fetch): Pro
   });
 }
 
+/**
+ * sent_at / sent_message_id updates. Do not call these while
+ * RESTOCK_EMAIL_ENABLED is unset. Migration 20261112050000 grants the service
+ * role select and insert only. Updating sent columns needs a separate NEEDS-YES grant.
+ */
 export async function claimSignup(env: ServiceEnv, id: string, fetchImpl: typeof fetch): Promise<boolean> {
   const rows = await rest(
     env,

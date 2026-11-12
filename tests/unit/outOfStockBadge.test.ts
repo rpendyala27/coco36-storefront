@@ -87,21 +87,28 @@ describe('out of stock designation', () => {
 });
 
 describe('product card pill', () => {
-  it('shows the pill, the dim overlay, and Notify me only when designated and sold out', () => {
+  it('shows the pill, the dim overlay, and Notify me when sold out, and keeps the designation', () => {
     const html = card(product({ sizes: soldOut, tags: [oos, bestseller] }));
     expect(html).toContain(OUT_OF_STOCK_PILL);
+    expect(html).toContain('Bestseller');
     expect(html).toContain('bg-white/55');
     expect(html).toContain('Notify me');
-    expect(html).not.toContain('Bestseller');
     expect(html).not.toContain('btn-primary');
   });
 
-  it('keeps Notify me and the overlay, without the pill, when the designation is off', () => {
+  it('keeps the designation and the stock pill when the out-of-stock tag is off, and Coming Soon replaces the pill', () => {
     const html = card(product({ sizes: soldOut, tags: [bestseller] }));
-    expect(html).not.toContain(OUT_OF_STOCK_PILL);
+    expect(html).toContain(OUT_OF_STOCK_PILL);
+    expect(html).toContain('Bestseller');
     expect(html).toContain('bg-white/55');
     expect(html).toContain('Notify me');
-    expect(html).not.toContain('Bestseller');
+    const soon = card(product({
+      sizes: soldOut,
+      tags: [bestseller, { slug: 'coming-soon', label: 'Coming Soon..', kind: 'designation' }],
+    }));
+    expect(soon).toContain('Coming Soon');
+    expect(soon).toContain('Bestseller');
+    expect(soon).not.toContain(OUT_OF_STOCK_PILL);
   });
 
   it('never replaces Add to cart when a variant is in stock, even with the designation ticked', () => {
@@ -133,10 +140,10 @@ describe('product card pill', () => {
 });
 
 describe('product page wiring', () => {
-  it('renders the same pill from the same gate, and does not change the add-to-bag branch', () => {
+  it('renders designation badges from the shared rules, and does not change the add-to-bag branch', () => {
     const src = readFileSync(path.resolve(__dirname, '../../src/pages/ProductDetail.tsx'), 'utf8');
-    expect(src).toContain('showOutOfStockPill(product)');
-    expect(src).toContain('<OutOfStockPill />');
+    expect(src).toContain('productBadges(product)');
+    expect(src).toContain('<DesignationBadges');
     expect(src).toContain('selectedSize && !selectedSize.inStock');
     expect(src).toContain('Add to bag');
   });

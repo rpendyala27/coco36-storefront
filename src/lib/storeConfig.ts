@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { API_URL } from './supabase';
-import { DEFAULT_POLICY, type StorePolicy } from '../seo/site';
+import { API_URL } from './supabase.js';
+import { DEFAULT_POLICY, type StorePolicy } from '../seo/site.js';
 
 /**
  * Store policy the storefront displays — fetched from the admin so the
@@ -25,7 +25,10 @@ export const ORDERING_CLOSED_MESSAGE = "We're not taking orders just yet. Please
  * server even before the config fetch resolves or if it's offline.
  * Keep in sync with the admin `settings` defaults.
  */
-export const DEFAULT_CONFIG: StoreConfig = DEFAULT_POLICY; // ₹1,200 free / ₹99 flat / ₹50 COD / 7 days
+export const DEFAULT_CONFIG: StoreConfig = {
+  ...DEFAULT_POLICY,
+  sourced: { handlingDays: false, freeShippingPaise: false, returnWindowDays: false },
+};
 
 let cache: StoreConfig = DEFAULT_CONFIG;
 let inflight: Promise<StoreConfig> | null = null;
@@ -42,7 +45,8 @@ function asConfig(value: unknown): Partial<StoreConfig> | null {
 /**
  * Admin public config (shipping, returns, ordering) plus handlingDays from
  * this app's /api/public/config, which reads delivery_zones with the service
- * role. A missing or failed zone read keeps DEFAULT_CONFIG.handlingDays.
+ * role. A missing or null handlingDays is not sourced. The DISPATCH_WINDOW
+ * fallback must not mark the trust-band ships line.
  */
 export function loadStoreConfig(): Promise<StoreConfig> {
   if (inflight) return inflight;
@@ -53,10 +57,18 @@ export function loadStoreConfig(): Promise<StoreConfig> {
     const admin = asConfig(adminRaw);
     const zone = asConfig(zoneRaw);
     const next: StoreConfig = { ...DEFAULT_CONFIG };
+    const sourced = { handlingDays: false, freeShippingPaise: false, returnWindowDays: false };
     if (admin && typeof admin.freeShippingPaise === 'number') Object.assign(next, admin);
+    if (typeof admin?.freeShippingPaise === 'number' && admin.freeShippingPaise > 0) sourced.freeShippingPaise = true;
+    if (typeof admin?.returnWindowDays === 'number' && Number.isInteger(admin.returnWindowDays) && admin.returnWindowDays >= 1) {
+      sourced.returnWindowDays = true;
+    }
+    // Only a real zone read. null, a missing field, or a non-integer is not sourced.
     if (typeof zone?.handlingDays === 'number' && Number.isInteger(zone.handlingDays) && zone.handlingDays >= 1) {
       next.handlingDays = zone.handlingDays;
+      sourced.handlingDays = true;
     }
+    next.sourced = sourced;
     cache = next;
     return cache;
   }).catch(() => cache);

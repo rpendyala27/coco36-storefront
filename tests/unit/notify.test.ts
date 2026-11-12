@@ -1,17 +1,18 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { COMING_SOON } from '../../src/content/comingSoon';
 import {
-  allowRate, authorizeJob, handleNotify, insertWithAnon, parseSignup, type SignupInsert,
+  allowRate, authorizeJob, handleNotify, insertSignup, parseSignup, type SignupInsert,
 } from '../../server/notify';
 import { signupsToCsv } from '../../server/notifyCsv';
 import { matchBackInStock, restockEmailEnabled, restockFrom, restockMail, runRestock } from '../../server/restock';
 import { sendResend } from '../../server/resendMail';
 
+const PRODUCT_ID = '6f1b6c1e-0c55-4c7e-9a43-8f3f6f1c0a01';
+
 const ROW: SignupInsert = {
-  product_key: 'japanese-matcha',
-  product_name: 'Japanese matcha',
+  product_key: PRODUCT_ID,
+  product_name: 'Tahitian Vanilla Beans',
   email: 'baker@example.com',
   phone: null,
   audience: null,
@@ -19,34 +20,40 @@ const ROW: SignupInsert = {
 };
 
 describe('notify validation', () => {
-  it('requires an email, keeps phone, audience and pack optional, and rejects natural cocoa', () => {
-    const missing = parseSignup({ productKey: 'japanese-matcha', productName: 'Japanese matcha', email: 'nope' });
+  it('requires an email, keeps phone, audience and pack optional, accepts a product id, and rejects retired keys and natural cocoa', () => {
+    const missing = parseSignup({ productKey: PRODUCT_ID, productName: 'Tahitian Vanilla Beans', email: 'nope' });
     expect(missing.fieldErrors?.email).toMatch(/valid email/i);
 
     const ok = parseSignup({
-      productKey: 'dutch-process-cocoa-powder',
-      productName: 'Dutch-process cocoa powder',
+      productKey: PRODUCT_ID,
+      productName: 'Tahitian Vanilla Beans',
       email: '  Baker@Example.com ',
       phone: '',
       audience: 'business',
       packSize: 'bulk',
     });
     expect(ok.row).toMatchObject({
+      product_key: PRODUCT_ID,
       email: 'baker@example.com',
       phone: null,
       audience: 'business',
       pack_size: 'bulk',
-      product_name: 'Dutch-process cocoa powder',
+      product_name: 'Tahitian Vanilla Beans',
     });
 
-    const catalogId = ['6f1b6c1e', '0c55', '4c7e', '9a43', '8f3f6f1c0a01'].join('-');
+    const retired = parseSignup({
+      productKey: 'japanese-matcha',
+      productName: 'Japanese matcha',
+      email: 'baker@example.com',
+    });
+    expect(retired.row).toBeUndefined();
+
     const natural = parseSignup({
-      productKey: catalogId,
+      productKey: PRODUCT_ID,
       productName: 'Natural cocoa powder',
       email: 'baker@example.com',
     });
     expect(natural.row).toBeUndefined();
-    expect(COMING_SOON.some((item) => /natural cocoa/i.test(item.name))).toBe(false);
   });
 
   it('treats a filled honeypot as success and does not insert', async () => {
@@ -62,13 +69,17 @@ describe('notify validation', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it('rate-limits and returns a real error when the table is missing', async () => {
+  it('shows an error when the insert is unavailable, and success on a duplicate', async () => {
     const store = new Map<string, number[]>();
-    const insert = vi.fn(async () => 'unavailable' as const);
     const input = { productKey: ROW.product_key, productName: ROW.product_name, email: 'baker@example.com' };
-    const first = await handleNotify({ input, ip: '2.2.2.2', now: 0, store, insert });
-    expect(first.status).toBe(503);
-    expect(first.body.error).toMatch(/couldn't save/i);
+    const failed = await handleNotify({ input, ip: '2.2.2.2', now: 0, store, insert: async () => 'unavailable' });
+    expect(failed.status).toBe(503);
+    expect(failed.body.ok).toBe(false);
+    expect(failed.body.error).toMatch(/try again later/i);
+
+    const duplicate = await handleNotify({ input, ip: '2.2.2.3', now: 1, store, insert: async () => 'duplicate' });
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body).toEqual({ ok: true });
 
     for (let i = 0; i < 5; i++) allowRate(store, 'ip:9.9.9.9', 0, 5, 60_000);
     const limited = await handleNotify({
@@ -76,7 +87,7 @@ describe('notify validation', () => {
       ip: '9.9.9.9',
       now: 10,
       store,
-      insert,
+      insert: async () => 'unavailable',
     });
     expect(limited.status).toBe(429);
   });
@@ -101,15 +112,29 @@ describe('notify validation', () => {
     expect(seen.size).toBe(1);
   });
 
-  it('maps a missing table and a conflict from PostgREST', async () => {
-    const env = { VITE_SUPABASE_URL: 'https://db.example.test', VITE_SUPABASE_ANON_KEY: 'anon' };
+  it('inserts only with the service role, errors without the key or on a missing table, and treats a duplicate as success', async () => {
+    const anonOnly = { VITE_SUPABASE_URL: 'https://db.example.test', VITE_SUPABASE_ANON_KEY: 'anon' };
+    const unused = vi.fn(async () => new Response('', { status: 201 }));
+    expect(await insertSignup(anonOnly, ROW, unused as unknown as typeof fetch)).toBe('unavailable');
+    expect(unused).not.toHaveBeenCalled();
+
+    const env = { ...anonOnly, SUPABASE_SERVICE_ROLE_KEY: 'service-role' };
+    const ok = vi.fn(async () => new Response('', { status: 201 }));
+    expect(await insertSignup(env, ROW, ok as unknown as typeof fetch)).toBe('ok');
+    const call = ok.mock.calls[0] as unknown as [string, RequestInit];
+    expect(call[0]).toBe('https://db.example.test/rest/v1/back_in_stock_signups');
+    expect(call[1].headers).toMatchObject({ Authorization: 'Bearer service-role' });
+    expect(String((call[1].headers as Record<string, string>).Authorization)).not.toContain('anon');
+    const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual([
+      'audience', 'email', 'pack_size', 'phone', 'product_key', 'product_name',
+    ]);
+    expect(body.product_key).toBe(PRODUCT_ID);
+
     const missing = vi.fn(async () => new Response('relation does not exist', { status: 404 }));
-    expect(await insertWithAnon(env, ROW, missing as unknown as typeof fetch)).toBe('unavailable');
-    const conflict = vi.fn(async () => new Response('', { status: 409 }));
-    expect(await insertWithAnon(env, ROW, conflict as unknown as typeof fetch)).toBe('duplicate');
-    const calls = conflict.mock.calls[0] as unknown as [string, RequestInit];
-    expect(calls[1].headers).toMatchObject({ Authorization: 'Bearer anon' });
-    expect(String((calls[1].headers as Record<string, string>).Prefer)).toContain('ignore-duplicates');
+    expect(await insertSignup(env, ROW, missing as unknown as typeof fetch)).toBe('unavailable');
+    const conflict = vi.fn(async () => new Response('duplicate key value violates unique constraint', { status: 409 }));
+    expect(await insertSignup(env, ROW, conflict as unknown as typeof fetch)).toBe('duplicate');
   });
 });
 
@@ -219,22 +244,19 @@ describe('restock email', () => {
 });
 
 describe('proposal migration', () => {
-  it('is marked NEEDS-YES, is not under supabase/migrations, and documents the rollback', () => {
+  it('is only a superseded note, with no anon grant left to apply', () => {
     const file = path.resolve(__dirname, '../../proposals/NEEDS-YES-back-in-stock-signups.sql');
     const sql = readFileSync(file, 'utf8');
-    expect(sql).toContain('NEEDS-YES');
-    expect(sql).toContain('enable row level security');
-    expect(sql).toContain('grant insert');
-    expect(sql).toContain('back_in_stock_signups_one_per_email');
-    expect(sql).not.toMatch(/for select/i);
-    expect(sql).toContain('drop table if exists public.back_in_stock_signups');
+    expect(sql).toContain('SUPERSEDED');
+    expect(sql).toContain('20261112050000_back_in_stock_signups.sql');
     expect(sql.startsWith('--')).toBe(true);
-    const rollback = sql.slice(sql.indexOf('-- Rollback'));
-    expect(rollback.trim().startsWith('-- Rollback')).toBe(true);
-    for (const line of rollback.split('\n')) {
+    expect(file.includes(`${path.sep}supabase${path.sep}migrations${path.sep}`)).toBe(false);
+    for (const line of sql.split('\n')) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      expect(trimmed.startsWith('--')).toBe(true);
+      expect(trimmed.startsWith('--'), trimmed).toBe(true);
     }
+    expect(sql).not.toMatch(/^grant /im);
+    expect(sql).not.toMatch(/^create table/im);
   });
 });

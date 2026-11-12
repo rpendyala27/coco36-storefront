@@ -4,8 +4,9 @@ import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
 } from '../src/lib/categoryTree.js';
 import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
-import { readHandlingDays } from './dispatchZone.js';
+import { readHandlingDaysLive } from './dispatchZone.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
+import { marksFromClaims, type ClaimMark } from '../src/lib/claimMarks.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
 
@@ -24,6 +25,8 @@ export interface Catalog {
   products: Product[];
   tree: CategoryTree;
   policy: StorePolicy;
+  /** Claim types product_claims() returned. Absent or empty means show none. */
+  claimMarks?: ClaimMark[];
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -58,18 +61,24 @@ const SETTINGS_KEYS = {
   returnWindowDays:  'returns.window_days',
 } as const;
 
+function presentNumber(byKey: Map<string, unknown>, key: string): number | null {
+  if (!byKey.has(key)) return null;
+  const v = Number(byKey.get(key));
+  return Number.isFinite(v) && v > 0 ? v : null;
+}
+
 function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
   const byKey = new Map(rows.map((r) => [r.key, r.value]));
-  const num = (k: string, fallback: number) => {
-    const v = Number(byKey.get(k));
-    return Number.isFinite(v) && v > 0 ? v : fallback;
-  };
+  const num = (k: string, fallback: number) => presentNumber(byKey, k) ?? fallback;
+  const free = presentNumber(byKey, SETTINGS_KEYS.freeShippingPaise);
+  const returns = presentNumber(byKey, SETTINGS_KEYS.returnWindowDays);
   return {
     freeShippingPaise: num(SETTINGS_KEYS.freeShippingPaise, DEFAULT_POLICY.freeShippingPaise),
     flatShippingPaise: num(SETTINGS_KEYS.flatShippingPaise, DEFAULT_POLICY.flatShippingPaise),
     codSurchargePaise: num(SETTINGS_KEYS.codSurchargePaise, DEFAULT_POLICY.codSurchargePaise),
     returnWindowDays:  num(SETTINGS_KEYS.returnWindowDays,  DEFAULT_POLICY.returnWindowDays),
     handlingDays: DEFAULT_POLICY.handlingDays,
+    sourced: { handlingDays: false, freeShippingPaise: free != null, returnWindowDays: returns != null },
   };
 }
 
@@ -92,11 +101,14 @@ async function fetchCatalog(): Promise<Catalog> {
     }),
   ]);
   const policy = policyFrom(settings);
-  policy.handlingDays = await readHandlingDays(process.env, fetch);
+  const liveDays = await readHandlingDaysLive(process.env, fetch);
+  policy.handlingDays = liveDays ?? DEFAULT_POLICY.handlingDays;
+  if (policy.sourced) policy.sourced.handlingDays = liveDays != null;
   return {
     products: applyClaims(rows.map(mapSupabaseProduct), claimRows ? claimsFromRows(claimRows) : null),
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
+    claimMarks: claimRows ? marksFromClaims(claimRows) : [],
   };
 }
 

@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { parseLotCode } from './lotCode';
 
+export { certLabel } from './certLabel.js';
+
 /**
  * The public lot page (/lot/<COCO36 lot code>, e.g. /lot/C36-MUSL-20261203-01,
  * as printed on the pack label). public.lot_passport() returns
@@ -28,8 +30,3 @@ export async function fetchLotPassport(lot: string): Promise<LotPassport | null>
   return data as LotPassport;
 }
 
-/** "usda-organic" → "USDA Organic". */
-const ACRONYMS = new Set(['usda', 'brc', 'brcgs', 'fssai', 'npop', 'gmp', 'iso', 'haccp', 'fsc', 'eu']);
-export function certLabel(type: string): string {
-  return type.split('-').map((w) => (ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
-}

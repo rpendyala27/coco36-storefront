@@ -92,6 +92,15 @@ export interface StorePolicy {
   returnWindowDays:  number;   // returns.window_days
   /** delivery_zones.handling_days for country IN. Fallback: DISPATCH_WINDOW. */
   handlingDays: number;
+  /**
+   * Which of the trust-band numbers were present on the live read.
+   * Absent means those lines stay hidden instead of using the defaults.
+   */
+  sourced?: {
+    handlingDays: boolean;
+    freeShippingPaise: boolean;
+    returnWindowDays: boolean;
+  };
 }
 
 export const DEFAULT_POLICY: StorePolicy = {

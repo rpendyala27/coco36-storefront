@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, setTemplate } from '../../server/render';
 import { resetCatalogCache } from '../../server/catalog';
-import { COMING_SOON, COMING_SOON_NOTE } from '../../src/content/comingSoon';
+import { COMING_SOON_NOTE } from '../../src/content/comingSoon';
 import { SHOP_LEDE, shopPromises } from '../../src/content/shopIntro';
 import { DEFAULT_POLICY } from '../../src/seo/site';
 import { NOTIFY_BUTTON } from '../../src/content/notifyCopy';
@@ -32,25 +32,22 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 const fields: NotifyFields = { email: '', phone: '', audience: '', packSize: '', company: '' };
 
 describe('shop intro snapshot', () => {
-  it('puts one lede and the promise row above the grid, SEO and coming soon below, and keeps the title', async () => {
+  it('puts one lede and the promise row above the grid, SEO below, and hides coming soon when nothing is tagged', async () => {
     const r = await render('/shop', '', 'coco36.com');
     expect(r.body).toContain('<title>Shop Baking &amp; Pastry Ingredients in India | COCO36</title>');
     expect(r.body).toContain('rel="canonical" href="https://coco36.com/shop"');
     const ledeAt = r.body.indexOf(SHOP_LEDE);
-    const gridAt = r.body.indexOf('<h2>Coming soon</h2>');
     const seoAt = r.body.indexOf('full catalogue of specialty baking');
     expect(ledeAt).toBeGreaterThan(0);
-    expect(gridAt).toBeGreaterThan(ledeAt);
-    expect(seoAt).toBeGreaterThan(gridAt);
+    expect(seoAt).toBeGreaterThan(ledeAt);
     for (const item of shopPromises(DEFAULT_POLICY)) expect(r.body).toContain(item.label);
     expect(r.body.toLowerCase()).not.toContain('homepage is a shorter introduction');
-    for (const item of COMING_SOON) {
-      expect(r.body).toContain(item.name);
-      expect(r.body).not.toContain(`href="/shop/${item.key}"`);
+    expect(r.body).not.toContain('<h2>Coming soon</h2>');
+    expect(r.body).not.toContain(COMING_SOON_NOTE);
+    for (const name of ['Japanese matcha', 'Whole vanilla beans', 'Pistachio paste', 'Dutch-process cocoa powder', 'Cocoa butter', 'Palm jaggery', 'Coconut sugar']) {
+      expect(r.body).not.toContain(name);
     }
-    expect(r.body).toContain(COMING_SOON_NOTE);
     expect(r.body).not.toMatch(/natural cocoa/i);
-    expect(COMING_SOON.map((item) => item.name).join(' ')).not.toMatch(/natural cocoa/i);
   });
 });
 

@@ -297,6 +297,7 @@ export function NotifyMe({ productKey, productName, comingSoon = false, classNam
       <button
         ref={triggerRef}
         type="button"
+        data-product-key={productKey}
         className={`btn-ghost ${className}`}
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
       >
