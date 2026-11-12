@@ -22,6 +22,8 @@ import { productPage } from '../content/productPages';
 import { parseRich, type RichNode } from '../content/richText';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { NotifyMe } from '../components/NotifyMe';
+import { OutOfStockPill } from '../components/OutOfStockPill';
+import { showOutOfStockPill } from '../lib/outOfStockBadge';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -144,11 +146,18 @@ export const ProductDetail = () => {
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
         {/* Gallery */}
         <div className="lg:sticky lg:top-28">
-          <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-surface">
-            {gallery[activeImage]
-              ? <img src={imageUrl(gallery[activeImage], 900)} srcSet={imageSrcSet(gallery[activeImage], [600, 900, 1200])} sizes="(min-width: 1024px) 45vw, 100vw" alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-              // Light "awaiting photo" placeholder — matches the ProductCard treatment.
-              : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
+          <div className="relative">
+            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-line bg-brand-surface">
+              {gallery[activeImage]
+                ? <img src={imageUrl(gallery[activeImage], 900)} srcSet={imageSrcSet(gallery[activeImage], [600, 900, 1200])} sizes="(min-width: 1024px) 45vw, 100vw" alt={product.name} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                // Light "awaiting photo" placeholder — matches the ProductCard treatment.
+                : <div className="w-full h-full flex items-center justify-center"><span className="font-display text-8xl text-brand-forest/15 select-none">{product.name.charAt(0)}</span></div>}
+            </div>
+            {showOutOfStockPill(product) && (
+              <div className="absolute top-3.5 left-3.5 z-10 pointer-events-none">
+                <OutOfStockPill />
+              </div>
+            )}
           </div>
           {gallery.length > 1 && (
             <div className="flex gap-3 mt-3">
@@ -170,6 +179,11 @@ export const ProductDetail = () => {
         <div>
           <p className="eyebrow text-brand-leaf mb-3">{product.category} · {countryOf(product.origin)}</p>
           <h1 className="font-display text-4xl md:text-5xl leading-[1.02] text-brand-forest">{page?.h1 ?? product.name}</h1>
+          {showOutOfStockPill(product) && (
+            <div className="mt-3">
+              <OutOfStockPill />
+            </div>
+          )}
           <p className="mt-3 text-sm text-brand-muted">By <span className="text-brand-forest font-medium">{product.brand}</span></p>
 
           {/* Cert + dietary marks — stamp icons, same iconography as cards + trust band */}

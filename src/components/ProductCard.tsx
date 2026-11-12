@@ -9,7 +9,9 @@ import { imageUrl, imageSrcSet } from '../lib/img';
 import { productPath } from '../lib/productPath';
 import { CertStamp } from './CertStamp';
 import { NotifyMe } from './NotifyMe';
+import { OutOfStockPill } from './OutOfStockPill';
 import { isFssaiClaim } from '../lib/fssai';
+import { isOutOfStockDesignation, productIsOutOfStock, showOutOfStockPill } from '../lib/outOfStockBadge';
 
 interface Props {
   product: Product;
@@ -49,22 +51,30 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
   }, [pickerOpen]);
 
   const inStockSizes  = product.sizes.filter((s) => s.inStock);
-  const isOutOfStock  = product.sizes.length > 0 && inStockSizes.length === 0;
+  const isOutOfStock  = productIsOutOfStock(product);
+  const showOosPill   = showOutOfStockPill(product);
   const minPricePaise = product.sizes.length ? Math.min(...product.sizes.map((s) => s.priceInPaise)) : 0;
   const hasOptions    = product.sizes.length > 1;
   const unitLabel     = product.sizes.length === 1 ? product.sizes[0].label : '';
 
   // Badges = designation-kind tags (data-driven); fall back to the static
   // `badges` strings for the warm-start catalogue. Chips = cert + dietary tags.
+  // The Out of Stock designation is not one of these chips: it renders as its
+  // own pill, and only when every variant is actually out of stock.
   const designationTags = (product.tags ?? []).filter((t) => t.kind === 'designation');
+  const sellingDesignations = designationTags.filter((t) => !isOutOfStockDesignation(t));
   // When a product is sold out the OOS pill owns the top of the image —
   // don't also render Bestseller / New / Limited chips there (they clash
   // visually with the pill AND claim status the product can't fulfil).
+  // The Out of Stock designation is exempt: `showOosPill` draws it instead.
   const badgeItems = isOutOfStock
     ? []
     : designationTags.length
-      ? designationTags.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
-      : (product.badges ?? []).slice(0, 2).map((b) => ({ label: b, slug: '' }));
+      ? sellingDesignations.slice(0, 2).map((t) => ({ label: t.label, slug: t.slug }))
+      : (product.badges ?? [])
+          .filter((b) => !isOutOfStockDesignation({ label: b }))
+          .slice(0, 2)
+          .map((b) => ({ label: b, slug: '' }));
   const certTags = (product.tags ?? [])
     .filter((t) => (t.kind === 'certification' || t.kind === 'dietary') && !isFssaiClaim(t.slug, t.label))
     .slice(0, 5);
@@ -125,6 +135,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             cards): forest-deep glass, gold-pale type for New Arrival, white
             for the rest. */}
         <div className="absolute top-2.5 left-2.5 md:top-3.5 md:left-3.5 flex flex-row flex-wrap md:flex-col gap-1 md:gap-1.5 items-start pointer-events-none">
+          {showOosPill && <OutOfStockPill />}
           {badgeItems.map((b) => (
             <span key={b.label} className={`font-display font-bold text-[10px] md:text-[11px] leading-none md:leading-normal uppercase tracking-[0.06em] md:tracking-[0.1em] px-2 py-1 md:px-3 md:py-1.5 rounded-full border border-white/15 bg-brand-forest-deep/80 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] ${b.slug === 'new-arrival' || b.label === 'New' ? 'text-brand-gold-pale' : 'text-white'}`}>
               <span className="md:hidden">{shortBadgeLabel(b)}</span>
