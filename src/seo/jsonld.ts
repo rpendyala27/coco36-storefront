@@ -99,7 +99,11 @@ export function shippingJsonLd(pricePaise: number, policy: StorePolicy = DEFAULT
   };
 }
 
-/** Homepage Organization. */
+/**
+ * Homepage Organization. No certification, award, or credential property.
+ * A product certification belongs on that product only when product_claims()
+ * kept the tag, and even then this builder does not invent a site-wide mark.
+ */
 export function organizationJsonLd(policy: StorePolicy = DEFAULT_POLICY): WithContext<Organization> {
   return {
     '@context': 'https://schema.org',
@@ -159,6 +163,9 @@ export interface ReviewSummary { ratingValue: number; reviewCount: number }
  * schema.org Product. One Offer per variant (merchant listings don't accept
  * AggregateOffer), each with INR price, availability, seller, shipping and
  * return policy. aggregateRating is emitted ONLY when real `reviews` are passed.
+ * No hasCertification, award, or credential field. Certification tags reach
+ * the page only after product_claims() keeps them, and they are not copied
+ * into this object.
  */
 export function productJsonLd(
   p: Product,

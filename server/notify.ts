@@ -3,6 +3,7 @@ import {
   NOTIFY_EMAIL_INVALID, NOTIFY_PHONE_INVALID, NOTIFY_RATE_LIMIT, NOTIFY_UNAVAILABLE,
 } from '../src/content/notifyCopy.js';
 import { UUID_RE } from '../src/lib/productPath.js';
+import { serviceCredentials } from './notifyStore.js';
 
 /**
  * Back-in-stock sign-ups. The browser posts here; this module validates,
@@ -40,7 +41,7 @@ export interface SignupInsert {
   pack_size: string | null;
 }
 
-export type InsertResult = 'ok' | 'duplicate' | 'missing' | 'unavailable';
+export type InsertResult = 'ok' | 'duplicate' | 'unavailable';
 
 export interface NotifyResponse {
   status: number;
@@ -135,9 +136,6 @@ export async function handleNotify(opts: {
     return { status: 429, body: { ok: false, error: NOTIFY_RATE_LIMIT } };
   }
   const inserted = await opts.insert(parsed.row);
-  // The sign-up table may not exist yet. Confirm quietly and store nothing,
-  // so the visitor is not shown a save error. Other failures stay visible.
-  if (inserted === 'missing') return { status: 200, body: { ok: true } };
   if (inserted === 'unavailable') return { status: 503, body: { ok: false, error: NOTIFY_UNAVAILABLE } };
   return { status: 200, body: { ok: true } };
 }
@@ -149,17 +147,7 @@ export function anonCredentials(env: NotifyEnv): { url: string; key: string } | 
   return { url, key };
 }
 
-/** Service role when the server has it; otherwise the anon insert grant. */
-export function insertCredentials(env: NotifyEnv): { url: string; key: string } | null {
-  const url = (env.SUPABASE_URL || env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
-  const service = env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
-  const anon = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || '';
-  const key = service || anon;
-  if (!url || !key) return null;
-  return { url, key };
-}
-
-/** Columns granted by proposals/NEEDS-YES-back-in-stock-signups.sql. No extras. */
+/** Columns on back_in_stock_signups. No extras. */
 export function signupPayload(row: SignupInsert): SignupInsert {
   return {
     product_key: row.product_key,
@@ -171,13 +159,19 @@ export function signupPayload(row: SignupInsert): SignupInsert {
   };
 }
 
-function missingTable(status: number, body: string): boolean {
-  if (status === 404) return true;
-  return /PGRST205|schema cache|does not exist/i.test(body);
+function isDuplicate(status: number, body: string): boolean {
+  if (status === 409) return true;
+  return /23505|duplicate key|unique constraint/i.test(body);
 }
 
+/**
+ * Insert with the service role only. Anon and authenticated have no rights
+ * on this table (coco36-next migration 20261112050000). A missing key or a
+ * failed insert, including a missing table, is unavailable. A unique
+ * violation is a duplicate, which the handler treats as success.
+ */
 export async function insertSignup(env: NotifyEnv, row: SignupInsert, fetchImpl: typeof fetch): Promise<InsertResult> {
-  const creds = insertCredentials(env);
+  const creds = serviceCredentials(env);
   if (!creds) return 'unavailable';
   try {
     const res = await fetchImpl(`${creds.url}/rest/v1/back_in_stock_signups`, {
@@ -190,9 +184,9 @@ export async function insertSignup(env: NotifyEnv, row: SignupInsert, fetchImpl:
       },
       body: JSON.stringify(signupPayload(row)),
     });
-    if (res.ok || res.status === 409) return res.status === 409 ? 'duplicate' : 'ok';
+    if (res.ok) return 'ok';
     const text = await res.text();
-    if (missingTable(res.status, text)) return 'missing';
+    if (isDuplicate(res.status, text)) return 'duplicate';
     return 'unavailable';
   } catch {
     return 'unavailable';

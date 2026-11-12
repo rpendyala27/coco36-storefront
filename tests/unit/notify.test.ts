@@ -69,16 +69,17 @@ describe('notify validation', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it('confirms quietly when the sign-up table is missing, and still errors on other failures', async () => {
+  it('shows an error when the insert is unavailable, and success on a duplicate', async () => {
     const store = new Map<string, number[]>();
     const input = { productKey: ROW.product_key, productName: ROW.product_name, email: 'baker@example.com' };
-    const quiet = await handleNotify({ input, ip: '2.2.2.2', now: 0, store, insert: async () => 'missing' });
-    expect(quiet.status).toBe(200);
-    expect(quiet.body).toEqual({ ok: true });
-
-    const failed = await handleNotify({ input, ip: '2.2.2.3', now: 1, store, insert: async () => 'unavailable' });
+    const failed = await handleNotify({ input, ip: '2.2.2.2', now: 0, store, insert: async () => 'unavailable' });
     expect(failed.status).toBe(503);
-    expect(failed.body.error).toMatch(/couldn't save/i);
+    expect(failed.body.ok).toBe(false);
+    expect(failed.body.error).toMatch(/try again later/i);
+
+    const duplicate = await handleNotify({ input, ip: '2.2.2.3', now: 1, store, insert: async () => 'duplicate' });
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body).toEqual({ ok: true });
 
     for (let i = 0; i < 5; i++) allowRate(store, 'ip:9.9.9.9', 0, 5, 60_000);
     const limited = await handleNotify({
@@ -86,7 +87,7 @@ describe('notify validation', () => {
       ip: '9.9.9.9',
       now: 10,
       store,
-      insert: async () => 'missing',
+      insert: async () => 'unavailable',
     });
     expect(limited.status).toBe(429);
   });
@@ -111,33 +112,29 @@ describe('notify validation', () => {
     expect(seen.size).toBe(1);
   });
 
-  it('maps a missing table and a conflict from PostgREST', async () => {
-    const env = { VITE_SUPABASE_URL: 'https://db.example.test', VITE_SUPABASE_ANON_KEY: 'anon' };
-    const missing = vi.fn(async () => new Response('relation does not exist', { status: 404 }));
-    expect(await insertSignup(env, ROW, missing as unknown as typeof fetch)).toBe('missing');
-    const conflict = vi.fn(async () => new Response('', { status: 409 }));
-    expect(await insertSignup(env, ROW, conflict as unknown as typeof fetch)).toBe('duplicate');
-    const calls = conflict.mock.calls[0] as unknown as [string, RequestInit];
-    expect(calls[1].headers).toMatchObject({ Authorization: 'Bearer anon' });
-    expect(String((calls[1].headers as Record<string, string>).Prefer)).toContain('ignore-duplicates');
-  });
+  it('inserts only with the service role, errors without the key or on a missing table, and treats a duplicate as success', async () => {
+    const anonOnly = { VITE_SUPABASE_URL: 'https://db.example.test', VITE_SUPABASE_ANON_KEY: 'anon' };
+    const unused = vi.fn(async () => new Response('', { status: 201 }));
+    expect(await insertSignup(anonOnly, ROW, unused as unknown as typeof fetch)).toBe('unavailable');
+    expect(unused).not.toHaveBeenCalled();
 
-  it('posts the proposal columns with the service role when that key is set', async () => {
-    const env = {
-      VITE_SUPABASE_URL: 'https://db.example.test',
-      VITE_SUPABASE_ANON_KEY: 'anon',
-      SUPABASE_SERVICE_ROLE_KEY: 'service-role',
-    };
-    const fetchImpl = vi.fn(async () => new Response('', { status: 201 }));
-    expect(await insertSignup(env, ROW, fetchImpl as unknown as typeof fetch)).toBe('ok');
-    const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    const env = { ...anonOnly, SUPABASE_SERVICE_ROLE_KEY: 'service-role' };
+    const ok = vi.fn(async () => new Response('', { status: 201 }));
+    expect(await insertSignup(env, ROW, ok as unknown as typeof fetch)).toBe('ok');
+    const call = ok.mock.calls[0] as unknown as [string, RequestInit];
     expect(call[0]).toBe('https://db.example.test/rest/v1/back_in_stock_signups');
     expect(call[1].headers).toMatchObject({ Authorization: 'Bearer service-role' });
+    expect(String((call[1].headers as Record<string, string>).Authorization)).not.toContain('anon');
     const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
     expect(Object.keys(body).sort()).toEqual([
       'audience', 'email', 'pack_size', 'phone', 'product_key', 'product_name',
     ]);
     expect(body.product_key).toBe(PRODUCT_ID);
+
+    const missing = vi.fn(async () => new Response('relation does not exist', { status: 404 }));
+    expect(await insertSignup(env, ROW, missing as unknown as typeof fetch)).toBe('unavailable');
+    const conflict = vi.fn(async () => new Response('duplicate key value violates unique constraint', { status: 409 }));
+    expect(await insertSignup(env, ROW, conflict as unknown as typeof fetch)).toBe('duplicate');
   });
 });
 
@@ -250,6 +247,8 @@ describe('proposal migration', () => {
   it('is marked NEEDS-YES, is not under supabase/migrations, and documents the rollback', () => {
     const file = path.resolve(__dirname, '../../proposals/NEEDS-YES-back-in-stock-signups.sql');
     const sql = readFileSync(file, 'utf8');
+    expect(sql).toContain('SUPERSEDED');
+    expect(sql).toContain('20261112050000_back_in_stock_signups.sql');
     expect(sql).toContain('NEEDS-YES');
     expect(sql).toContain('enable row level security');
     expect(sql).toContain('grant insert');

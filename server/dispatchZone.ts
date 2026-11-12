@@ -31,17 +31,21 @@ export function handlingDaysFromRows(rows: unknown): number | null {
   return parsed[0].days;
 }
 
-export async function readHandlingDays(env: ServiceEnv, fetchImpl: typeof fetch): Promise<number> {
-  const fallback = fallbackHandlingDays();
+/** The India zone's handling_days, or null when that row cannot be read. */
+export async function readHandlingDaysLive(env: ServiceEnv, fetchImpl: typeof fetch): Promise<number | null> {
   const creds = serviceCredentials(env);
-  if (!creds) return fallback;
+  if (!creds) return null;
   try {
     const res = await fetchImpl(`${creds.url}/rest/v1/${DISPATCH_ZONE_PATH}`, {
       headers: { apikey: creds.key, Authorization: `Bearer ${creds.key}`, Accept: 'application/json' },
     });
-    if (!res.ok) return fallback;
-    return handlingDaysFromRows(await res.json()) ?? fallback;
+    if (!res.ok) return null;
+    return handlingDaysFromRows(await res.json());
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+export async function readHandlingDays(env: ServiceEnv, fetchImpl: typeof fetch): Promise<number> {
+  return (await readHandlingDaysLive(env, fetchImpl)) ?? fallbackHandlingDays();
 }

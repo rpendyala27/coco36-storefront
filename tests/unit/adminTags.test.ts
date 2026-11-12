@@ -14,6 +14,8 @@ import {
 } from '../../src/lib/badges';
 import { featuredProducts } from '../../src/lib/catalog';
 import { marksFromClaims } from '../../src/lib/claimMarks';
+import { trustLines, trustLinesFromConfig } from '../../src/lib/trustLines';
+import { organizationJsonLd, productJsonLd } from '../../src/seo/jsonld';
 import { designationBrowseTiles } from '../../src/lib/designationTiles';
 import { readTagSlugs, shopTagPath } from '../../src/lib/shopTags';
 import type { Product, ProductTag } from '../../src/types';
@@ -246,12 +248,67 @@ describe('trust band', () => {
       { slug: 'usda-organic', label: 'USDA Organic' },
     ]);
     const empty = html(createElement(TrustBand, { marks: [] }));
-    expect(empty).toContain('36-Step Traceable');
+    for (const line of ['Traceable to origin', 'Sealed original packs', 'Secure checkout with Razorpay']) {
+      expect(empty).toContain(line);
+    }
+    expect(empty).not.toContain('Free shipping');
+    expect(empty).not.toContain('business day');
+    expect(empty).not.toContain('day returns');
     for (const word of FORBIDDEN_MARKS) expect(empty, word).not.toContain(word);
     const one = html(createElement(TrustBand, { marks: [{ slug: 'usda-organic', label: 'USDA Organic' }] }));
     expect(one).toContain('USDA Organic');
     expect(one).not.toContain('Halal');
     expect(one).not.toContain('Fairtrade');
+    expect(one).not.toContain('opacity');
+  });
+
+  it('builds the six lines from live numbers and hides a missing one', () => {
+    expect(trustLines()).toEqual([
+      'Traceable to origin',
+      'Sealed original packs',
+      'Secure checkout with Razorpay',
+    ]);
+    expect(trustLines({ handlingDays: 1, freeShippingPaise: 120000, returnWindowDays: 7 })).toEqual([
+      'Traceable to origin',
+      'Sealed original packs',
+      'Ships in 1 business day',
+      'Free shipping over ₹1,200',
+      '7-day returns',
+      'Secure checkout with Razorpay',
+    ]);
+    expect(trustLines({ handlingDays: 3 })).toContain('Ships in 3 business days');
+    expect(trustLines({ handlingDays: 0, freeShippingPaise: 0, returnWindowDays: 0 })).toEqual(trustLines());
+    expect(trustLinesFromConfig({
+      handlingDays: 1,
+      freeShippingPaise: 120000,
+      returnWindowDays: 7,
+      sourced: { handlingDays: false, freeShippingPaise: true, returnWindowDays: false },
+    })).toEqual([
+      'Traceable to origin',
+      'Sealed original packs',
+      'Free shipping over ₹1,200',
+      'Secure checkout with Razorpay',
+    ]);
+  });
+
+  it('puts no certification property on organization or product JSON-LD', () => {
+    const keys = (value: unknown): string[] => {
+      const found: string[] = [];
+      const walk = (node: unknown) => {
+        if (!node || typeof node !== 'object') return;
+        for (const [key, child] of Object.entries(node as Record<string, unknown>)) {
+          if (/certification|hasCredential|award/i.test(key)) found.push(key);
+          walk(child);
+        }
+      };
+      walk(value);
+      return found;
+    };
+    expect(keys(organizationJsonLd())).toEqual([]);
+    expect(keys(productJsonLd(product({
+      id: 'p', name: 'Salt',
+      tags: [tag('vegan', 'Vegan', 'dietary'), tag('usda-organic', 'USDA Organic', 'certification')],
+    })))).toEqual([]);
   });
 });
 

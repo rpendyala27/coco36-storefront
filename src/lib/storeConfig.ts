@@ -25,7 +25,10 @@ export const ORDERING_CLOSED_MESSAGE = "We're not taking orders just yet. Please
  * server even before the config fetch resolves or if it's offline.
  * Keep in sync with the admin `settings` defaults.
  */
-export const DEFAULT_CONFIG: StoreConfig = DEFAULT_POLICY; // ₹1,200 free / ₹99 flat / ₹50 COD / 7 days
+export const DEFAULT_CONFIG: StoreConfig = {
+  ...DEFAULT_POLICY,
+  sourced: { handlingDays: false, freeShippingPaise: false, returnWindowDays: false },
+};
 
 let cache: StoreConfig = DEFAULT_CONFIG;
 let inflight: Promise<StoreConfig> | null = null;
@@ -53,10 +56,17 @@ export function loadStoreConfig(): Promise<StoreConfig> {
     const admin = asConfig(adminRaw);
     const zone = asConfig(zoneRaw);
     const next: StoreConfig = { ...DEFAULT_CONFIG };
+    const sourced = { handlingDays: false, freeShippingPaise: false, returnWindowDays: false };
     if (admin && typeof admin.freeShippingPaise === 'number') Object.assign(next, admin);
+    if (typeof admin?.freeShippingPaise === 'number' && admin.freeShippingPaise > 0) sourced.freeShippingPaise = true;
+    if (typeof admin?.returnWindowDays === 'number' && Number.isInteger(admin.returnWindowDays) && admin.returnWindowDays >= 1) {
+      sourced.returnWindowDays = true;
+    }
     if (typeof zone?.handlingDays === 'number' && Number.isInteger(zone.handlingDays) && zone.handlingDays >= 1) {
       next.handlingDays = zone.handlingDays;
+      sourced.handlingDays = true;
     }
+    next.sourced = sourced;
     cache = next;
     return cache;
   }).catch(() => cache);

@@ -1,3 +1,9 @@
+-- SUPERSEDED. Do not apply this file.
+-- The live table is coco36-next migration 20261112050000_back_in_stock_signups.sql.
+-- That migration forces row level security, adds no policies, grants anon and
+-- authenticated nothing, and grants the service role select and insert only.
+-- The anon insert grant below is not the live rule.
+--
 -- NEEDS-YES. Do not apply this file. Rohan reviews it first.
 --
 -- Why this is a proposal in coco36-storefront, not a migration here:

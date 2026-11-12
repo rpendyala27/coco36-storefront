@@ -5,9 +5,8 @@ const store = new Map<string, number[]>();
 
 /**
  * POST /api/notify — one back-in-stock sign-up.
- * Inserts from this server (service role when set, otherwise the anon
- * insert grant). If the table is not there yet, the visitor sees the
- * usual confirmation and nothing is stored.
+ * Inserts with SUPABASE_SERVICE_ROLE_KEY only. That key is server-only.
+ * A missing key or a failed insert shows an error. A duplicate does not.
  */
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');

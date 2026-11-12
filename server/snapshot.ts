@@ -8,6 +8,7 @@ import { productBadges, useCaseTags } from '../src/lib/badges.js';
 import type { ClaimMark } from '../src/lib/claimMarks.js';
 import { comingSoonProducts } from '../src/lib/comingSoonProducts.js';
 import { shopTagPath } from '../src/lib/shopTags.js';
+import { trustLinesFromConfig } from '../src/lib/trustLines.js';
 import { categoryPage } from '../src/content/categoryPages.js';
 import { productPage } from '../src/content/productPages.js';
 import { formatPublishDate, type BakingNote, type NoteBlock } from '../src/content/bakingNotes.js';
@@ -102,6 +103,11 @@ function claimMarkList(ctx: SnapshotCtx): string {
   return `<ul>${marks.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul>`;
 }
 
+function trustLineList(ctx: SnapshotCtx): string {
+  const lines = trustLinesFromConfig(ctx.policy);
+  return `<ul>${lines.map((line) => `<li>${esc(line)}</li>`).join('')}</ul>`;
+}
+
 function comingSoonList(ctx: SnapshotCtx): string {
   const items = comingSoonProducts(ctx.products);
   if (!items.length) return '';
@@ -144,6 +150,7 @@ export function homeSnapshot(ctx: SnapshotCtx): string {
     '<p>Origin ingredients for bakers, pastry chefs and chocolatiers across India: vanilla, cane sugars, speciality flours, finishing salt and kits. Ships across India.</p>',
     '<h2>Featured ingredients</h2>',
     productList(featuredProducts(ctx.products)) || '<p>New lots are on their way.</p>',
+    trustLineList(ctx),
     claimMarkList(ctx),
     `<p>${a('/shop', 'Shop all ingredients')}</p>`,
     '<h2>Shop by category</h2>',
@@ -160,6 +167,7 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
     '<h1>Shop all ingredients</h1>',
     `<p>${esc(SHOP_LEDE)}</p>`,
     `<ul>${shopPromises(ctx.policy).map((item) => `<li>${esc(item.label)}</li>`).join('')}</ul>`,
+    trustLineList(ctx),
     productList(ctx.products) || '<p>New lots are on their way.</p>',
     comingSoonList(ctx),
     claimMarkList(ctx),
