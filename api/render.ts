@@ -1,11 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseRequest, render } from '../server/render.js';
+import { reportServerException, withSentry } from '../server/sentry.js';
 
 /**
  * Vercel Function behind every HTML URL on coco36.com (vercel.json rewrites
  * `/(.*)` → `/api/render?__path=$1` after static files). See server/render.ts.
  */
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const { pathname, search } = parseRequest(req.url ?? '/');
   const host = String(req.headers['x-forwarded-host'] ?? req.headers.host ?? '').split(',')[0].trim().toLowerCase();
   try {
@@ -15,9 +16,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.end(req.method === 'HEAD' ? undefined : out.body);
   } catch (err) {
     console.error('[api/render]', pathname, err);
+    await reportServerException(err);
     res.statusCode = 500;
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.end('Something went wrong. Please try again shortly.');
   }
 }
+
+export default withSentry(handler);
