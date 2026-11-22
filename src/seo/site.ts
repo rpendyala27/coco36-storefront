@@ -93,6 +93,11 @@ export interface StorePolicy {
   /** delivery_zones.handling_days for country IN. Fallback: DISPATCH_WINDOW. */
   handlingDays: number;
   /**
+   * settings `cod.enabled`. True only when that JSON boolean is true.
+   * Missing, false, or any other value keeps cash on delivery off.
+   */
+  codEnabled: boolean;
+  /**
    * Which of the trust-band numbers were present on the live read.
    * Absent means those lines stay hidden instead of using the defaults.
    */
@@ -109,6 +114,7 @@ export const DEFAULT_POLICY: StorePolicy = {
   codSurchargePaise: 5000,   // ₹50
   returnWindowDays:  7,
   handlingDays: Number(DISPATCH_WINDOW),
+  codEnabled: false,
 };
 
 /** ₹ amount for copy: 120000 → "₹1,200". */

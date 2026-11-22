@@ -11,6 +11,7 @@ import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
 import { marksFromClaims, type ClaimMark } from '../src/lib/claimMarks.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
+import { COD_ENABLED_SETTING, codEnabledFrom, refuseCodOrder, type CodOrderRefusal } from '../src/lib/codGate.js';
 
 /**
  * Live catalogue for the render + sitemap functions, read straight from
@@ -97,7 +98,48 @@ const SETTINGS_KEYS = {
   flatShippingPaise: 'shipping.standard_fee_paise',
   codSurchargePaise: 'shipping.cod_extra_paise',
   returnWindowDays:  'returns.window_days',
+  codEnabled:        COD_ENABLED_SETTING,
 } as const;
+
+/**
+ * Public settings rows. Null when the read fails (network, non-2xx, missing
+ * env): callers fail closed for the COD gate and keep numeric defaults.
+ */
+export async function readPublicSettings(keys: readonly string[]): Promise<{ key: string; value: unknown }[] | null> {
+  const list = keys.map((k) => `"${k}"`).join(',');
+  try {
+    return await rest<{ key: string; value: unknown }[]>(
+      `settings?select=key,value&key=in.(${encodeURIComponent(list)})`,
+    );
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
+
+/** JSON true from `cod.enabled`, else false. A failed read is false. */
+export async function readCodEnabled(): Promise<boolean> {
+  try {
+    return codEnabledFrom(await readPublicSettings([SETTINGS_KEYS.codEnabled]));
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+/**
+ * Defence in depth for a COD checkout. Refuses unless `cod.enabled` was
+ * read as JSON true on this call. Prepaid is never refused here.
+ */
+export async function rejectCodOrder(paymentMethod: unknown): Promise<CodOrderRefusal | null> {
+  if (paymentMethod !== 'cod') return null;
+  try {
+    return refuseCodOrder(paymentMethod, await readCodEnabled());
+  } catch (e) {
+    console.error(e);
+    return refuseCodOrder(paymentMethod, false);
+  }
+}
 
 function presentNumber(byKey: Map<string, unknown>, key: string): number | null {
   if (!byKey.has(key)) return null;
@@ -105,8 +147,9 @@ function presentNumber(byKey: Map<string, unknown>, key: string): number | null 
   return Number.isFinite(v) && v > 0 ? v : null;
 }
 
-function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
-  const byKey = new Map(rows.map((r) => [r.key, r.value]));
+function policyFrom(rows: { key: string; value: unknown }[] | null): StorePolicy {
+  const list = rows ?? [];
+  const byKey = new Map(list.map((r) => [r.key, r.value]));
   const num = (k: string, fallback: number) => presentNumber(byKey, k) ?? fallback;
   const free = presentNumber(byKey, SETTINGS_KEYS.freeShippingPaise);
   const returns = presentNumber(byKey, SETTINGS_KEYS.returnWindowDays);
@@ -116,21 +159,18 @@ function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
     codSurchargePaise: num(SETTINGS_KEYS.codSurchargePaise, DEFAULT_POLICY.codSurchargePaise),
     returnWindowDays:  num(SETTINGS_KEYS.returnWindowDays,  DEFAULT_POLICY.returnWindowDays),
     handlingDays: DEFAULT_POLICY.handlingDays,
+    codEnabled: codEnabledFrom(rows),
     sourced: { handlingDays: false, freeShippingPaise: free != null, returnWindowDays: returns != null },
   };
 }
 
 async function fetchCatalog(): Promise<Catalog> {
-  const keys = Object.values(SETTINGS_KEYS).map((k) => `"${k}"`).join(',');
   const [rows, cats, settings, claimRows] = await Promise.all([
     // order=name,id mirrors productService.list(): slug collisions resolve the same way.
     rest<unknown[]>(`products?select=${compact(PRODUCT_SELECT)}&status=eq.active&deleted_at=is.null&order=name.asc,id.asc`),
     rest<CategoryRow[]>(`categories?select=${compact(CATEGORY_SELECT)}&deleted_at=is.null&order=sort_order.asc,name.asc`),
-    // Policy is nice-to-have: fall back to defaults rather than fail the page.
-    rest<{ key: string; value: unknown }[]>(`settings?select=key,value&key=in.(${encodeURIComponent(keys)})`).catch((e) => {
-      console.error(e);
-      return [];
-    }),
+    // Policy numbers fall back to defaults. The COD gate fails closed (off).
+    readPublicSettings(Object.values(SETTINGS_KEYS)),
     // Certification badges only where a certificate is valid today; if this
     // fails, no claim is shown (null).
     rest<{ product_id: string; claim: string }[]>('rpc/product_claims').catch((e) => {
