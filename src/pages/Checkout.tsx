@@ -15,6 +15,7 @@ import { listAddresses, addAddress, type BookAddress, type AddressInput } from '
 import { AddressForm } from '../components/AddressForm';
 import { DeliveryAnswer } from '../components/CheckDelivery';
 import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/delivery';
+import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
 
 const DRAFT_KEY = 'coco36.checkout-draft';
 
@@ -99,23 +100,31 @@ export const Checkout = () => {
   // ── Delivery to the chosen address (Phase 2A) ─────────────────────────────
   // The server refuses an undeliverable address anyway; this tells the shopper
   // before they press Place order, and stops COD where the zone doesn't take it.
+  // The global cod.enabled gate is separate: off, missing, or unreadable hides
+  // the control. Per-PIN availability is unchanged once the gate is on.
   const shipAddr = addresses.find((a) => a.id === selectedShipId) ?? null;
   const [delivery, setDelivery] = useState<DeliveryCheck | null>(null);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const codShown = showCodPayment(cfg.codEnabled, delivery ? delivery.codAllowed : null);
+  const paymentMethod: PaymentMethod = codShown && form.paymentMethod === 'cod' ? 'cod' : 'prepaid';
   const itemIds = items.map((it) => it.sizeId).join(',');
+  useEffect(() => {
+    if (codShown) return;
+    setForm((f) => (f.paymentMethod === 'cod' ? { ...f, paymentMethod: 'prepaid' } : f));
+  }, [codShown]);
   useEffect(() => {
     if (!shipAddr) { setDelivery(null); setDeliveryError(null); return; }
     let live = true;
-    checkDelivery(shipAddr.pincode, { variantIds: itemIds ? itemIds.split(',') : [], cod: form.paymentMethod === 'cod' })
+    checkDelivery(shipAddr.pincode, { variantIds: itemIds ? itemIds.split(',') : [], cod: paymentMethod === 'cod' })
       .then((r) => { if (!live) return; setDelivery(r); setDeliveryError(null); rememberPincode(shipAddr.pincode); })
       .catch((e: Error) => { if (live) { setDelivery(null); setDeliveryError(e.message); } });
     return () => { live = false; };
-  }, [shipAddr?.pincode, itemIds, form.paymentMethod]);
+  }, [shipAddr?.pincode, itemIds, paymentMethod]);
   const deliveryBlock: string | null = !delivery
     ? null
     : !delivery.deliverable
       ? (delivery.message ?? "We can't deliver to this address yet.")
-      : form.paymentMethod === 'cod' && !delivery.codAllowed
+      : paymentMethod === 'cod' && !delivery.codAllowed
         ? "Cash on delivery isn't available for this PIN code. Please pay online."
         : null;
 
@@ -169,14 +178,14 @@ export const Checkout = () => {
     // Sellable units only (the cart caps lines at stock; sold-out lines count 0).
     const subtotal_paise = subtotal;
     const shipping_paise = shippingFor(subtotal_paise, cfg);
-    const cod_paise      = form.paymentMethod === 'cod' ? cfg.codSurchargePaise : 0;
+    const cod_paise      = paymentMethod === 'cod' ? cfg.codSurchargePaise : 0;
     return {
       subtotal_paise,
       shipping_paise,
       cod_paise,
       total_paise: subtotal_paise + shipping_paise + cod_paise,
     };
-  }, [subtotal, form.paymentMethod, cfg]);
+  }, [subtotal, paymentMethod, cfg]);
 
   // ── Address-book helpers ────────────────────────────────────────────────────
   const addShipAddress = async (input: AddressInput) => {
@@ -241,7 +250,7 @@ export const Checkout = () => {
       return;
     }
 
-    if (form.paymentMethod === 'prepaid' && !razorpayLoaded) {
+    if (paymentMethod === 'prepaid' && !razorpayLoaded) {
       setError('Payment gateway still loading. Please wait a moment.');
       return;
     }
@@ -254,6 +263,17 @@ export const Checkout = () => {
     }
 
     setSubmitting(true);
+
+    // Fresh settings read. A COD order is refused unless cod.enabled is JSON true.
+    if (paymentMethod === 'cod') {
+      const refusal = refuseCodOrder('cod', await fetchCodEnabled());
+      if (refusal) {
+        setError(refusal.error);
+        setForm((f) => ({ ...f, paymentMethod: 'prepaid' }));
+        setSubmitting(false);
+        return;
+      }
+    }
 
     const sig = cartSignature(items);
     if (attempt.current.cart && attempt.current.cart !== sig) freshAttempt();
@@ -271,7 +291,7 @@ export const Checkout = () => {
           billAddressId,
           customerName:  form.name,
           customerPhone: form.phone,
-          paymentMethod: form.paymentMethod,
+          paymentMethod,
           idempotencyKey: attempt.current.key,
         }),
       });
@@ -294,7 +314,7 @@ export const Checkout = () => {
 
       const { orderId, orderNumber, razorpayOrderId, amount } = payload;
 
-      if (form.paymentMethod === 'cod') {
+      if (paymentMethod === 'cod') {
         freshAttempt();
         setConfirmedOrder({ orderNumber, total_paise: amount });
         setStep('confirmed');
@@ -493,7 +513,7 @@ export const Checkout = () => {
                 <div className="mb-3 text-sm" data-testid="checkout-delivery">
                   {delivery && <DeliveryAnswer pin={shipAddr.pincode} result={delivery} />}
                   {deliveryError && <p className="text-brand-muted">{deliveryError}</p>}
-                  {delivery?.deliverable && form.paymentMethod === 'cod' && !delivery.codAllowed && (
+                  {delivery?.deliverable && paymentMethod === 'cod' && !delivery.codAllowed && (
                     <p role="alert" className="mt-1 text-red-700">Cash on delivery isn&apos;t available for this PIN code. Please pay online.</p>
                   )}
                 </div>
@@ -573,19 +593,23 @@ export const Checkout = () => {
               </h2>
               <div className="space-y-3">
                 <PaymentOption
-                  selected={form.paymentMethod === 'prepaid'}
+                  selected={paymentMethod === 'prepaid'}
                   onSelect={() => setForm({ ...form, paymentMethod: 'prepaid' })}
                   title="Online — UPI, Cards, Netbanking, Wallets"
                   hint="Powered by Razorpay · 256-bit TLS"
                   icon={<IndianRupee size={18} />}
+                  testId="payment-prepaid"
                 />
-                <PaymentOption
-                  selected={form.paymentMethod === 'cod'}
-                  onSelect={() => setForm({ ...form, paymentMethod: 'cod' })}
-                  title="Cash on Delivery"
-                  hint="Pay in cash when your order arrives"
-                  icon={<Truck size={18} />}
-                />
+                {codShown && (
+                  <PaymentOption
+                    selected={paymentMethod === 'cod'}
+                    onSelect={() => setForm({ ...form, paymentMethod: 'cod' })}
+                    title="Cash on Delivery"
+                    hint="Pay in cash when your order arrives"
+                    icon={<Truck size={18} />}
+                    testId="payment-cod"
+                  />
+                )}
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-brand-muted font-bold pt-2">
                   <Lock size={11} /> All payments encrypted via TLS 1.3
                 </div>
@@ -764,11 +788,13 @@ interface PaymentOptionProps {
   title: string;
   hint: string;
   icon: React.ReactNode;
+  testId?: string;
 }
-function PaymentOption({ selected, onSelect, title, hint, icon }: PaymentOptionProps) {
+function PaymentOption({ selected, onSelect, title, hint, icon, testId }: PaymentOptionProps) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onSelect}
       className={`w-full flex items-center gap-4 px-5 py-4 border-2 rounded-xl transition-all text-left ${
         selected

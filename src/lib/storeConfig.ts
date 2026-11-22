@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { API_URL } from './supabase.js';
+import { codEnabledFromConfig } from './codGate.js';
 import { DEFAULT_POLICY, type StorePolicy } from '../seo/site.js';
 
 /**
@@ -37,16 +38,23 @@ export function getStoreConfig(): StoreConfig {
   return cache;
 }
 
+/** Test hook: forget the cached config so the next load hits the network. */
+export function resetStoreConfigCache(): void {
+  cache = { ...DEFAULT_CONFIG };
+  inflight = null;
+}
+
 function asConfig(value: unknown): Partial<StoreConfig> | null {
   if (!value || typeof value !== 'object') return null;
   return value as Partial<StoreConfig>;
 }
 
 /**
- * Admin public config (shipping, returns, ordering) plus handlingDays from
- * this app's /api/public/config, which reads delivery_zones with the service
- * role. A missing or null handlingDays is not sourced. The DISPATCH_WINDOW
- * fallback must not mark the trust-band ships line.
+ * Admin public config (shipping, returns, ordering) plus handlingDays and
+ * the COD gate from this app's /api/public/config. handlingDays comes from
+ * delivery_zones (service role). A missing or null handlingDays is not
+ * sourced. The DISPATCH_WINDOW fallback must not mark the trust-band ships
+ * line. codEnabled is true only when that same-origin read says JSON true.
  */
 export function loadStoreConfig(): Promise<StoreConfig> {
   if (inflight) return inflight;
@@ -69,6 +77,9 @@ export function loadStoreConfig(): Promise<StoreConfig> {
       sourced.handlingDays = true;
     }
     next.sourced = sourced;
+    // After the admin assign, so a missing or failed same-origin read stays off
+    // even if some other payload mentions the flag.
+    next.codEnabled = codEnabledFromConfig(zone);
     cache = next;
     return cache;
   }).catch(() => cache);
