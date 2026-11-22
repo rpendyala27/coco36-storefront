@@ -1,5 +1,7 @@
 import type { Product } from '../src/types';
+import type { ConcealedProduct } from '../src/lib/productPath.js';
 import { PRODUCT_SELECT, mapSupabaseProduct } from '../src/services/productMapper.js';
+import { serviceCredentials } from './notifyStore.js';
 import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
 } from '../src/lib/categoryTree.js';
@@ -14,7 +16,10 @@ import { parseLotCode } from '../src/lib/lotCode.js';
  * Live catalogue for the render + sitemap functions, read straight from
  * PostgREST with the PUBLIC anon key — the same rows the browser can see.
  * RLS only exposes products with status='active' AND deleted_at IS NULL, and
- * the query filters on both explicitly as well.
+ * the query filters on both explicitly as well. Archived and other hidden
+ * products are not in this list. Their names are read separately, server-side
+ * only, by loadConcealedProducts() — never merged into `products`, never sent
+ * to the browser, and never added to the sitemap.
  *
  * Read-only. Uses the storefront's existing VITE_SUPABASE_* env vars (Vercel
  * exposes project env vars to functions at runtime); SUPABASE_URL /
@@ -53,6 +58,39 @@ async function rest<T>(path: string): Promise<T> {
 }
 
 const compact = (select: string) => encodeURIComponent(select.replace(/\s+/g, ''));
+
+/**
+ * Visibility of products the public catalogue hides. Name, status and
+ * deleted_at only — no prices, suppliers, tax or licence columns. There is
+ * no slug column; the renderer slugifies `name` the same way live URLs do.
+ *
+ * Uses SUPABASE_SERVICE_ROLE_KEY, which is set on Production and intentionally
+ * unset on Preview. With no key, loadConcealedProducts() returns [] and an
+ * archived slug stays a 404 instead of 301.
+ */
+export const CONCEALED_PRODUCTS_PATH =
+  'products?select=name,status,deleted_at&or=(status.neq.active,status.is.null,deleted_at.not.is.null)';
+
+let concealedCache: { at: number; rows: ConcealedProduct[] } | null = null;
+let concealedInflight: Promise<ConcealedProduct[]> | null = null;
+let concealedGeneration = 0;
+
+/** Service-role JSON → rows. Anything else is empty. */
+export function parseConcealedProducts(body: unknown): ConcealedProduct[] {
+  if (!Array.isArray(body)) return [];
+  const rows: ConcealedProduct[] = [];
+  for (const row of body) {
+    if (!row || typeof row !== 'object') continue;
+    const rec = row as { name?: unknown; status?: unknown; deleted_at?: unknown };
+    if (typeof rec.name !== 'string' || !rec.name.trim()) continue;
+    rows.push({
+      name: rec.name,
+      status: typeof rec.status === 'string' ? rec.status : null,
+      deleted_at: typeof rec.deleted_at === 'string' && rec.deleted_at.length > 0 ? rec.deleted_at : null,
+    });
+  }
+  return rows;
+}
 
 const SETTINGS_KEYS = {
   freeShippingPaise: 'shipping.free_threshold_paise',
@@ -123,9 +161,55 @@ export async function loadCatalog(): Promise<Catalog> {
   return inflight;
 }
 
-/** Test hook: forget the cached catalogue. */
+/** Test hook: forget the cached catalogue and the visibility read. */
 export function resetCatalogCache(): void {
   cached = null;
+  concealedCache = null;
+  concealedInflight = null;
+  concealedGeneration += 1;
+}
+
+/**
+ * Hidden products, for the 301 decision only. Returns [] when the service
+ * role key is absent (Preview) or the read fails, so the page stays a 404
+ * instead of a 500. Does not log the key or the product names.
+ */
+export async function loadConcealedProducts(): Promise<ConcealedProduct[]> {
+  const creds = serviceCredentials(process.env);
+  if (!creds) return [];
+  if (concealedCache && Date.now() - concealedCache.at < TTL_MS) return concealedCache.rows;
+  if (!concealedInflight) {
+    const generation = concealedGeneration;
+    concealedInflight = readConcealed(creds)
+      .then((rows) => {
+        if (rows && generation === concealedGeneration) concealedCache = { at: Date.now(), rows };
+        return rows ?? [];
+      })
+      .finally(() => { concealedInflight = null; });
+  }
+  return concealedInflight;
+}
+
+async function readConcealed(creds: { url: string; key: string }): Promise<ConcealedProduct[] | null> {
+  try {
+    const res = await fetch(`${creds.url}/rest/v1/${CONCEALED_PRODUCTS_PATH}`, {
+      headers: {
+        apikey: creds.key,
+        Authorization: `Bearer ${creds.key}`,
+        Accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.arrayBuffer().catch(() => undefined);
+      console.error('[catalog] product visibility HTTP', res.status);
+      return null;
+    }
+    return parseConcealedProducts(await res.json());
+  } catch {
+    console.error('[catalog] product visibility unavailable');
+    return null;
+  }
 }
 
 /**
