@@ -1,6 +1,7 @@
 import type { Product } from '../src/types';
 import type { ConcealedProduct } from '../src/lib/productPath.js';
 import { PRODUCT_SELECT, mapSupabaseProduct } from '../src/services/productMapper.js';
+import { serviceCredentials } from './notifyStore.js';
 import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
 } from '../src/lib/categoryTree.js';
@@ -15,12 +16,10 @@ import { parseLotCode } from '../src/lib/lotCode.js';
  * Live catalogue for the render + sitemap functions, read straight from
  * PostgREST with the PUBLIC anon key — the same rows the browser can see.
  * RLS only exposes products with status='active' AND deleted_at IS NULL, and
- * the query filters on both explicitly as well. Products that are archived,
- * draft, deleted, or otherwise not visible are read separately from
- * storefront_concealed_products() (name, status, deleted_at only) so their
- * URLs can 301 to /shop. Those rows are never merged into `products`, so the
- * sitemap cannot list them. The anon key is enough; the service role is not
- * used here.
+ * the query filters on both explicitly as well. Archived and other hidden
+ * products are not in this list. Their names are read separately, server-side
+ * only, by loadConcealedProducts() — never merged into `products`, never sent
+ * to the browser, and never added to the sitemap.
  *
  * Read-only. Uses the storefront's existing VITE_SUPABASE_* env vars (Vercel
  * exposes project env vars to functions at runtime); SUPABASE_URL /
@@ -33,11 +32,6 @@ export interface Catalog {
   policy: StorePolicy;
   /** Claim types product_claims() returned. Absent or empty means show none. */
   claimMarks?: ClaimMark[];
-  /**
-   * Products hidden from the public catalogue. Absent or empty means the
-   * redirect lookup has nothing to match. Never render or sitemap these.
-   */
-  concealed?: ConcealedProduct[];
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -65,7 +59,23 @@ async function rest<T>(path: string): Promise<T> {
 
 const compact = (select: string) => encodeURIComponent(select.replace(/\s+/g, ''));
 
-/** RPC body → concealed rows. Anything else (including a failed read) is empty. */
+/**
+ * Visibility of products the public catalogue hides. Name, status and
+ * deleted_at only — no prices, suppliers, tax or licence columns. There is
+ * no slug column; the renderer slugifies `name` the same way live URLs do.
+ *
+ * Uses SUPABASE_SERVICE_ROLE_KEY, which is set on Production and intentionally
+ * unset on Preview. With no key, loadConcealedProducts() returns [] and an
+ * archived slug stays a 404 instead of 301.
+ */
+export const CONCEALED_PRODUCTS_PATH =
+  'products?select=name,status,deleted_at&or=(status.neq.active,status.is.null,deleted_at.not.is.null)';
+
+let concealedCache: { at: number; rows: ConcealedProduct[] } | null = null;
+let concealedInflight: Promise<ConcealedProduct[]> | null = null;
+let concealedGeneration = 0;
+
+/** Service-role JSON → rows. Anything else is empty. */
 export function parseConcealedProducts(body: unknown): ConcealedProduct[] {
   if (!Array.isArray(body)) return [];
   const rows: ConcealedProduct[] = [];
@@ -112,7 +122,7 @@ function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
 
 async function fetchCatalog(): Promise<Catalog> {
   const keys = Object.values(SETTINGS_KEYS).map((k) => `"${k}"`).join(',');
-  const [rows, cats, settings, claimRows, concealedRows] = await Promise.all([
+  const [rows, cats, settings, claimRows] = await Promise.all([
     // order=name,id mirrors productService.list(): slug collisions resolve the same way.
     rest<unknown[]>(`products?select=${compact(PRODUCT_SELECT)}&status=eq.active&deleted_at=is.null&order=name.asc,id.asc`),
     rest<CategoryRow[]>(`categories?select=${compact(CATEGORY_SELECT)}&deleted_at=is.null&order=sort_order.asc,name.asc`),
@@ -127,11 +137,6 @@ async function fetchCatalog(): Promise<Catalog> {
       console.error(e);
       return null;
     }),
-    // Missing or failing must not take the shop down: those URLs stay 404.
-    rest<unknown>('rpc/storefront_concealed_products').catch((e) => {
-      console.error(e);
-      return [];
-    }),
   ]);
   const policy = policyFrom(settings);
   const liveDays = await readHandlingDaysLive(process.env, fetch);
@@ -142,7 +147,6 @@ async function fetchCatalog(): Promise<Catalog> {
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
     claimMarks: claimRows ? marksFromClaims(claimRows) : [],
-    concealed: parseConcealedProducts(concealedRows),
   };
 }
 
@@ -157,9 +161,55 @@ export async function loadCatalog(): Promise<Catalog> {
   return inflight;
 }
 
-/** Test hook: forget the cached catalogue. */
+/** Test hook: forget the cached catalogue and the visibility read. */
 export function resetCatalogCache(): void {
   cached = null;
+  concealedCache = null;
+  concealedInflight = null;
+  concealedGeneration += 1;
+}
+
+/**
+ * Hidden products, for the 301 decision only. Returns [] when the service
+ * role key is absent (Preview) or the read fails, so the page stays a 404
+ * instead of a 500. Does not log the key or the product names.
+ */
+export async function loadConcealedProducts(): Promise<ConcealedProduct[]> {
+  const creds = serviceCredentials(process.env);
+  if (!creds) return [];
+  if (concealedCache && Date.now() - concealedCache.at < TTL_MS) return concealedCache.rows;
+  if (!concealedInflight) {
+    const generation = concealedGeneration;
+    concealedInflight = readConcealed(creds)
+      .then((rows) => {
+        if (rows && generation === concealedGeneration) concealedCache = { at: Date.now(), rows };
+        return rows ?? [];
+      })
+      .finally(() => { concealedInflight = null; });
+  }
+  return concealedInflight;
+}
+
+async function readConcealed(creds: { url: string; key: string }): Promise<ConcealedProduct[] | null> {
+  try {
+    const res = await fetch(`${creds.url}/rest/v1/${CONCEALED_PRODUCTS_PATH}`, {
+      headers: {
+        apikey: creds.key,
+        Authorization: `Bearer ${creds.key}`,
+        Accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.arrayBuffer().catch(() => undefined);
+      console.error('[catalog] product visibility HTTP', res.status);
+      return null;
+    }
+    return parseConcealedProducts(await res.json());
+  } catch {
+    console.error('[catalog] product visibility unavailable');
+    return null;
+  }
 }
 
 /**

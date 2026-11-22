@@ -108,9 +108,9 @@ export type ProductResolution<T> =
   | { kind: 'not-found' };                        // never existed → 404
 
 /**
- * A product the public catalogue does not show. `storefront_concealed_products()`
- * returns only these three fields. Visible means the same thing as the live
- * catalogue query and RLS: status is active and deleted_at is null.
+ * A product the public catalogue does not show. The server reads only these
+ * three fields with the service-role key. Visible means the same thing as the
+ * live catalogue query and RLS: status is active and deleted_at is null.
  */
 export interface ConcealedProduct {
   name: string;
@@ -148,8 +148,9 @@ export function isConcealedProductSlug(param: string, rows: readonly ConcealedPr
  * - `<slug>-<uuid>`, `<uuid>`, mixed case → redirect to the clean slug
  * - UUID that isn't live → gone (UUIDs aren't guessable, so it existed once)
  * - static-catalogue slug → 301 to its live successor, else gone
- * - anything else → not-found. The renderer then 301s to /shop when the
- *   slug matches a concealed product, and 404s when it never existed.
+ * - anything else → not-found. With the service-role key set, the renderer
+ *   301s to /shop when the slug matches a hidden product, and 404s when it
+ *   never existed. Preview has no service-role key, so a hidden slug stays 404.
  */
 export function resolveProductParam<T extends { id: string; name?: string | null }>(
   param: string,

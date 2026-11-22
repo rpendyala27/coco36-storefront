@@ -17,8 +17,7 @@ import type { Catalog } from './catalog.js';
  * Left out on purpose: archived/deleted products, empty categories, /cart
  * (real page, noindex — the bag is not a landing page), and utility pages
  * (/auth, /quick-order, /checkout, /account, /track).
- * Concealed rows (server/catalog.ts) are not copied onto cat.products, so
- * an archived product cannot be listed here.
+ * The service-role visibility read is not part of this catalogue.
  * /recipes and each recipe are included. /privacy, /terms and the info pages
  * (/about, /contact, /faq, /shipping, /returns) are included.
  *
