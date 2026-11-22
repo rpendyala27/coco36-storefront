@@ -108,6 +108,37 @@ export type ProductResolution<T> =
   | { kind: 'not-found' };                        // never existed → 404
 
 /**
+ * A product the public catalogue does not show. `storefront_concealed_products()`
+ * returns only these three fields. Visible means the same thing as the live
+ * catalogue query and RLS: status is active and deleted_at is null.
+ */
+export interface ConcealedProduct {
+  name: string;
+  status: string | null;
+  deleted_at: string | null;
+}
+
+/**
+ * True when `param` is the current slug of a product that exists but is not
+ * publicly visible (archived, draft, deleted, or any status other than active).
+ * Slug matching uses the same `productSlug` as live URLs, so a rename follows
+ * the database name. An active, non-deleted row does not match.
+ */
+export function isConcealedProductSlug(param: string, rows: readonly ConcealedProduct[]): boolean {
+  let slug = param.trim().toLowerCase();
+  try { slug = decodeURIComponent(slug); } catch { /* param is already a slug */ }
+  slug = slug.toLowerCase();
+  if (!slug) return false;
+  return rows.some((row) => {
+    const name = row.name.trim();
+    if (!name) return false;
+    const visible = row.status === 'active' && (row.deleted_at == null || row.deleted_at === '');
+    if (visible) return false;
+    return productSlug({ id: '', name }) === slug;
+  });
+}
+
+/**
  * Resolve a `/shop/:param` segment against the LIVE catalogue (status=active,
  * deleted_at null — RLS hides everything else from the public key).
  *
@@ -117,7 +148,8 @@ export type ProductResolution<T> =
  * - `<slug>-<uuid>`, `<uuid>`, mixed case → redirect to the clean slug
  * - UUID that isn't live → gone (UUIDs aren't guessable, so it existed once)
  * - static-catalogue slug → 301 to its live successor, else gone
- * - anything else → not-found
+ * - anything else → not-found. The renderer then 301s to /shop when the
+ *   slug matches a concealed product, and 404s when it never existed.
  */
 export function resolveProductParam<T extends { id: string; name?: string | null }>(
   param: string,

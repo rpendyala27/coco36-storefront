@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { categoryPath, productPath, resolveProductParam } from '../src/lib/productPath.js';
+import { categoryPath, isConcealedProductSlug, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { bakingNoteByPath } from '../src/content/bakingNotes.js';
 import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../src/content/wholesaleGuide.js';
@@ -27,7 +27,8 @@ import {
 /**
  * Every HTML request on coco36.com lands here (vercel.json rewrites /(.*) to
  * api/render). It decides the REAL HTTP status for the URL — 200, 301 to the
- * canonical URL, 404 or 410 — then serves the built SPA shell with that page's
+ * canonical URL (or to /shop when the product is no longer visible), 404 or
+ * 410 — then serves the built SPA shell with that page's
  * <head> and a server-rendered content snapshot injected.
  *
  * This replaces the old catch-all rewrite to index.html, which answered every
@@ -206,6 +207,10 @@ export async function render(pathname: string, search: string, host: string): Pr
       return withHost(page(200, productMeta(p, cat.tree, cat.policy), productSnapshot(ctx, p, productCrumbs(p, cat.tree))));
     }
     if (r.kind === 'gone') return withHost(page(410, goneMeta(), errorSnapshot(ctx, 'gone')));
+    // Live catalogue missed it. If the database still has this slug on a
+    // product that is archived, draft, deleted, or otherwise not active,
+    // send a real 301 to /shop. A slug that was never a product stays 404.
+    if (isConcealedProductSlug(segs[1], cat.concealed ?? [])) return redirect('/shop');
     return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
   }
 

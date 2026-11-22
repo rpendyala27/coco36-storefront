@@ -1,4 +1,5 @@
 import type { Product } from '../src/types';
+import type { ConcealedProduct } from '../src/lib/productPath.js';
 import { PRODUCT_SELECT, mapSupabaseProduct } from '../src/services/productMapper.js';
 import {
   CATEGORY_SELECT, buildTree, mapCategoryRow, type CategoryRow, type CategoryTree,
@@ -14,7 +15,12 @@ import { parseLotCode } from '../src/lib/lotCode.js';
  * Live catalogue for the render + sitemap functions, read straight from
  * PostgREST with the PUBLIC anon key — the same rows the browser can see.
  * RLS only exposes products with status='active' AND deleted_at IS NULL, and
- * the query filters on both explicitly as well.
+ * the query filters on both explicitly as well. Products that are archived,
+ * draft, deleted, or otherwise not visible are read separately from
+ * storefront_concealed_products() (name, status, deleted_at only) so their
+ * URLs can 301 to /shop. Those rows are never merged into `products`, so the
+ * sitemap cannot list them. The anon key is enough; the service role is not
+ * used here.
  *
  * Read-only. Uses the storefront's existing VITE_SUPABASE_* env vars (Vercel
  * exposes project env vars to functions at runtime); SUPABASE_URL /
@@ -27,6 +33,11 @@ export interface Catalog {
   policy: StorePolicy;
   /** Claim types product_claims() returned. Absent or empty means show none. */
   claimMarks?: ClaimMark[];
+  /**
+   * Products hidden from the public catalogue. Absent or empty means the
+   * redirect lookup has nothing to match. Never render or sitemap these.
+   */
+  concealed?: ConcealedProduct[];
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -53,6 +64,23 @@ async function rest<T>(path: string): Promise<T> {
 }
 
 const compact = (select: string) => encodeURIComponent(select.replace(/\s+/g, ''));
+
+/** RPC body → concealed rows. Anything else (including a failed read) is empty. */
+export function parseConcealedProducts(body: unknown): ConcealedProduct[] {
+  if (!Array.isArray(body)) return [];
+  const rows: ConcealedProduct[] = [];
+  for (const row of body) {
+    if (!row || typeof row !== 'object') continue;
+    const rec = row as { name?: unknown; status?: unknown; deleted_at?: unknown };
+    if (typeof rec.name !== 'string' || !rec.name.trim()) continue;
+    rows.push({
+      name: rec.name,
+      status: typeof rec.status === 'string' ? rec.status : null,
+      deleted_at: typeof rec.deleted_at === 'string' && rec.deleted_at.length > 0 ? rec.deleted_at : null,
+    });
+  }
+  return rows;
+}
 
 const SETTINGS_KEYS = {
   freeShippingPaise: 'shipping.free_threshold_paise',
@@ -84,7 +112,7 @@ function policyFrom(rows: { key: string; value: unknown }[]): StorePolicy {
 
 async function fetchCatalog(): Promise<Catalog> {
   const keys = Object.values(SETTINGS_KEYS).map((k) => `"${k}"`).join(',');
-  const [rows, cats, settings, claimRows] = await Promise.all([
+  const [rows, cats, settings, claimRows, concealedRows] = await Promise.all([
     // order=name,id mirrors productService.list(): slug collisions resolve the same way.
     rest<unknown[]>(`products?select=${compact(PRODUCT_SELECT)}&status=eq.active&deleted_at=is.null&order=name.asc,id.asc`),
     rest<CategoryRow[]>(`categories?select=${compact(CATEGORY_SELECT)}&deleted_at=is.null&order=sort_order.asc,name.asc`),
@@ -99,6 +127,11 @@ async function fetchCatalog(): Promise<Catalog> {
       console.error(e);
       return null;
     }),
+    // Missing or failing must not take the shop down: those URLs stay 404.
+    rest<unknown>('rpc/storefront_concealed_products').catch((e) => {
+      console.error(e);
+      return [];
+    }),
   ]);
   const policy = policyFrom(settings);
   const liveDays = await readHandlingDaysLive(process.env, fetch);
@@ -109,6 +142,7 @@ async function fetchCatalog(): Promise<Catalog> {
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
     claimMarks: claimRows ? marksFromClaims(claimRows) : [],
+    concealed: parseConcealedProducts(concealedRows),
   };
 }
 
