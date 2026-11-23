@@ -22,7 +22,8 @@ export function cartSignature(items: { sizeId: string; quantity: number }[]): st
 /**
  * The shopper closed the Razorpay window without paying: ask the API to
  * release the stock their order holds (it checks with Razorpay first).
- * Best-effort; the server also releases unpaid orders after 30 minutes.
+ * Best-effort; the server also releases unpaid orders once the unpaid hold
+ * ends (settings orders.unpaid_hold_minutes, 30 by default).
  */
 export async function abandonCheckout(orderId: string): Promise<void> {
   const auth = await authHeader();
@@ -35,29 +36,67 @@ export async function abandonCheckout(orderId: string): Promise<void> {
       keepalive: true,
     });
   } catch {
-    /* the 30-minute sweep covers it */
+    /* the unpaid-hold sweep covers it */
   }
 }
 
 // ── Razorpay window vs the unpaid hold (R08) ──────────────────────────────────
 /**
- * The admin cancels a prepaid order left unpaid for 30 minutes
- * (expire_unpaid_orders, default interval '30 minutes'; run by pg_cron).
+ * The admin cancels a prepaid order left unpaid for the unpaid hold:
+ * expire_unpaid_orders() (pg_cron) with settings orders.unpaid_hold_minutes,
+ * whole minutes 10–120, 30 when unset (P21). /api/orders/create returns that
+ * hold for the order (P21b A): `unpaidHoldMinutes` and `holdExpiresAt`
+ * (orders.placed_at + hold, ISO UTC).
+ *
  * The Razorpay window must close before that, or a shopper could pay on an
- * order that has just been released. One minute of margin covers clock skew
- * and the time between placing the order and opening the window.
+ * order that has just been released. One minute of margin covers the sweep
+ * running every minute and the time between placing the order and opening
+ * the window.
+ *
+ * F76 (handed to P21): the sweep moves from every five minutes to every
+ * minute (`* * * * *`). That is merged in coco36-next #67 but is NEEDS-YES to
+ * apply; until it is applied a release can lag the hold by up to five
+ * minutes, which only makes this window more conservative.
  */
+/** Fallback only, when the API response has no hold (an older admin deploy). */
 export const UNPAID_HOLD_MINUTES = 30;
 export const PAYMENT_WINDOW_MARGIN_SECONDS = 60;
 
+/** The hold fields from POST /api/orders/create (absent on an older API). */
+export interface UnpaidHold {
+  unpaidHoldMinutes?: unknown;
+  holdExpiresAt?: unknown;
+}
+
+/** The API's minutes when they are a whole number from 10 to 120; else the 30-minute fallback. */
+export function holdMinutes(value: unknown): number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 10 && value <= 120
+    ? value
+    : UNPAID_HOLD_MINUTES;
+}
+
 /**
- * Seconds for Razorpay's `timeout` option: what is left of the hold since the
- * order was placed, less the margin. Null when nothing useful is left (under a
- * minute): place the order again instead of opening the window.
+ * Seconds for Razorpay's `timeout` option. Null when nothing useful is left
+ * (under a minute): place the order again instead of opening the window.
+ *
+ * With `holdExpiresAt` from the API: seconds until that expiry, less the
+ * margin. It is also capped by the hold minutes counted from when this
+ * browser placed the order, so a device clock running behind the server
+ * cannot stretch the window past the real expiry.
+ * Without it: the hold minutes (or 30) since the order was placed, less the
+ * margin, as before.
  */
-export function paymentWindowSeconds(placedAtMs: number, nowMs: number = Date.now()): number | null {
+export function paymentWindowSeconds(
+  placedAtMs: number,
+  nowMs: number = Date.now(),
+  hold: UnpaidHold = {},
+): number | null {
   const elapsed = Math.max(0, Math.floor((nowMs - placedAtMs) / 1000));
-  const left = UNPAID_HOLD_MINUTES * 60 - PAYMENT_WINDOW_MARGIN_SECONDS - elapsed;
+  let left = holdMinutes(hold.unpaidHoldMinutes) * 60 - PAYMENT_WINDOW_MARGIN_SECONDS - elapsed;
+  const expiresAtMs = typeof hold.holdExpiresAt === 'string' ? Date.parse(hold.holdExpiresAt) : Number.NaN;
+  if (Number.isFinite(expiresAtMs)) {
+    left = Math.min(left, Math.floor((expiresAtMs - nowMs) / 1000) - PAYMENT_WINDOW_MARGIN_SECONDS);
+  }
   return left >= 60 ? left : null;
 }
 
