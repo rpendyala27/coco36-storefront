@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { safeRedirectPath } from '../lib/apiAuth';
 import { useAuth } from '../context/AuthContext';
 import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
@@ -62,12 +63,15 @@ export const AuthPage = () => {
         if (signInErr) throw signInErr;
         navigate(redirectTo);
       } else {
+        // Optional, but when given it must be a real Indian mobile (F49).
+        const phoneDigits = phone.trim() ? normaliseIndianMobile(phone) : null;
+        if (phone.trim() && !phoneDigits) throw new Error(PHONE_INVALID_MESSAGE);
         const { data, error: signUpErr } = await supabase.auth.signUp({
           email, password,
           options: {
             emailRedirectTo: `${window.location.origin}/auth`,
             // Profile hints only (user-editable, never used for access control).
-            data: { name: name || undefined, phone: phone || undefined },
+            data: { name: name || undefined, phone: phoneDigits ?? undefined },
           },
         });
         if (signUpErr) throw signUpErr;

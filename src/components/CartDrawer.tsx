@@ -1,23 +1,25 @@
 import React from 'react';
 import { CheckDelivery } from './CheckDelivery';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle, Check } from 'lucide-react';
+import { X, ShoppingBag, Minus, Plus, ArrowRight, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 import { productPath } from '../lib/productPath';
-import { shippingFor, freeShippingRemaining, freeShippingProgress } from '../lib/shipping';
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
-import { availableFor, soldOutItems, stockNote } from '../lib/stock';
+import { summarizeCart } from '../lib/cartSummary';
+import { CartSummaryBlock, RemovedLinesNotice } from './CartSummary';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
 
 export const CartDrawer: React.FC = () => {
-  const { items, isOpen, closeCart, updateQuantity, removeItem, subtotal, itemCount, stock } = useCart();
+  const { items, isOpen, closeCart, updateQuantity, removeItem, stock, removedLines, dismissRemovedLines } = useCart();
   const cfg = useStoreConfig();
+  // Same summary as /cart and checkout (F17).
+  const summary = summarizeCart(items, stock, cfg);
+  const { itemCount } = summary;
   const legacyCount = items.filter(it => isLegacy(it.sizeId)).length;
-  const soldOutCount = soldOutItems(items, stock).length;
   const removeAllLegacy = () => {
     items.filter(it => isLegacy(it.sizeId)).forEach(it => removeItem(it.productId, it.sizeId));
   };
@@ -64,6 +66,7 @@ export const CartDrawer: React.FC = () => {
 
             {/* Items */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
+              <RemovedLinesNotice removed={removedLines} onDismiss={dismissRemovedLines} className="mb-5" />
               {legacyCount > 0 && (
                 <div className="mb-5 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                   <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
@@ -96,7 +99,7 @@ export const CartDrawer: React.FC = () => {
                 </div>
               ) : (
                 <ul className="space-y-4">
-                  {items.map((item) => (
+                  {summary.lines.map(({ item, note, soldOut, lineTotal, cap }) => (
                     <li
                       key={`${item.productId}-${item.sizeId}`}
                       className="flex gap-4 p-3 bg-white rounded-2xl shadow-sm"
@@ -128,12 +131,9 @@ export const CartDrawer: React.FC = () => {
                         </div>
                         <p className="text-xs text-brand-muted mb-3">
                           {item.sizeLabel}
-                          {(() => {
-                            const note = stockNote(stock, item.sizeId, item.quantity);
-                            return note ? (
-                              <span className={`ml-2 font-bold ${note === 'Sold out' ? 'text-red-600' : 'text-amber-700'}`}>{note}</span>
-                            ) : null;
-                          })()}
+                          {note && (
+                            <span className={`ml-2 font-bold ${soldOut ? 'text-red-600' : 'text-amber-700'}`}>{note}</span>
+                          )}
                         </p>
 
                         <div className="flex items-center justify-between">
@@ -148,15 +148,15 @@ export const CartDrawer: React.FC = () => {
                             <span className="px-3 text-sm font-bold tabular-nums text-brand-ink">{item.quantity}</span>
                             <button
                               onClick={() => updateQuantity(item.productId, item.sizeId, item.quantity + 1)}
-                              disabled={(availableFor(stock, item.sizeId) ?? Infinity) <= item.quantity}
+                              disabled={(cap ?? Infinity) <= item.quantity}
                               className="p-2 hover:text-brand-leaf transition-colors disabled:opacity-30 disabled:hover:text-current"
                               aria-label="Increase quantity"
                             >
                               <Plus size={12} strokeWidth={2.5} />
                             </button>
                           </div>
-                          <span className={`font-bold ${availableFor(stock, item.sizeId) === 0 ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
-                            {formatMoney(item.unitPriceInPaise * item.quantity)}
+                          <span className={`font-bold ${soldOut ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
+                            {formatMoney(lineTotal)}
                           </span>
                         </div>
                       </div>
@@ -167,50 +167,11 @@ export const CartDrawer: React.FC = () => {
             </div>
 
             {/* Footer / Checkout */}
-            {items.length > 0 && (() => {
-              const shipping = shippingFor(subtotal, cfg);
-              const remaining = freeShippingRemaining(subtotal, cfg);
-              const pct = freeShippingProgress(subtotal, cfg);
+            {!summary.isEmpty && (() => {
               return (
                 <footer className="border-t border-brand-line px-6 py-5 space-y-4 bg-white">
                   <CheckDelivery compact variantIds={items.map((it) => it.sizeId)} />
-                  {/* Endowed progress toward free shipping */}
-                  <div>
-                    {remaining > 0 ? (
-                      <p className="text-[13px] text-brand-forest mb-2">
-                        Add <span className="font-semibold">{formatMoney(remaining)}</span> more for <span className="font-semibold">free shipping</span>
-                      </p>
-                    ) : (
-                      <p className="text-[13px] text-brand-leaf font-medium mb-2 flex items-center gap-1.5">
-                        <Check size={14} strokeWidth={2.5} /> Free shipping unlocked
-                      </p>
-                    )}
-                    <div className="h-1.5 rounded-full bg-brand-band overflow-hidden">
-                      <div className="h-full rounded-full bg-brand-leaf transition-all duration-300" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-
-                  {/* Radical cost transparency — no surprises at checkout */}
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-brand-muted">Subtotal</span>
-                      <span className="font-medium text-brand-forest">{formatMoney(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-brand-muted">Shipping</span>
-                      <span className="font-medium text-brand-forest">{shipping === 0 ? 'Free' : formatMoney(shipping)}</span>
-                    </div>
-                    <div className="flex justify-between items-baseline pt-2 border-t border-brand-line">
-                      <span className="text-sm font-medium text-brand-forest">Total <span className="text-brand-muted font-normal">· incl. taxes</span></span>
-                      <span className="font-display font-bold text-2xl text-brand-forest">{formatMoney(subtotal + shipping)}</span>
-                    </div>
-                  </div>
-
-                  {soldOutCount > 0 && (
-                    <p className="text-xs font-semibold text-red-600">
-                      {soldOutCount === 1 ? 'One item is' : `${soldOutCount} items are`} sold out. Remove {soldOutCount === 1 ? 'it' : 'them'} to check out.
-                    </p>
-                  )}
+                  <CartSummaryBlock summary={summary} />
                   {cfg.orderingOpen === false && (
                     <p className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                       {ORDERING_CLOSED_MESSAGE}

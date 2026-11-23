@@ -2,7 +2,10 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { MapPin, Check, X, Loader2 } from 'lucide-react';
 import { formatMoney } from '../lib/currency';
-import { checkDelivery, etaText, joinWaitlist, PIN_RE, rememberPincode, savedPincode, type DeliveryCheck } from '../lib/delivery';
+import {
+  checkDelivery, etaText, forgetPincode, joinWaitlist, pinProblem, rememberPincode, savedPincode, showsWaitlist,
+  type DeliveryCheck,
+} from '../lib/delivery';
 
 /**
  * "Check delivery" box (product page and cart). Remembers the PIN, shows the
@@ -17,11 +20,15 @@ export function CheckDelivery({ variantIds = [], compact = false }: { variantIds
   const idsKey = variantIds.join(',');
 
   const run = async (p: string) => {
-    if (!PIN_RE.test(p)) { setError('Enter a valid 6-digit PIN code.'); setResult(null); return; }
+    const problem = pinProblem(p);
+    if (problem) { setError(problem); setResult(null); return; }
     setBusy(true); setError(null);
     try {
-      setResult(await checkDelivery(p, { variantIds }));
-      rememberPincode(p);
+      const r = await checkDelivery(p, { variantIds });
+      setResult(r);
+      // Only a PIN we deliver to is remembered and pre-filled next time (F45).
+      if (r.deliverable) rememberPincode(p);
+      else forgetPincode();
     } catch (e) {
       setError((e as Error).message); setResult(null);
     } finally {
@@ -32,7 +39,7 @@ export function CheckDelivery({ variantIds = [], compact = false }: { variantIds
   // A remembered PIN is checked straight away (and again when the items change).
   useEffect(() => {
     const p = savedPincode();
-    if (PIN_RE.test(p)) { setPin(p); void run(p); }
+    if (p) { setPin(p); void run(p); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
@@ -81,7 +88,7 @@ export function DeliveryAnswer({ pin, result }: { pin: string; result: DeliveryC
         <X size={15} className="mt-0.5 shrink-0" aria-hidden />
         <span>{result.message ?? `Not available at ${pin} yet.`}</span>
       </p>
-      {(result.reason === 'blocked' || result.reason === 'no_zone' || result.reason === 'not_serviceable') && <NotifyMe pin={pin} />}
+      {showsWaitlist(result) && <NotifyMe pin={pin} />}
     </div>
   );
 }

@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Check, Minus, Plus, ShoppingBag, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react';
 import { Breadcrumbs } from '../components/Breadcrumbs';
 import { CheckDelivery } from '../components/CheckDelivery';
 import { useCart } from '../context/CartContext';
 import { formatMoney } from '../lib/currency';
 import { productPath } from '../lib/productPath';
-import { freeShippingProgress, freeShippingRemaining, shippingFor } from '../lib/shipping';
 import { ORDERING_CLOSED_MESSAGE, useStoreConfig } from '../lib/storeConfig';
-import { availableFor, soldOutItems, stockNote } from '../lib/stock';
+import { summarizeCart } from '../lib/cartSummary';
+import { CartSummaryBlock, RemovedLinesNotice } from '../components/CartSummary';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
@@ -19,7 +19,7 @@ const isLegacy = (sizeId: string) => !UUID_RE.test(sizeId);
  * Head is STATIC_PAGES['/cart'] applied by ScrollToTop.
  */
 export function CartPage() {
-  const { items, closeCart, updateQuantity, removeItem, subtotal, itemCount, stock, refreshStock } = useCart();
+  const { items, closeCart, updateQuantity, removeItem, stock, refreshStock, removedLines, dismissRemovedLines } = useCart();
   const cfg = useStoreConfig();
 
   useEffect(() => {
@@ -27,15 +27,13 @@ export function CartPage() {
     refreshStock();
   }, [closeCart, refreshStock]);
 
+  // Same summary as the drawer and checkout (F17).
+  const summary = summarizeCart(items, stock, cfg);
+  const { itemCount } = summary;
   const legacyCount = items.filter((it) => isLegacy(it.sizeId)).length;
-  const soldOutCount = soldOutItems(items, stock).length;
   const removeAllLegacy = () => {
     items.filter((it) => isLegacy(it.sizeId)).forEach((it) => removeItem(it.productId, it.sizeId));
   };
-
-  const shipping = shippingFor(subtotal, cfg);
-  const remaining = freeShippingRemaining(subtotal, cfg);
-  const pct = freeShippingProgress(subtotal, cfg);
 
   return (
     <div className="bg-brand-paper pt-20 min-h-screen">
@@ -46,7 +44,9 @@ export function CartPage() {
           {itemCount} {itemCount === 1 ? 'item' : 'items'}
         </p>
 
-        {items.length === 0 ? (
+        <RemovedLinesNotice removed={removedLines} onDismiss={dismissRemovedLines} className="mt-8" />
+
+        {summary.isEmpty ? (
           <div className="mt-12 rounded-xl border border-dashed border-brand-line bg-brand-surface px-6 py-16 text-center">
             <div className="mx-auto size-20 rounded-2xl bg-brand-paper flex items-center justify-center mb-6">
               <ShoppingBag size={32} strokeWidth={1.5} className="text-brand-muted" />
@@ -73,7 +73,7 @@ export function CartPage() {
             )}
 
             <ul className="mt-8 space-y-4">
-              {items.map((item) => (
+              {summary.lines.map(({ item, note, soldOut, lineTotal, cap }) => (
                 <li key={`${item.productId}-${item.sizeId}`} className="flex gap-4 p-3 bg-white rounded-2xl shadow-sm">
                   <Link to={productPath({ id: item.productId, name: item.name })} className="size-20 shrink-0 rounded-xl bg-brand-surface overflow-hidden">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
@@ -89,10 +89,7 @@ export function CartPage() {
                     </div>
                     <p className="text-xs text-brand-muted mb-3">
                       {item.sizeLabel}
-                      {(() => {
-                        const note = stockNote(stock, item.sizeId, item.quantity);
-                        return note ? <span className={`ml-2 font-bold ${note === 'Sold out' ? 'text-red-600' : 'text-amber-700'}`}>{note}</span> : null;
-                      })()}
+                      {note && <span className={`ml-2 font-bold ${soldOut ? 'text-red-600' : 'text-amber-700'}`}>{note}</span>}
                     </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center bg-brand-surface rounded-lg">
@@ -103,15 +100,15 @@ export function CartPage() {
                         <button
                           type="button"
                           onClick={() => updateQuantity(item.productId, item.sizeId, item.quantity + 1)}
-                          disabled={(availableFor(stock, item.sizeId) ?? Infinity) <= item.quantity}
+                          disabled={(cap ?? Infinity) <= item.quantity}
                           className="p-2 hover:text-brand-leaf transition-colors disabled:opacity-30"
                           aria-label={`Increase quantity of ${item.name}`}
                         >
                           <Plus size={12} strokeWidth={2.5} />
                         </button>
                       </div>
-                      <span className={`font-bold ${availableFor(stock, item.sizeId) === 0 ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
-                        {formatMoney(item.unitPriceInPaise * item.quantity)}
+                      <span className={`font-bold ${soldOut ? 'text-brand-muted line-through' : 'text-brand-ink'}`}>
+                        {formatMoney(lineTotal)}
                       </span>
                     </div>
                   </div>
@@ -121,39 +118,7 @@ export function CartPage() {
 
             <div className="mt-8 rounded-2xl border border-brand-line bg-white px-5 py-5 space-y-4">
               <CheckDelivery compact variantIds={items.map((it) => it.sizeId)} />
-              <div>
-                {remaining > 0 ? (
-                  <p className="text-[13px] text-brand-forest mb-2">
-                    Add <span className="font-semibold">{formatMoney(remaining)}</span> more for <span className="font-semibold">free shipping</span>
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-brand-leaf font-medium mb-2 flex items-center gap-1.5">
-                    <Check size={14} strokeWidth={2.5} /> Free shipping unlocked
-                  </p>
-                )}
-                <div className="h-1.5 rounded-full bg-brand-band overflow-hidden">
-                  <div className="h-full rounded-full bg-brand-leaf transition-all duration-300" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-brand-muted">Subtotal</span>
-                  <span className="font-medium text-brand-forest">{formatMoney(subtotal)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-brand-muted">Shipping</span>
-                  <span className="font-medium text-brand-forest">{shipping === 0 ? 'Free' : formatMoney(shipping)}</span>
-                </div>
-                <div className="flex justify-between items-baseline pt-2 border-t border-brand-line">
-                  <span className="text-sm font-medium text-brand-forest">Total <span className="text-brand-muted font-normal">· incl. taxes</span></span>
-                  <span className="font-display font-bold text-2xl text-brand-forest">{formatMoney(subtotal + shipping)}</span>
-                </div>
-              </div>
-              {soldOutCount > 0 && (
-                <p className="text-xs font-semibold text-red-600">
-                  {soldOutCount === 1 ? 'One item is' : `${soldOutCount} items are`} sold out. Remove {soldOutCount === 1 ? 'it' : 'them'} to check out.
-                </p>
-              )}
+              <CartSummaryBlock summary={summary} />
               {cfg.orderingOpen === false && (
                 <p className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   {ORDERING_CLOSED_MESSAGE}

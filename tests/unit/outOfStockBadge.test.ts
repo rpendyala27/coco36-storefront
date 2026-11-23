@@ -140,11 +140,12 @@ describe('product card pill', () => {
 });
 
 describe('product page wiring', () => {
-  it('renders designation badges from the shared rules, and does not change the add-to-bag branch', () => {
+  it('renders designation badges from the shared rules; the add-to-bag branch follows the shared availability (P37a)', () => {
     const src = readFileSync(path.resolve(__dirname, '../../src/pages/ProductDetail.tsx'), 'utf8');
     expect(src).toContain('productBadges(product)');
     expect(src).toContain('<DesignationBadges');
-    expect(src).toContain('selectedSize && !selectedSize.inStock');
+    expect(src).toContain('selectedSize && !buyable');
+    expect(src).toContain('canBuy(product, selectedSize, liveStock)');
     expect(src).toContain('Add to bag');
   });
 });

@@ -5,9 +5,10 @@ import { Upload, Plus, Trash2, Check, AlertTriangle, ShoppingBag } from 'lucide-
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../context/CartContext';
 import { findPackBySku } from '../lib/findPack';
+import { canBuy, isComingSoon } from '../lib/availability';
 
 type Row = { sku: string; qty: number };
-type Result = { sku: string; qty: number; status: 'added' | 'notfound' | 'oos'; name?: string };
+type Result = { sku: string; qty: number; status: 'added' | 'notfound' | 'oos' | 'soon'; name?: string };
 
 export const QuickOrder = () => {
   const { products } = useProducts();
@@ -26,7 +27,7 @@ export const QuickOrder = () => {
       const hit = findPackBySku(products, r.sku);
       if (!hit) { res.push({ sku: r.sku, qty: r.qty, status: 'notfound' }); return; }
       const { product: p, size } = hit;
-      if (!size.inStock) { res.push({ sku: r.sku, qty: r.qty, status: 'oos', name: `${p.name} · ${size.label}` }); return; }
+      if (!canBuy(p, size)) { res.push({ sku: r.sku, qty: r.qty, status: isComingSoon(p) ? 'soon' : 'oos', name: `${p.name} · ${size.label}` }); return; }
       addItem(p, size, Math.max(1, r.qty || 1));
       res.push({ sku: r.sku, qty: r.qty, status: 'added', name: `${p.name} · ${size.label}` });
     });
@@ -99,7 +100,7 @@ export const QuickOrder = () => {
                   <div className="min-w-0">
                     <span className="font-mono text-xs text-brand-muted">{r.sku}</span>
                     <p className="text-brand-forest">
-                      {r.status === 'added' ? `Added ${r.qty}× ${r.name}` : r.status === 'oos' ? `${r.name}, out of stock` : 'SKU not found'}
+                      {r.status === 'added' ? `Added ${r.qty}× ${r.name}` : r.status === 'oos' ? `${r.name}, out of stock` : r.status === 'soon' ? `${r.name}, coming soon` : 'SKU not found'}
                     </p>
                   </div>
                 </div>

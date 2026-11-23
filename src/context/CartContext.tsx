@@ -4,6 +4,9 @@ import { trackAddToCart } from '../lib/analytics';
 import { API_URL } from '../lib/supabase';
 import { availableFor, clampQty, fetchStock, sellableSubtotal, stockIds, type Stock } from '../lib/stock';
 
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { cartVariantIds, splitArchived, type LiveVariantReader } from '../lib/cartReconcile';
+
 interface CartContextType {
   items: CartItem[];
   itemCount: number;
@@ -20,11 +23,26 @@ interface CartContextType {
   stock: Stock | null;
   /** Re-read stock now (cart opened, checkout loaded). */
   refreshStock: () => void;
+  /** Lines dropped because their product was archived or deleted (F18), for a one-time notice. */
+  removedLines: CartItem[];
+  dismissRemovedLines: () => void;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
 
 const STORAGE_KEY = 'coco36-cart';
+
+/** Packs the shop still sells, by the anon read (P31 policy hides archived products' packs). Null on any failure. */
+const readLiveVariants: LiveVariantReader = async (ids) => {
+  if (!isSupabaseConfigured || ids.length === 0) return null;
+  try {
+    const { data, error } = await supabase.from('product_variants').select('id').in('id', ids).is('deleted_at', null);
+    if (error || !data) return null;
+    return new Set(data.map((r: { id: string }) => r.id));
+  } catch {
+    return null;
+  }
+};
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -73,6 +91,26 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     return () => { live = false; };
   }, [idsKey, tick]);
+
+  // ── Archived packs: drop them from a saved cart with a notice (F18) ──────
+  const [removedLines, setRemovedLines] = useState<CartItem[]>([]);
+  const variantKey = cartVariantIds(items).join(',');
+  useEffect(() => {
+    if (!variantKey) return undefined;
+    let live = true;
+    void readLiveVariants(variantKey.split(',')).then((liveIds) => {
+      if (!live || !liveIds) return;
+      setItems((prev) => {
+        const { keep, removed } = splitArchived(prev, liveIds);
+        if (!removed.length) return prev;
+        // Keyed by pack id: a strict-mode double run of this updater adds nothing twice.
+        setRemovedLines((r) => [...r, ...removed.filter((x) => !r.some((y) => y.sizeId === x.sizeId))]);
+        return keep;
+      });
+    });
+    return () => { live = false; };
+  }, [variantKey, tick]);
+  const dismissRemovedLines = useCallback(() => setRemovedLines([]), []);
 
   const openCart = useCallback(() => { setIsOpen(true); setTick((t) => t + 1); }, []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -149,7 +187,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <CartContext.Provider
-      value={{ items, itemCount, subtotal, isOpen, openCart, closeCart, addItem, updateQuantity, removeItem, clear, stock, refreshStock }}
+      value={{ items, itemCount, subtotal, isOpen, openCart, closeCart, addItem, updateQuantity, removeItem, clear, stock, refreshStock, removedLines, dismissRemovedLines }}
     >
       {children}
     </CartContext.Provider>
