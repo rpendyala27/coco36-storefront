@@ -1,9 +1,104 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Cookie, X } from 'lucide-react';
+import { Cookie } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { readConsent, writeConsent, type Consent } from '../lib/consent';
+import { clearConsent, CONSENT_REOPEN_EVENT, readConsent, writeConsent, type Consent } from '../lib/consent';
 import { setAnalyticsConsent } from '../lib/analytics';
+
+/** Shared by Accept and Essential only so the two controls match in size. */
+export const COOKIE_CHOICE_CLASS =
+  'inline-flex items-center justify-center min-h-10 px-4 py-2 rounded-lg border-2 text-xs font-bold uppercase tracking-wider transition-colors';
+
+/** Height of the open banner. Fixed bottom bars sit above this. */
+export const COOKIE_BANNER_OFFSET = '--cookie-banner-offset';
+
+export function CookieSettingsButton({ className }: { className?: string }) {
+  return (
+    <button type="button" className={className} onClick={() => clearConsent()}>
+      Cookie settings
+    </button>
+  );
+}
+
+export function CookieBannerView({ onDecide }: { onDecide: (choice: 'accepted' | 'rejected') => void }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return undefined;
+    const apply = () => {
+      // The phone bar spans the viewport, so the page and the sticky buy bar
+      // move up by its height. The desktop card sits in the corner; the
+      // quick-order control already lifts itself, and a full-width gap would
+      // leave a white band under the footer.
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      document.documentElement.style.setProperty(
+        COOKIE_BANNER_OFFSET,
+        mobile ? `${el.offsetHeight}px` : '0px',
+      );
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    const media = window.matchMedia('(max-width: 767px)');
+    media.addEventListener('change', apply);
+    return () => {
+      observer.disconnect();
+      media.removeEventListener('change', apply);
+      document.documentElement.style.removeProperty(COOKIE_BANNER_OFFSET);
+    };
+  }, []);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        ref={panelRef}
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        className="fixed z-40 inset-x-0 bottom-0 md:inset-x-auto md:left-auto md:right-6 md:bottom-6 md:max-w-md
+                   bg-white border-t border-black/10 md:border-0 md:ring-1 md:ring-black/5
+                   md:rounded-2xl shadow-[0_-2px_12px_rgba(0,0,0,0.10)] md:shadow-2xl
+                   px-4 py-3 md:p-5"
+        role="dialog"
+        aria-label="Cookie preferences"
+      >
+        <div className="flex items-start gap-3 max-w-7xl mx-auto">
+          <div className="hidden md:flex size-8 rounded-full bg-brand-gold/20 text-brand-forest items-center justify-center shrink-0">
+            <Cookie size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-brand-ink leading-relaxed">
+              We use cookies to remember your cart, login, and pincode. Accept
+              and we also use Google Analytics to see how the shop is used —
+              never advertising trackers.{' '}
+              <NavLink to="/privacy" className="text-brand-leaf hover:underline">
+                Read more
+              </NavLink>.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => onDecide('accepted')}
+                className={`${COOKIE_CHOICE_CLASS} border-brand-leaf bg-brand-leaf text-white hover:bg-brand-leaf-bright hover:border-brand-leaf-bright`}
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                onClick={() => onDecide('rejected')}
+                className={`${COOKIE_CHOICE_CLASS} border-brand-ink bg-white text-brand-ink hover:bg-brand-paper`}
+              >
+                Essential only
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 export const CookieBanner = () => {
   const [consent, setConsent] = useState<Consent>(null);
@@ -12,77 +107,18 @@ export const CookieBanner = () => {
   // SSR-safe: only render after mount once we know the stored consent.
   useEffect(() => { setConsent(readConsent()); setMounted(true); }, []);
 
+  useEffect(() => {
+    const reopen = () => setConsent(null);
+    window.addEventListener(CONSENT_REOPEN_EVENT, reopen);
+    return () => window.removeEventListener(CONSENT_REOPEN_EVENT, reopen);
+  }, []);
+
   const decide = (choice: 'accepted' | 'rejected') => {
     writeConsent(choice);
-    // Loads Google Analytics on accept; stays dark on "Essential only".
     setAnalyticsConsent(choice);
     setConsent(choice);
   };
 
   if (!mounted || consent) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        className="fixed z-50 inset-x-0 bottom-0 md:inset-x-auto md:left-auto md:right-6 md:bottom-6 md:max-w-md
-                   bg-white border-t border-black/10 md:border-0 md:ring-1 md:ring-black/5
-                   md:rounded-2xl shadow-[0_-2px_12px_rgba(0,0,0,0.10)] md:shadow-2xl
-                   px-4 py-2.5 md:p-5"
-        role="dialog"
-        aria-label="Cookie preferences"
-      >
-        {/* On mobile this is a slim single-row bar; on md+ it expands to a card. */}
-        <div className="flex items-center md:items-start gap-3 max-w-7xl mx-auto">
-          <div className="hidden md:flex size-8 rounded-full bg-brand-gold/20 text-brand-forest items-center justify-center shrink-0">
-            <Cookie size={16} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] md:text-sm text-brand-ink leading-snug md:leading-relaxed truncate md:whitespace-normal">
-              <span className="md:hidden">Cookies keep your cart &amp; login. </span>
-              <span className="hidden md:inline">
-                We use cookies to remember your cart, login, and pincode. Accept
-                and we also use Google Analytics to see how the shop is used —
-                never advertising trackers.{' '}
-              </span>
-              <NavLink to="/privacy" className="text-brand-leaf hover:underline whitespace-nowrap">
-                Read more
-              </NavLink>.
-            </p>
-            <div className="hidden md:flex items-center gap-2 mt-4">
-              <button
-                onClick={() => decide('accepted')}
-                className="bg-brand-leaf hover:bg-brand-leaf-bright text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-colors"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => decide('rejected')}
-                className="text-xs font-bold uppercase tracking-wider text-brand-muted hover:text-brand-ink px-3 py-2 transition-colors"
-              >
-                Essential only
-              </button>
-            </div>
-          </div>
-          {/* Mobile-only inline actions */}
-          <button
-            onClick={() => decide('accepted')}
-            className="md:hidden bg-brand-leaf text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg shrink-0"
-          >
-            Accept
-          </button>
-          <button
-            onClick={() => decide('rejected')}
-            className="p-1 -m-1 text-brand-muted hover:text-brand-ink shrink-0"
-            aria-label="Essential only"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <CookieBannerView onDecide={decide} />;
 };

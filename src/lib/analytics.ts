@@ -142,8 +142,9 @@ export function initAnalytics(consent: 'accepted' | 'rejected' | null): void {
  */
 export function setAnalyticsConsent(choice: 'accepted' | 'rejected'): void {
   if (choice === 'rejected') {
-    // The head snippet may already have installed gtag with storage denied.
-    // Say so again so a later grant in this tab cannot be assumed.
+    // Stop our page_view and ecommerce calls for the rest of this page,
+    // including a visitor who accepted earlier and then chose Essential only.
+    loaded = false;
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('consent', 'update', {
         ad_storage:         'denied',

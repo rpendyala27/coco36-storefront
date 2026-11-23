@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
-import { CookieBanner } from './components/CookieBanner';
+import { CookieBanner, CookieSettingsButton } from './components/CookieBanner';
 import { StorefrontAnalytics } from './components/StorefrontAnalytics';
 import { QuickOrderDock } from './components/QuickOrderDock';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
@@ -138,7 +138,7 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <AuthLinkRedirect />
-      <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper">
+      <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper pb-[var(--cookie-banner-offset,0px)]">
         <Navigation />
         <CartDrawer />
         <CookieBanner />
@@ -290,6 +290,7 @@ export default function App() {
                 <a href="/shipping" className="hover:text-brand-leaf-bright transition-colors">Shipping</a>
                 <a href="/returns" className="hover:text-brand-leaf-bright transition-colors">Returns</a>
                 <a href="/privacy" className="hover:text-brand-leaf-bright transition-colors">Privacy</a>
+                <CookieSettingsButton className="hover:text-brand-leaf-bright transition-colors" />
                 <a href="/terms" className="hover:text-brand-leaf-bright transition-colors">Terms</a>
                 <SupportContactLink className="hover:text-brand-leaf-bright transition-colors" />
               </div>

@@ -422,7 +422,7 @@ export const ProductDetail = () => {
 
       {/* Sticky add-to-bag — meets the buyer at peak intent on scroll */}
       {showSticky && selectedSize && (
-        <div data-sticky-buy className="fixed bottom-0 left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div data-sticky-buy className="fixed bottom-[var(--cookie-banner-offset,0px)] left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
             <div className="hidden sm:block min-w-0 flex-1">
               <p className="font-display font-bold text-lg text-brand-forest truncate">{product.name}</p>

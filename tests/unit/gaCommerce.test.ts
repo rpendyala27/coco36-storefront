@@ -172,4 +172,23 @@ describe('GA4 ecommerce consent gate', () => {
     trackPurchase({ orderNumber: 'C36-1001', totalPaise: 184900, lines: [vanilla] });
     expect(commerceEvents(dataLayer)).toHaveLength(before);
   });
+
+  it('stops further events after Essential only, and tells gtag storage is denied', () => {
+    setAnalyticsConsent('accepted');
+    trackViewItem(vanilla);
+    expect(commerceEvents(dataLayer).map((e) => e.name)).toEqual(['view_item']);
+
+    setAnalyticsConsent('rejected');
+    trackViewItem(vanilla);
+    trackAddToCart(sugar);
+    trackBeginCheckout([vanilla], 89900);
+    trackPurchase({ orderNumber: 'C36-1001', totalPaise: 89900, lines: [vanilla] });
+    expect(commerceEvents(dataLayer).map((e) => e.name)).toEqual(['view_item']);
+
+    const updates = dataLayer
+      .map((entry) => entry as { 0: string; 1?: string; 2?: { analytics_storage?: string } })
+      .filter((entry) => entry[0] === 'consent' && entry[1] === 'update');
+    expect(updates.at(-1)?.[2]?.analytics_storage).toBe('denied');
+    expect(store.has(purchaseStorageKey('C36-1001'))).toBe(false);
+  });
 });

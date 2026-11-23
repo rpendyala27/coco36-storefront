@@ -1,4 +1,5 @@
 import type React from 'react';
+import { CookieSettingsButton } from '../components/CookieBanner';
 import { SupportContactLink } from '../components/SupportContact';
 
 /**
@@ -71,6 +72,9 @@ export const Privacy = () => {
           cart, login session, and pincode preference. We do not run
           third-party advertising trackers. You can clear cookies any time
           via your browser settings.
+        </p>
+        <p>
+          <CookieSettingsButton className="text-brand-leaf hover:underline" />
         </p>
       </Section>
 
