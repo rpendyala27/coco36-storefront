@@ -82,4 +82,6 @@ export interface CartItem {
   /** Canonical price in INR paise. */
   unitPriceInPaise: number;
   image: string;
+  /** Pack SKU when the catalogue had one. Absent on older saved carts. */
+  sku?: string;
 }

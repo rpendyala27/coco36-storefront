@@ -52,9 +52,13 @@ export function isTemplate(html: string): boolean {
   return HEAD_RE.test(html) && html.includes(BODY_MARK);
 }
 
-/** Swap the head block and drop the snapshot into #root. */
-export function inject(template: string, head: string, body: string): string {
-  return template
+/** Swap the head block and drop the snapshot into #root.
+ *  `extraHead` is inserted immediately before </head> (the GA tag). A function
+ *  replacer so a `$` in that string is not treated as a replacement pattern. */
+export function inject(template: string, head: string, body: string, extraHead = ''): string {
+  const html = template
     .replace(HEAD_RE, () => `<!--seo:head-->\n${head}\n    <!--/seo:head-->`)
     .replace(BODY_MARK, () => body);
+  if (!extraHead) return html;
+  return html.replace('</head>', () => `${extraHead}\n  </head>`);
 }
