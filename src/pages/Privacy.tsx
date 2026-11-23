@@ -27,7 +27,7 @@ export const Privacy = () => {
           <li>Shipping addresses you save against your account.</li>
           <li>Order, payment status, and shipment tracking events.</li>
           <li>Cookies and local storage for cart state, session, and pincode preference.</li>
-          <li>Aggregate usage data (page views, errors) via Vercel + Sentry.</li>
+          <li>Aggregate usage data (page views, errors) via Vercel, Sentry and, if you allow analytics, Google Analytics.</li>
         </ul>
       </Section>
 
