@@ -6,14 +6,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * P37a checkout state: decline vs cancel (F28), the Razorpay window vs the
- * 30-minute unpaid hold (R08), the phone rule (F49) and the PIN check (F45).
+ * unpaid hold (R08), the phone rule (F49) and the PIN check (F45).
+ *
+ * P21b: the hold comes from /api/orders/create (`unpaidHoldMinutes`,
+ * `holdExpiresAt`); 30 minutes is only the fallback when those are absent.
+ * F76 is handed to P21: the every-minute (`* * * * *`) expiry cron is merged
+ * in coco36-next #67 and is NEEDS-YES to apply.
  */
 
 vi.mock('../../src/lib/supabase', () => ({ API_URL: 'https://admin.example.test', supabase: {} }));
 
 const {
   classifyPaymentFailure, outcomeOnDismiss, paymentMessage, paymentWindowSeconds, PAYMENT_MESSAGES,
-  PAYMENT_WINDOW_MARGIN_SECONDS, UNPAID_HOLD_MINUTES,
+  PAYMENT_WINDOW_MARGIN_SECONDS, UNPAID_HOLD_MINUTES, holdMinutes,
 } = await import('../../src/lib/checkout');
 const { INDIAN_MOBILE_RE, isIndianMobile, normaliseIndianMobile } = await import('../../src/lib/phone');
 const {
@@ -65,7 +70,7 @@ describe('payment outcomes (F28)', () => {
 });
 
 describe('Razorpay window vs the unpaid hold (R08)', () => {
-  it('is 30 minutes less a 1-minute margin, less time since the order was placed', () => {
+  it('without a hold from the API: 30 minutes less a 1-minute margin, less time since the order was placed', () => {
     expect(UNPAID_HOLD_MINUTES).toBe(30);
     expect(PAYMENT_WINDOW_MARGIN_SECONDS).toBe(60);
     const placed = 5_000_000;
@@ -83,11 +88,74 @@ describe('Razorpay window vs the unpaid hold (R08)', () => {
     }
   });
 
-  it('checkout passes it as Razorpay `timeout` and keeps the first placement time per attempt', () => {
+  it('checkout passes it as Razorpay `timeout`, with the API hold, and keeps the first placement time per attempt', () => {
     const src = read('src/pages/Checkout.tsx');
     expect(src).toContain('timeout:  windowSeconds,');
-    expect(src).toContain('const windowSeconds = paymentWindowSeconds(attempt.current.placedAt);');
+    expect(src).toContain('const { orderId, orderNumber, razorpayOrderId, amount, unpaidHoldMinutes, holdExpiresAt } = payload;');
+    expect(src).toContain('const windowSeconds = paymentWindowSeconds(attempt.current.placedAt, Date.now(), { unpaidHoldMinutes, holdExpiresAt });');
     expect(src).toContain('if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();');
+  });
+});
+
+describe('Razorpay window from the API hold (P21b)', () => {
+  const placed = Date.parse('2026-11-23T10:00:00.000Z');
+  const iso = (ms: number) => new Date(ms).toISOString();
+
+  it('is derived from holdExpiresAt, less the 1-minute margin', () => {
+    const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 30 * 60_000) };
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
+    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(19 * 60);
+    expect(paymentWindowSeconds(placed, placed + 28 * 60_000, hold)).toBe(60);
+    expect(paymentWindowSeconds(placed, placed + 28 * 60_000 + 1000, hold)).toBeNull();
+  });
+
+  it('follows a longer or shorter hold set in admin settings', () => {
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 45, holdExpiresAt: iso(placed + 45 * 60_000) })).toBe(44 * 60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 10, holdExpiresAt: iso(placed + 10 * 60_000) })).toBe(9 * 60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 120, holdExpiresAt: iso(placed + 120 * 60_000) })).toBe(119 * 60);
+  });
+
+  it('an order placed on the server earlier (a reused order) gets only what is left of its hold', () => {
+    // The browser first saw this order now, but the server placed it 20 minutes ago.
+    const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 10 * 60_000) };
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(9 * 60);
+  });
+
+  it('a device clock running behind the server cannot stretch the window past the hold', () => {
+    // Server expiry looks 40 minutes away to a slow clock; the 30-minute hold since placement still caps it.
+    const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 40 * 60_000) };
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
+  });
+
+  it('an expiry already past (or inside the margin) means place the order again', () => {
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed - 1000) })).toBeNull();
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 119_000) })).toBeNull();
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 120_000) })).toBe(60);
+  });
+
+  it.each([
+    ['both absent (older API)', {}],
+    ['nulls (COD-shaped or unreadable placed_at)', { unpaidHoldMinutes: null, holdExpiresAt: null }],
+    ['an unparsable expiry and bad minutes', { unpaidHoldMinutes: '45', holdExpiresAt: 'soon' }],
+    ['minutes out of range', { unpaidHoldMinutes: 500 }],
+  ])('falls back to 30 minutes when the hold is %s', (_n, hold) => {
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
+    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(19 * 60);
+  });
+
+  it('minutes without an expiry still size the window from the placement time', () => {
+    expect(paymentWindowSeconds(placed, placed + 5 * 60_000, { unpaidHoldMinutes: 45 })).toBe(39 * 60);
+  });
+
+  it('holdMinutes accepts whole minutes 10–120 only', () => {
+    expect([10, 30, 45, 120].map(holdMinutes)).toEqual([10, 30, 45, 120]);
+    expect([9, 121, 30.5, '45', null, undefined, Number.NaN].map(holdMinutes)).toEqual([30, 30, 30, 30, 30, 30, 30]);
+  });
+
+  it('the timeout copy is unchanged and says nothing about a fixed number of minutes', () => {
+    expect(paymentMessage('timed_out')).toBe(PAYMENT_MESSAGES.timedOut);
+    expect(PAYMENT_MESSAGES.timedOut).toBe('The payment window timed out and the order was released. Your bag is unchanged; place the order again when you are ready.');
+    expect(Object.values(PAYMENT_MESSAGES).map(String).join(' ')).not.toMatch(/\d+\s*min/i);
   });
 });
 

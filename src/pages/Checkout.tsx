@@ -87,7 +87,7 @@ export const Checkout = () => {
   // a network error returns the same order instead of a second one. A new key
   // once the cart changes or the attempt ended (paid, cancelled, failed).
   // placedAt: when this attempt's order was first placed, so the Razorpay
-  // window can close before the 30-minute unpaid hold ends (R08).
+  // window can close before the unpaid hold ends (R08; hold from the API, P21b).
   const attempt = useRef<{ key: string; cart: string; placedAt?: number }>({ key: newIdempotencyKey(), cart: '' });
   const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), cart: '' }; };
 
@@ -349,7 +349,7 @@ export const Checkout = () => {
         throw new Error(payload.error ?? 'Order creation failed');
       }
 
-      const { orderId, orderNumber, razorpayOrderId, amount } = payload;
+      const { orderId, orderNumber, razorpayOrderId, amount, unpaidHoldMinutes, holdExpiresAt } = payload;
       const purchaseLines = items.map((it) => ({
         sku: it.sku ?? '',
         name: it.name,
@@ -373,7 +373,7 @@ export const Checkout = () => {
       // The window closes before the unpaid hold ends (R08). Too little left:
       // this order is about to be released, so start again.
       if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
-      const windowSeconds = paymentWindowSeconds(attempt.current.placedAt);
+      const windowSeconds = paymentWindowSeconds(attempt.current.placedAt, Date.now(), { unpaidHoldMinutes, holdExpiresAt });
       if (windowSeconds === null) {
         freshAttempt();
         setError(paymentMessage('timed_out'));
