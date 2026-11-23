@@ -13,9 +13,11 @@ import {
   setAnalyticsConsent,
   trackAddToCart,
   trackBeginCheckout,
+  trackPageView,
   trackPurchase,
   trackViewItem,
 } from '../../src/lib/analytics';
+import { openCookieSettings } from '../../src/components/CookieBanner';
 
 const vanilla: GaLine = {
   sku: 'VAN-BOUR-5BN',
@@ -39,6 +41,12 @@ function installBrowser() {
   const g = globalThis as unknown as Record<string, unknown>;
   g.window = g;
   g.dataLayer = dataLayer;
+  g.dispatchEvent = () => {};
+  g.localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
   g.sessionStorage = {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => { store.set(k, v); },
@@ -97,10 +105,11 @@ describe('GA4 ecommerce payloads', () => {
         { item_id: 'SGR-MUSD-1KG', item_name: 'Muscovado', item_variant: '1 kg', price: 450, quantity: 2 },
       ],
     });
-    expect(purchaseParams({ orderNumber: 'C36-1001', totalPaise: 184900, lines: [vanilla, sugar] })).toEqual({
+    expect(purchaseParams({ orderNumber: 'C36-1001', totalPaise: 184900, shippingPaise: 9900, lines: [vanilla, sugar] })).toEqual({
       transaction_id: 'C36-1001',
       currency: 'INR',
       value: 1849,
+      shipping: 99,
       items: [
         { item_id: 'VAN-BOUR-5BN', item_name: 'Madagascar Bourbon Vanilla Beans', item_variant: '5 beans', price: 899, quantity: 1 },
         { item_id: 'SGR-MUSD-1KG', item_name: 'Muscovado', item_variant: '1 kg', price: 450, quantity: 2 },
@@ -190,5 +199,25 @@ describe('GA4 ecommerce consent gate', () => {
       .filter((entry) => entry[0] === 'consent' && entry[1] === 'update');
     expect(updates.at(-1)?.[2]?.analytics_storage).toBe('denied');
     expect(store.has(purchaseStorageKey('C36-1001'))).toBe(false);
+  });
+
+  it('sends no events after Cookie settings, including a later navigation', () => {
+    setAnalyticsConsent('accepted');
+    trackPageView('/shop');
+    const viewsAfterAllow = dataLayer.filter((entry) => {
+      const row = entry as { 0: string; 1?: string };
+      return row[0] === 'event' && row[1] === 'page_view';
+    }).length;
+    expect(viewsAfterAllow).toBeGreaterThan(0);
+
+    openCookieSettings();
+    trackPageView('/terms');
+    trackViewItem(vanilla);
+    const viewsAfterSettings = dataLayer.filter((entry) => {
+      const row = entry as { 0: string; 1?: string };
+      return row[0] === 'event' && row[1] === 'page_view';
+    }).length;
+    expect(viewsAfterSettings).toBe(viewsAfterAllow);
+    expect(commerceEvents(dataLayer).map((event) => event.name)).not.toContain('view_item');
   });
 });

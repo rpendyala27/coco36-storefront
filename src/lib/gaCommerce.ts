@@ -72,13 +72,16 @@ export function purchaseParams(order: {
   orderNumber: string;
   totalPaise: number;
   lines: readonly GaLine[];
-}): { transaction_id: string; currency: typeof GA_CURRENCY; value: number; items: GaItem[] } | null {
+  /** Charged shipping, in paise. Omitted when the caller does not know it. */
+  shippingPaise?: number;
+}): { transaction_id: string; currency: typeof GA_CURRENCY; value: number; shipping?: number; items: GaItem[] } | null {
   const transaction_id = order.orderNumber.trim();
   if (!transaction_id) return null;
   return {
     transaction_id,
     currency: GA_CURRENCY,
     value: paiseToRupees(order.totalPaise),
+    ...(typeof order.shippingPaise === 'number' ? { shipping: paiseToRupees(order.shippingPaise) } : {}),
     items: gaItems(order.lines),
   };
 }

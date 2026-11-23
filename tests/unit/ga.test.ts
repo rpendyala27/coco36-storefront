@@ -40,14 +40,14 @@ describe('GA head snippet', () => {
     expect(gaHeadForEnv({ NODE_ENV: 'production', VITE_GA_ID: '<script>' })).toBe('');
   });
 
-  it('loads gtag.js async and does not send the automatic page_view', () => {
+  it('sets consent denied and does not request Google', () => {
     const html = gaHeadForEnv({ NODE_ENV: 'production' });
-    expect(html).toContain('async src="https://www.googletagmanager.com/gtag/js?id=G-H2E318VXJX"');
-    expect(html).toContain('send_page_view: false');
     expect(html).toContain("analytics_storage: 'denied'");
+    expect(html).not.toContain('googletagmanager');
+    expect(html).not.toContain('google-analytics');
+    expect(html).not.toContain('gtag/js');
+    expect(html).not.toContain('src=');
     expect(html).not.toContain('wait_for_update');
-    expect(html).not.toContain('url_passthrough');
-    expect(html).not.toContain('ads_data_redaction');
   });
 });
 
@@ -84,28 +84,24 @@ describe('GA tag in server-rendered head', () => {
     expect(head(devPage.body)).not.toContain('googletagmanager');
   });
 
-  it('puts the async tag in the head of /, /terms, and a 404 when production', async () => {
+  it('does not request googletagmanager on /, /terms, or a 404 in production', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     for (const [pathname, status] of [['/', 200], ['/terms', 200], ['/no-such-page', 404]] as const) {
       const r = await render(pathname, '', 'coco36.com');
       expect(r.status, pathname).toBe(status);
-      const h = head(r.body);
-      expect(h, pathname).toContain('async src="https://www.googletagmanager.com/gtag/js?id=G-H2E318VXJX"');
-      expect(h, pathname).toContain('send_page_view: false');
-      expect(r.body.slice(r.body.indexOf('</head>')), pathname).not.toContain('googletagmanager');
+      expect(r.body, pathname).not.toContain('googletagmanager');
+      expect(r.body, pathname).not.toContain('google-analytics.com');
+      expect(r.body, pathname).not.toContain('gtag/js');
+      expect(head(r.body), pathname).toContain("analytics_storage: 'denied'");
     }
   });
 
-  it('uses VITE_GA_ID and omits the tag when that var is explicitly empty', async () => {
+  it('omits the consent stub when the measurement id is explicitly empty', async () => {
     vi.stubEnv('NODE_ENV', 'production');
-    vi.stubEnv('VITE_GA_ID', 'G-CUSTOM123');
-    const custom = await render('/terms', '', 'coco36.com');
-    expect(head(custom.body)).toContain('id=G-CUSTOM123');
-    expect(head(custom.body)).not.toContain('G-H2E318VXJX');
-
     vi.stubEnv('VITE_GA_ID', '');
     const off = await render('/terms', '', 'coco36.com');
     expect(off.body).not.toContain('googletagmanager');
+    expect(off.body).not.toContain('analytics_storage');
     expect(off.body).not.toContain('G-H2E318VXJX');
   });
 });

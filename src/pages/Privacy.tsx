@@ -68,10 +68,10 @@ export const Privacy = () => {
 
       <Section title="Cookies">
         <p>
-          We use first-party cookies and browser local storage to keep your
-          cart, login session, and pincode preference. We do not run
-          third-party advertising trackers. You can clear cookies any time
-          via your browser settings.
+          Essential cookies run the shop: they keep your cart, login, and
+          pincode. Google Analytics runs only after you choose Allow
+          analytics. Vercel Web Analytics is cookieless. You can change your
+          choice any time with Cookie settings.
         </p>
         <p>
           <CookieSettingsButton className="text-brand-leaf hover:underline" />

@@ -11,9 +11,15 @@ export const COOKIE_CHOICE_CLASS =
 /** Height of the open banner. Fixed bottom bars sit above this. */
 export const COOKIE_BANNER_OFFSET = '--cookie-banner-offset';
 
+/** Clear the stored choice, stop analytics for this page, and reopen the banner. */
+export function openCookieSettings(): void {
+  setAnalyticsConsent('rejected');
+  clearConsent();
+}
+
 export function CookieSettingsButton({ className }: { className?: string }) {
   return (
-    <button type="button" className={className} onClick={() => clearConsent()}>
+    <button type="button" className={className} onClick={() => openCookieSettings()}>
       Cookie settings
     </button>
   );

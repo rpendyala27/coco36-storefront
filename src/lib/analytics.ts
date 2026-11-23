@@ -1,17 +1,10 @@
 /**
  * Google Analytics 4 (gtag.js) for the Vite storefront.
  *
- * The async loader itself is in the server-rendered <head> (server/gaSnippet.ts)
- * on production HTML, including 404 and static pages. This module does not
- * inject a second copy of that script. It only turns collection on after the
- * cookie banner's Accept, and it records SPA navigations.
- *
- * 1. CONSENT-GATED HITS. The banner offers "Essential only" and
- *    "Allow analytics". The head snippet
- *    starts Consent Mode with analytics_storage denied (ad storage stays
- *    denied either way). The browser does fetch gtag.js, because the tag is
- *    in the HTML. Until Accept, trackPageView is a no-op, so route hits are
- *    not sent. Granting consent is what lets those page views out.
+ * gtag.js is not in the server HTML. This module injects it only after
+ * Allow analytics. The head may contain a consent-default stub with no
+ * script src (server/gaSnippet.ts). Until Allow analytics, trackPageView
+ * is a no-op. Cookie settings revokes that grant for the rest of the page.
  *
  * 2. SPA-AWARE, WITHOUT DOUBLE COUNTING. gtag config uses send_page_view:
  *    false, so the initial config does not emit a page_view. App.tsx calls
@@ -82,24 +75,26 @@ const gtag: GtagFn = function () {
   (window.dataLayer = window.dataLayer || []).push(arguments);
 } as GtagFn;
 
-/** Configure gtag once consent is granted, and fetch gtag.js if the SSR head
- *  did not already include it (local dev with VITE_GA_DEV). */
+/** Fetch gtag.js only after Allow analytics. The SSR head never includes that src. */
 function load(): void {
   if (loaded || !enabled() || typeof document === 'undefined' || !MEASUREMENT_ID) return;
   loaded = true;
 
-  const fromHead = typeof window.gtag === 'function' || snippetPresent();
+  const alreadyBooted = typeof window.gtag === 'function';
   if (!window.gtag) window.gtag = gtag;
 
-  if (fromHead) {
-    // The head snippet already pushed consent default (denied) and config
-    // with send_page_view false. Update consent only — a second config would
-    // be a second page_view if send_page_view were ever left on.
+  if (alreadyBooted) {
+    // Consent-default stub, or a previous grant in this tab. Grant storage
+    // and configure the property. send_page_view stays off.
     window.gtag('consent', 'update', {
       ad_storage:         'denied',
       ad_user_data:       'denied',
       ad_personalization: 'denied',
       analytics_storage:  'granted',
+    });
+    window.gtag('config', MEASUREMENT_ID, {
+      send_page_view: false,
+      anonymize_ip:   true,
     });
   } else {
     gtag('js', new Date());
@@ -219,7 +214,7 @@ function rememberPurchase(orderNumber: string): void {
  * The payload is transaction id, value in rupees, INR, and item rows. No
  * email, phone, name, or address.
  */
-export function trackPurchase(order: { orderNumber: string; totalPaise: number; lines: readonly GaLine[] }): void {
+export function trackPurchase(order: { orderNumber: string; totalPaise: number; lines: readonly GaLine[]; shippingPaise?: number }): void {
   if (!loaded) return;
   const orderNumber = order.orderNumber.trim();
   if (!orderNumber) return;

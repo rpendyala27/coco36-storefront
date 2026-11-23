@@ -373,7 +373,12 @@ export const Checkout = () => {
           // the user we show confirmation immediately. purchase is prepaid
           // success only; COD never reaches this handler.
           freshAttempt();
-          trackPurchase({ orderNumber, totalPaise: amount, lines: purchaseLines });
+          trackPurchase({
+            orderNumber,
+            totalPaise: amount,
+            shippingPaise: totals.shipping_paise,
+            lines: purchaseLines,
+          });
           setConfirmedOrder({ orderNumber, total_paise: amount });
           setStep('confirmed');
           setTimeout(() => clear(), 300);

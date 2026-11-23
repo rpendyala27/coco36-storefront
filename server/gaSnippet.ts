@@ -1,39 +1,30 @@
-import { readGaIdEnv } from '../src/lib/gaId.js';
-
 /**
- * The gtag snippet for the server-rendered <head>.
+ * Consent default for the server-rendered <head>.
  *
- * Every HTML document from api/render goes through this, including 404 and
- * /terms. Redirect bodies do not. The loader is async so it does not block
- * first paint. The inline bootstrap is a few lines; gtag.js itself is the
- * async script.
+ * This does not load gtag.js and does not name googletagmanager.com.
+ * The library is injected only after Allow analytics (src/lib/analytics.ts).
+ * The inline stub records Consent Mode as denied so a later load cannot
+ * treat the first hit as already granted. Ad storage stays denied.
  *
- * Consent defaults stay denied. This is not Consent Mode advanced: there is
- * no wait_for_update, so the snippet does not schedule a cookieless ping
- * before the visitor chooses. The cookie banner grants analytics_storage
- * only after Accept (src/lib/analytics.ts). Ad storage stays denied.
- * send_page_view is false so the config call does not emit a hit that
- * App.tsx would then emit again on the same route.
- *
- * Emitted only when NODE_ENV is production and the id is non-empty, so
- * `vite dev`, vitest, and an explicit empty VITE_GA_ID stay quiet.
+ * Omitted outside production, and when the measurement id is explicitly
+ * empty or not a GA4 id, so dev, tests, and a disabled property stay quiet.
  */
+
+import { readGaIdEnv } from '../src/lib/gaId.js';
 
 export function gaHeadForEnv(env: NodeJS.ProcessEnv = process.env): string {
   if (env.NODE_ENV !== 'production') return '';
-  const id = readGaIdEnv(env);
-  if (!id) return '';
-  return renderGaHead(id);
+  if (!readGaIdEnv(env)) return '';
+  return renderConsentDefault();
 }
 
-export function renderGaHead(id: string): string {
+/** No script src. Nothing here is a request to Google. */
+export function renderConsentDefault(): string {
   return [
-    '    <script async src="https://www.googletagmanager.com/gtag/js?id=' + id + '"></script>',
     '    <script>',
     '      window.dataLayer = window.dataLayer || [];',
     '      function gtag(){dataLayer.push(arguments);}',
     '      window.gtag = gtag;',
-    "      gtag('js', new Date());",
     "      gtag('consent', 'default', {",
     "        ad_storage: 'denied',",
     "        ad_user_data: 'denied',",
@@ -42,7 +33,6 @@ export function renderGaHead(id: string): string {
     "        functionality_storage: 'granted',",
     "        security_storage: 'granted'",
     '      });',
-    "      gtag('config', '" + id + "', { send_page_view: false, anonymize_ip: true });",
     '    </script>',
   ].join('\n');
 }

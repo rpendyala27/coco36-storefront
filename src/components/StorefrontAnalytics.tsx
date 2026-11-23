@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/react';
+import { scrubVercelPageView } from '../lib/vercelAnalyticsPath';
 
 /**
  * Vercel Web Analytics for the storefront.
@@ -14,5 +15,5 @@ import { Analytics } from '@vercel/analytics/react';
  */
 export function StorefrontAnalytics() {
   if (!import.meta.env.PROD) return null;
-  return <Analytics />;
+  return <Analytics beforeSend={scrubVercelPageView} />;
 }
