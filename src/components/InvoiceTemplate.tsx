@@ -1,12 +1,12 @@
-import React from 'react';
-import type { InvoiceBreakup, InvoiceSettings } from '../lib/invoice-types';
+import type { InvoiceBreakup, InvoiceSeller, InvoiceSettings } from '../lib/invoice-types';
 
 /**
  * Customer-facing invoice template.
  *
- * Visually identical to the admin invoice (admin lives in
- * coco36-next/app/(admin)/admin/orders/[id]/invoice/page.tsx). Both render
- * the same data shape pulled from `invoices.gst_breakup` + `settings`.
+ * Line items come from `invoices.gst_breakup`. The seller block comes from
+ * public.customer_invoice_header() (legal name, address, GSTIN, FSSAI when
+ * set). PAN and bank details are not printed. A missing seller block leaves
+ * the wordmark and the rest of the invoice in place.
  *
  * Print-safe: the `.print:hidden` toolbar in the parent page disappears
  * on browser print; this template prints exactly as-rendered.
@@ -32,7 +32,6 @@ export function InvoiceTemplate({
   paymentMethod, customer, ship, breakup, settings,
 }: Props) {
   const seller = settings.seller;
-  const ic     = settings.invoice;
 
   return (
     <div className="bg-white min-h-screen p-10 print:p-0 print:m-0 max-w-4xl mx-auto text-gray-900 text-[13px] leading-relaxed">
@@ -40,24 +39,10 @@ export function InvoiceTemplate({
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-900">
         <div>
-          {ic.logoUrl ? (
-            <img src={ic.logoUrl} alt={settings.storeName} className="h-12 mb-3" />
-          ) : (
-            <div className="text-3xl font-extrabold">
-              COCO<span className="text-[#4e7d24]">36</span>
-            </div>
-          )}
-          <p className="font-bold text-base">{seller.legalName}</p>
-          <p className="text-xs text-gray-600 mt-1 leading-tight">
-            {seller.addressLine1}<br />
-            {seller.addressLine2 && <>{seller.addressLine2}<br /></>}
-            {seller.city}, {seller.state} — {seller.pincode}
-          </p>
-          <p className="text-xs text-gray-600 mt-2">
-            {seller.gstin       && <>GSTIN: <span className="font-mono">{seller.gstin}</span><br /></>}
-            {seller.pan         && <>PAN: <span className="font-mono">{seller.pan}</span><br /></>}
-            {seller.fssaiLicNo  && <>FSSAI: <span className="font-mono">{seller.fssaiLicNo}</span></>}
-          </p>
+          <div className="text-3xl font-extrabold">
+            COCO<span className="text-[#4e7d24]">36</span>
+          </div>
+          {seller ? <SellerBlock seller={seller} /> : null}
         </div>
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Tax Invoice</p>
@@ -168,31 +153,6 @@ export function InvoiceTemplate({
         </table>
       </section>
 
-      {/* ── Bank + Signature ─────────────────────────────────────────────── */}
-      {(ic.bankName || ic.bankAccount) && (
-        <section className="border-t border-gray-200 pt-4 grid grid-cols-2 gap-6">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Bank Details</p>
-            <p className="text-xs">{ic.bankName}</p>
-            {ic.bankAccount && <p className="text-xs font-mono">A/c: {ic.bankAccount}</p>}
-            {ic.bankIfsc    && <p className="text-xs font-mono">IFSC: {ic.bankIfsc}</p>}
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">For {seller.legalName}</p>
-            {ic.signatureUrl && <img src={ic.signatureUrl} alt="Authorised signatory" className="ml-auto h-12 my-2" />}
-            <p className="text-xs mt-4 border-t border-gray-300 inline-block pt-1 px-4">Authorised Signatory</p>
-          </div>
-        </section>
-      )}
-
-      {/* ── Terms ────────────────────────────────────────────────────────── */}
-      {ic.terms && (
-        <section className="border-t border-gray-200 pt-4 mt-6">
-          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Terms & Conditions</p>
-          <p className="text-xs text-gray-600 leading-relaxed">{ic.terms}</p>
-        </section>
-      )}
-
       {/* ── Footer note ──────────────────────────────────────────────────── */}
       <footer className="text-center text-[10px] text-gray-400 mt-8 pt-4 border-t border-gray-100">
         This is a computer-generated invoice — no physical signature required if e-invoicing is enabled.
@@ -200,5 +160,40 @@ export function InvoiceTemplate({
         Generated via {settings.storeName}
       </footer>
     </div>
+  );
+}
+
+function SellerBlock({ seller }: { seller: InvoiceSeller }) {
+  const locality = [seller.city, seller.state].filter(Boolean).join(', ');
+  const place = seller.pincode
+    ? (locality ? `${locality} — ${seller.pincode}` : seller.pincode)
+    : locality;
+  const lines = [seller.addressLine1, seller.addressLine2, place].filter((line) => line.length > 0);
+
+  return (
+    <>
+      {seller.legalName ? <p className="font-bold text-base">{seller.legalName}</p> : null}
+      {lines.length > 0 && (
+        <p className="text-xs text-gray-600 mt-1 leading-tight">
+          {lines.map((line, index) => (
+            <span key={`${index}-${line}`}>
+              {index > 0 ? <br /> : null}
+              {line}
+            </span>
+          ))}
+        </p>
+      )}
+      {(seller.gstin || seller.fssaiLicNo) && (
+        <p className="text-xs text-gray-600 mt-2">
+          {seller.gstin ? (
+            <>
+              GSTIN: <span className="font-mono">{seller.gstin}</span>
+              {seller.fssaiLicNo ? <br /> : null}
+            </>
+          ) : null}
+          {seller.fssaiLicNo ? <>FSSAI: <span className="font-mono">{seller.fssaiLicNo}</span></> : null}
+        </p>
+      )}
+    </>
   );
 }

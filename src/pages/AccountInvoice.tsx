@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { loadInvoiceSettings } from '../lib/invoiceHeader';
 import { InvoiceTemplate } from '../components/InvoiceTemplate';
 import type { InvoiceBreakup, InvoiceSettings } from '../lib/invoice-types';
 
@@ -29,8 +30,12 @@ interface OrderRow {
  * Customer's printable tax invoice. Gated by Supabase RLS — only the
  * order's owning customer can SELECT the invoice row.
  *
- * Renders the same `InvoiceTemplate` the admin uses. Browser print
- * (File → Print → Save as PDF) gives the customer a takeaway PDF.
+ * The seller block is public.customer_invoice_header() (legal name, address,
+ * GSTIN, FSSAI once set). It is not read from settings. store.name is still
+ * a public settings row. If the header call fails or comes back empty, the
+ * invoice renders without that block.
+ *
+ * Browser print (File → Print → Save as PDF) gives the customer a takeaway PDF.
  *
  * If the order hasn't been packed yet there's no invoice — we show
  * a polite empty state instead of a confusing 404.
@@ -53,61 +58,41 @@ export const AccountInvoice = () => {
     if (!id) return;
 
     (async () => {
-      // 1. Order + invoice (RLS gates the read to this customer's orders)
-      const orderQuery = supabase
-        .from('orders')
-        .select(`
-          id, order_number, payment_method, placed_at,
-          customer:customers(name, email, phone, gstin),
-          ship:addresses!ship_address_id(name, line1, line2, city, state, pincode),
-          invoice:invoices(id, invoice_number, issued_at, gst_breakup)
-        `)
-        .eq('id', id)
-        .eq('customer_id', user.id)
-        .maybeSingle();
+      try {
+        // Order + invoice (RLS gates the read to this customer's orders).
+        // Seller header is a separate RPC and must not fail this read.
+        const orderQuery = supabase
+          .from('orders')
+          .select(`
+            id, order_number, payment_method, placed_at,
+            customer:customers(name, email, phone, gstin),
+            ship:addresses!ship_address_id(name, line1, line2, city, state, pincode),
+            invoice:invoices(id, invoice_number, issued_at, gst_breakup)
+          `)
+          .eq('id', id)
+          .eq('customer_id', user.id)
+          .maybeSingle();
 
-      // 2. Settings — public-readable (anon SELECT policy)
-      const settingsQuery = supabase
-        .from('settings')
-        .select('key, value');
+        const [orderRes, chrome] = await Promise.all([
+          orderQuery,
+          // A header failure must not fail the invoice. The loader already
+          // returns a null seller; this catch covers an unexpected throw.
+          loadInvoiceSettings().catch(() => ({ seller: null, storeName: 'COCO36' })),
+        ]);
 
-      const [orderRes, settingsRes] = await Promise.all([orderQuery, settingsQuery]);
+        if (orderRes.error || !orderRes.data) {
+          setError('Order not found.');
+          setLoading(false);
+          return;
+        }
 
-      if (orderRes.error || !orderRes.data) {
-        setError('Order not found.');
+        setOrder(orderRes.data as any);
+        setSettings(chrome);
         setLoading(false);
-        return;
+      } catch {
+        setError('Could not load invoice.');
+        setLoading(false);
       }
-
-      setOrder(orderRes.data as any);
-
-      // Project settings rows → InvoiceSettings shape
-      const map = new Map<string, unknown>(
-        (settingsRes.data ?? []).map((r: any) => [r.key, r.value]),
-      );
-      setSettings({
-        storeName: pickStr(map.get('store.name'), 'COCO36'),
-        seller: {
-          legalName:    pickStr(map.get('seller.legal_name'),    'COCO36 Foods Pvt Ltd'),
-          gstin:        pickStr(map.get('seller.gstin'),         ''),
-          pan:          pickStr(map.get('seller.pan'),           ''),
-          addressLine1: pickStr(map.get('seller.address_line1'), ''),
-          addressLine2: pickStr(map.get('seller.address_line2'), ''),
-          city:         pickStr(map.get('seller.city'),          ''),
-          state:        pickStr(map.get('seller.state'),         ''),
-          pincode:      pickStr(map.get('seller.pincode'),       ''),
-          fssaiLicNo:   pickStr(map.get('seller.fssai_lic_no'),  ''),
-        },
-        invoice: {
-          terms:        pickStr(map.get('invoice.terms'),         ''),
-          bankName:     pickStr(map.get('invoice.bank_name'),     ''),
-          bankAccount:  pickStr(map.get('invoice.bank_account'),  ''),
-          bankIfsc:     pickStr(map.get('invoice.bank_ifsc'),     ''),
-          signatureUrl: pickStr(map.get('invoice.signature_url'), ''),
-          logoUrl:      pickStr(map.get('invoice.logo_url'),      ''),
-        },
-      });
-      setLoading(false);
     })();
   }, [id, user, navigate]);
 
@@ -210,9 +195,3 @@ export const AccountInvoice = () => {
     </>
   );
 };
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function pickStr(v: unknown, fallback: string): string {
-  return typeof v === 'string' ? v : fallback;
-}
