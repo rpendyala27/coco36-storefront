@@ -7,6 +7,7 @@ import { browseCategories, featuredProducts, listingIntro, productsInCategory } 
 import { productBadges, useCaseTags } from '../src/lib/badges.js';
 import type { ClaimMark } from '../src/lib/claimMarks.js';
 import { comingSoonProducts } from '../src/lib/comingSoonProducts.js';
+import { AVAILABILITY_TEXT, productAvailability, sizeAvailability } from '../src/lib/availability.js';
 import { shopTagPath } from '../src/lib/shopTags.js';
 import { trustLinesFromConfig } from '../src/lib/trustLines.js';
 import { categoryPage } from '../src/content/categoryPages.js';
@@ -95,7 +96,12 @@ const priceFrom = (p: Product) => {
   const min = Math.min(...p.sizes.map((s) => s.priceInPaise));
   return `${p.sizes.length > 1 ? 'from ' : ''}${rupees(min)}`;
 };
-const stockNote = (p: Product) => (p.sizes.some((s) => s.inStock) ? '' : ' (out of stock)');
+// Same availability source as the product page and cards (R13, F63). No live
+// counts on the server: coming-soon tag, then in_stock.
+const stockNote = (p: Product) => {
+  const a = productAvailability(p);
+  return a === 'available' ? '' : ` (${AVAILABILITY_TEXT[a]})`;
+};
 
 function claimMarkList(ctx: SnapshotCtx): string {
   const marks = ctx.claimMarks ?? [];
@@ -230,7 +236,7 @@ export function productSnapshot(ctx: SnapshotCtx, p: Product, crumbs: Crumb[]): 
     goodForLine(p),
     `<p>${[p.brand && `By ${esc(p.brand)}`, p.origin && `Origin: ${esc(p.origin)}`].filter(Boolean).join(' · ')}</p>`,
     body,
-    p.sizes.length ? `<h2>Sizes and prices</h2><ul>${p.sizes.map((s) => `<li>${esc(s.label)}${s.sku ? ` (SKU ${esc(s.sku)})` : ''}: ${esc(rupees(s.priceInPaise))} — ${s.inStock ? 'in stock' : 'out of stock'}</li>`).join('')}</ul>` : '',
+    p.sizes.length ? `<h2>Sizes and prices</h2><ul>${p.sizes.map((s) => `<li>${esc(s.label)}${s.sku ? ` (SKU ${esc(s.sku)})` : ''}: ${esc(rupees(s.priceInPaise))} — ${AVAILABILITY_TEXT[sizeAvailability(p, s)]}</li>`).join('')}</ul>` : '',
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
     cat ? `<p>More in ${a(categoryPath(cat), cat.name)}</p>` : '',
     guide ? `<p>Buying guide: ${a(guidePath(guide), guide.h1)}</p>` : '',

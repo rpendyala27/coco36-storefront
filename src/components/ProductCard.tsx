@@ -12,7 +12,8 @@ import { CertStamp } from './CertStamp';
 import { DesignationBadges } from './DesignationBadges';
 import { NotifyMe } from './NotifyMe';
 import { isFssaiClaim } from '../lib/fssai';
-import { productIsOutOfStock } from '../lib/outOfStockBadge';
+import { allPacksOut, buyableSizes, isComingSoon, productAvailability } from '../lib/availability';
+import { useLiveStock } from '../lib/liveStock';
 
 interface Props {
   product: Product;
@@ -42,8 +43,12 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
     return () => document.removeEventListener('pointerdown', onDown);
   }, [pickerOpen]);
 
-  const inStockSizes  = product.sizes.filter((s) => s.inStock);
-  const isOutOfStock  = productIsOutOfStock(product);
+  // Same availability source as the product page and the snapshot (R13):
+  // coming soon or sold out shows Notify me instead of Add.
+  const liveStock     = useLiveStock(product.sizes.map((s) => s.id));
+  const inStockSizes  = buyableSizes(product, liveStock);
+  const isOutOfStock  = productAvailability(product, liveStock) !== 'available';
+  const comingSoon    = isComingSoon(product);
   const minPricePaise = product.sizes.length ? Math.min(...product.sizes.map((s) => s.priceInPaise)) : 0;
   const hasOptions    = product.sizes.length > 1;
   const unitLabel     = product.sizes.length === 1 ? product.sizes[0].label : '';
@@ -102,7 +107,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
           <span className="absolute bottom-3.5 right-3.5 size-9 rounded-full bg-white/92 backdrop-blur-sm border border-brand-line/60 text-brand-forest flex items-center justify-center">
             <ArrowRight size={15} strokeWidth={2} />
           </span>
-          {isOutOfStock && <div aria-hidden className="absolute inset-0 bg-white/55" />}
+          {allPacksOut(product, liveStock) && <div aria-hidden className="absolute inset-0 bg-white/55" />}
         </Link>
         {/* Phone-width cards shorten New and Limited. Coming Soon stays the
             full label and may use the card width. The sold-out wash stays on
@@ -134,7 +139,7 @@ export const ProductCard: React.FC<Props> = ({ product, index = 0 }) => {
             {hasOptions && <div className="text-xs text-brand-muted mt-1">From</div>}
           </div>
           {isOutOfStock ? (
-            <NotifyMe productKey={product.id} productName={product.name} className="!px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap" />
+            <NotifyMe productKey={product.id} productName={product.name} comingSoon={comingSoon} className="!px-3 md:!px-4 !py-2 text-[13px] whitespace-nowrap" />
           ) : (
             <button
               ref={addBtnRef}

@@ -5,6 +5,7 @@ import type {
 import type { Product } from '../types';
 import { imageUrl } from '../lib/img.js';
 import { productPath } from '../lib/productPath.js';
+import { schemaAvailability, sizeAvailability } from '../lib/availability.js';
 import { stripMarkdown } from './text.js';
 import {
   BRAND, DEFAULT_POLICY, LEGAL_NAME, LOGO_URL, dispatchDayBounds, dispatchWindow,
@@ -217,7 +218,7 @@ export function productJsonLd(
       price: paiseToRupees(s.priceInPaise),
       priceCurrency: 'INR',
       priceValidUntil: validUntil,
-      availability: s.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      availability: schemaAvailability(sizeAvailability(p, s)),
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', '@id': ORG_ID, name: BRAND },
       shippingDetails: shippingJsonLd(s.priceInPaise, policy),

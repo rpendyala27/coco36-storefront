@@ -8,7 +8,6 @@ import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
 import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checkout';
-import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
 import { availableFor, soldOutItems, stockNote } from '../lib/stock';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
@@ -16,6 +15,12 @@ import { AddressForm } from '../components/AddressForm';
 import { DeliveryAnswer } from '../components/CheckDelivery';
 import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/delivery';
 import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
+import { summarizeCart } from '../lib/cartSummary';
+import {
+  classifyPaymentFailure, outcomeOnDismiss, paymentMessage, paymentWindowSeconds, type RazorpayFailure,
+} from '../lib/checkout';
+import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
+import { RemovedLinesNotice } from '../components/CartSummary';
 
 const DRAFT_KEY = 'coco36.checkout-draft';
 
@@ -28,7 +33,7 @@ declare global {
 type PaymentMethod = 'prepaid' | 'cod';
 
 export const Checkout = () => {
-  const { items, clear, subtotal, stock, refreshStock } = useCart();
+  const { items, clear, subtotal, stock, refreshStock, removedLines, dismissRemovedLines } = useCart();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const cfg = useStoreConfig();
@@ -57,7 +62,9 @@ export const Checkout = () => {
   // One idempotency key per checkout attempt: a double-click or a retry after
   // a network error returns the same order instead of a second one. A new key
   // once the cart changes or the attempt ended (paid, cancelled, failed).
-  const attempt = useRef<{ key: string; cart: string }>({ key: newIdempotencyKey(), cart: '' });
+  // placedAt: when this attempt's order was first placed, so the Razorpay
+  // window can close before the 30-minute unpaid hold ends (R08).
+  const attempt = useRef<{ key: string; cart: string; placedAt?: number }>({ key: newIdempotencyKey(), cart: '' });
   const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), cart: '' }; };
 
   // ── Address book ──────────────────────────────────────────────────────────
@@ -116,7 +123,7 @@ export const Checkout = () => {
     if (!shipAddr) { setDelivery(null); setDeliveryError(null); return; }
     let live = true;
     checkDelivery(shipAddr.pincode, { variantIds: itemIds ? itemIds.split(',') : [], cod: paymentMethod === 'cod' })
-      .then((r) => { if (!live) return; setDelivery(r); setDeliveryError(null); rememberPincode(shipAddr.pincode); })
+      .then((r) => { if (!live) return; setDelivery(r); setDeliveryError(null); if (r.deliverable) rememberPincode(shipAddr.pincode); })
       .catch((e: Error) => { if (live) { setDelivery(null); setDeliveryError(e.message); } });
     return () => { live = false; };
   }, [shipAddr?.pincode, itemIds, paymentMethod]);
@@ -174,18 +181,18 @@ export const Checkout = () => {
 
   // ── Totals ──────────────────────────────────────────────────────────────────
   // Paise end-to-end — Supabase, cart, checkout, payment gateway all agree.
-  const totals = useMemo(() => {
-    // Sellable units only (the cart caps lines at stock; sold-out lines count 0).
-    const subtotal_paise = subtotal;
-    const shipping_paise = shippingFor(subtotal_paise, cfg);
-    const cod_paise      = paymentMethod === 'cod' ? cfg.codSurchargePaise : 0;
-    return {
-      subtotal_paise,
-      shipping_paise,
-      cod_paise,
-      total_paise: subtotal_paise + shipping_paise + cod_paise,
-    };
-  }, [subtotal, paymentMethod, cfg]);
+  // Same summary as the drawer and /cart (F17): sellable units only; no
+  // shipping or threshold line when nothing is sellable (F19).
+  const summary = useMemo(
+    () => summarizeCart(items, stock, cfg, { codFeePaise: paymentMethod === 'cod' ? cfg.codSurchargePaise : 0 }),
+    [items, stock, paymentMethod, cfg],
+  );
+  const totals = {
+    subtotal_paise: summary.subtotal,
+    shipping_paise: summary.shipping,
+    cod_paise:      summary.codFee,
+    total_paise:    summary.total,
+  };
 
   // ── Address-book helpers ────────────────────────────────────────────────────
   const addShipAddress = async (input: AddressInput) => {
@@ -217,6 +224,12 @@ export const Checkout = () => {
     // see the <div> wrapper note below).
     if (!form.name.trim() || !form.phone.trim()) {
       setError('Please enter your name and phone number.');
+      return;
+    }
+    // Same rule as signup and the admin API, plus no placeholder numbers (F49).
+    const customerPhone = normaliseIndianMobile(form.phone);
+    if (!customerPhone) {
+      setError(PHONE_INVALID_MESSAGE);
       return;
     }
 
@@ -290,7 +303,7 @@ export const Checkout = () => {
           shipAddressId: selectedShipId,
           billAddressId,
           customerName:  form.name,
-          customerPhone: form.phone,
+          customerPhone,
           paymentMethod,
           idempotencyKey: attempt.current.key,
         }),
@@ -313,6 +326,7 @@ export const Checkout = () => {
       }
 
       const { orderId, orderNumber, razorpayOrderId, amount } = payload;
+      if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
 
       if (paymentMethod === 'cod') {
         freshAttempt();
@@ -326,6 +340,20 @@ export const Checkout = () => {
       // Prepaid — open Razorpay checkout
       if (!razorpayOrderId) throw new Error('Payment gateway not initialised');
 
+      // The window closes before the unpaid hold ends (R08). Too little left:
+      // this order is about to be released, so start again.
+      const windowSeconds = paymentWindowSeconds(attempt.current.placedAt);
+      if (windowSeconds === null) {
+        freshAttempt();
+        setError(paymentMessage('timed_out'));
+        setSubmitting(false);
+        return;
+      }
+      // A failure earlier in this window, so closing it afterwards is not
+      // reported as "cancelled" (F28).
+      let lastFailure: RazorpayFailure | null = null;
+      const openedAt = Date.now();
+
       const rzp = new window.Razorpay({
         key:      RAZORPAY_KEY_ID,
         amount,            // paise
@@ -336,6 +364,7 @@ export const Checkout = () => {
         prefill:  { name: form.name, email: form.email, contact: form.phone },
         notes:    { orderId, orderNumber },
         theme:    { color: '#4e7d24' },
+        timeout:  windowSeconds,
         handler:  () => {
           // Razorpay JS handler fires on successful authorisation.
           // The webhook on the server is the real source of truth — but for
@@ -351,14 +380,15 @@ export const Checkout = () => {
           ondismiss: () => {
             freshAttempt();
             void abandonCheckout(orderId);
-            setError('Payment cancelled. Your bag is unchanged; place the order again when you are ready.');
+            setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));
             setSubmitting(false);
           },
         },
       });
 
-      rzp.on('payment.failed', (resp: any) => {
-        setError(resp?.error?.description ?? 'Payment failed. Please try again.');
+      rzp.on('payment.failed', (resp: { error?: RazorpayFailure } | undefined) => {
+        lastFailure = resp?.error ?? {};
+        setError(paymentMessage(classifyPaymentFailure(lastFailure), lastFailure));
         setSubmitting(false);
       });
 
@@ -653,14 +683,16 @@ export const Checkout = () => {
                   <span className="text-brand-muted">Subtotal</span>
                   <span className="font-semibold">{formatMoney(totals.subtotal_paise)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-brand-muted">Shipping</span>
-                  <span className="font-semibold">
-                    {totals.shipping_paise === 0
-                      ? <span className="text-brand-leaf text-[10px] uppercase tracking-widest font-bold">Free</span>
-                      : formatMoney(totals.shipping_paise)}
-                  </span>
-                </div>
+                {totals.shipping_paise !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-brand-muted">Shipping</span>
+                    <span className="font-semibold">
+                      {totals.shipping_paise === 0
+                        ? <span className="text-brand-leaf text-[10px] uppercase tracking-widest font-bold">Free</span>
+                        : formatMoney(totals.shipping_paise)}
+                    </span>
+                  </div>
+                )}
                 {totals.cod_paise > 0 && (
                   <div className="flex justify-between">
                     <span className="text-brand-muted">COD handling</span>
@@ -673,11 +705,13 @@ export const Checkout = () => {
                 </div>
               </div>
 
-              {freeShippingRemaining(totals.subtotal_paise, cfg) > 0 && (
+              {summary.freeShipping && summary.freeShipping.remaining > 0 && (
                 <p className="text-[12px] text-brand-muted text-center bg-brand-paper py-3 border border-brand-line rounded">
-                  Add <span className="text-brand-forest font-bold">{formatMoney(freeShippingRemaining(totals.subtotal_paise, cfg))}</span> more for free shipping
+                  Add <span className="text-brand-forest font-bold">{formatMoney(summary.freeShipping.remaining)}</span> more for free shipping
                 </p>
               )}
+
+              <RemovedLinesNotice removed={removedLines} onDismiss={dismissRemovedLines} />
 
               {legacyItemCount > 0 && !error && (
                 <div className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-4 py-3 normal-case tracking-normal leading-snug">

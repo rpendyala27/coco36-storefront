@@ -24,7 +24,9 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { DesignationBadges } from '../components/DesignationBadges';
 import { GoodForChips } from '../components/GoodForChips';
 import { NotifyMe } from '../components/NotifyMe';
-import { isSoldOut, productBadges } from '../lib/badges';
+import { productBadges } from '../lib/badges';
+import { allPacksOut, canBuy, isComingSoon, sizeAvailability } from '../lib/availability';
+import { useLiveStock } from '../lib/liveStock';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -36,6 +38,8 @@ export const ProductDetail = () => {
   const { products } = useProducts();
   const { tree } = useCategories();
   const cfg = useStoreConfig();
+  // Live sellable units for this product's packs (R13). Null until known.
+  const liveStock = useLiveStock(product ? product.sizes.map((s) => s.id) : []);
 
   const [selectedSizeId, setSelectedSizeId] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -132,10 +136,14 @@ export const ProductDetail = () => {
   const markTags        = [...certTags, ...dietaryTags];
   const gallery         = [product.image, product.imageHover].filter(Boolean) as string[];
   const designationChips = productBadges(product);
-  const soldOut         = isSoldOut(product.sizes);
+  // One availability answer drives the gallery wash, size buttons, Add to bag,
+  // Buy now, the sticky bar and Notify me (F16, R13).
+  const soldOut         = allPacksOut(product, liveStock); // image wash, as before
+  const comingSoon      = isComingSoon(product);
+  const buyable         = canBuy(product, selectedSize, liveStock);
 
-  const handleAddToCart = () => selectedSize && addItem(product, selectedSize, quantity);
-  const handleBuyNow    = () => { if (selectedSize) { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 150); } };
+  const handleAddToCart = () => { if (buyable && selectedSize) addItem(product, selectedSize, quantity); };
+  const handleBuyNow    = () => { if (buyable && selectedSize) { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 150); } };
   const toggle = (k: keyof typeof open) => setOpen((s) => ({ ...s, [k]: !s[k] }));
 
   return (
@@ -219,14 +227,16 @@ export const ProductDetail = () => {
               <div className="flex flex-wrap gap-2.5">
                 {product.sizes.map((s) => {
                   const sel = selectedSizeId === s.id;
+                  // Coming soon packs stay selectable (price per size); sold-out ones don't.
+                  const out = sizeAvailability(product, s, liveStock) === 'sold_out';
                   return (
                     <button
                       key={s.id}
                       onClick={() => setSelectedSizeId(s.id)}
-                      disabled={!s.inStock}
+                      disabled={out}
                       className={`flex flex-col items-start px-4 py-2.5 rounded-xl border transition-all ${
                         sel ? 'border-brand-leaf bg-brand-surface ring-2 ring-brand-leaf/15' : 'border-brand-line hover:border-brand-forest'
-                      } ${!s.inStock ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
+                      } ${out ? 'opacity-40 cursor-not-allowed line-through' : ''}`}
                     >
                       <span className="text-sm font-semibold text-brand-forest">{s.label}</span>
                       <span className="text-[11px] text-brand-muted">{formatMoney(s.priceInPaise)}</span>
@@ -239,8 +249,8 @@ export const ProductDetail = () => {
 
           {/* Qty + add */}
           <div ref={primaryAddRef} className="flex gap-3 mt-7 flex-wrap">
-            {selectedSize && !selectedSize.inStock ? (
-              <NotifyMe productKey={product.id} productName={product.name} className="!px-6 !py-3.5" />
+            {selectedSize && !buyable ? (
+              <NotifyMe productKey={product.id} productName={product.name} comingSoon={comingSoon} className="!px-6 !py-3.5" />
             ) : (
               <>
                 <div className="flex items-center border border-brand-line rounded-full px-1.5">
@@ -409,10 +419,10 @@ export const ProductDetail = () => {
               <p className="text-xs text-brand-muted">{selectedSize.label}</p>
             </div>
             <span className="font-sans font-bold text-xl text-brand-forest tabular-nums">{formatMoney(totalPricePaise)}</span>
-            {selectedSize.inStock ? (
+            {buyable ? (
               <button onClick={handleAddToCart} className="btn-primary !py-3 px-8"><ShoppingBag size={15} /> Add to bag</button>
             ) : (
-              <NotifyMe productKey={product.id} productName={product.name} className="!py-3 !px-6" />
+              <NotifyMe productKey={product.id} productName={product.name} comingSoon={comingSoon} className="!py-3 !px-6" />
             )}
           </div>
         </div>
