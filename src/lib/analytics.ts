@@ -6,8 +6,8 @@
  * inject a second copy of that script. It only turns collection on after the
  * cookie banner's Accept, and it records SPA navigations.
  *
- * 1. CONSENT-GATED HITS. The banner offers "Essential only" and says
- *    analytics is part of Accept, not of the essential set. The head snippet
+ * 1. CONSENT-GATED HITS. The banner offers "Essential only" and
+ *    "Allow analytics". The head snippet
  *    starts Consent Mode with analytics_storage denied (ad storage stays
  *    denied either way). The browser does fetch gtag.js, because the tag is
  *    in the HTML. Until Accept, trackPageView is a no-op, so route hits are

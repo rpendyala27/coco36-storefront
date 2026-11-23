@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cookie } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
 import { clearConsent, CONSENT_REOPEN_EVENT, readConsent, writeConsent, type Consent } from '../lib/consent';
 import { setAnalyticsConsent } from '../lib/analytics';
 
-/** Shared by Accept and Essential only so the two controls match in size. */
+/** Shared by Allow analytics and Essential only so the two controls match in size. */
 export const COOKIE_CHOICE_CLASS =
   'inline-flex items-center justify-center min-h-10 px-4 py-2 rounded-lg border-2 text-xs font-bold uppercase tracking-wider transition-colors';
 
@@ -70,12 +69,7 @@ export function CookieBannerView({ onDecide }: { onDecide: (choice: 'accepted' |
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm text-brand-ink leading-relaxed">
-              We use cookies to remember your cart, login, and pincode. Accept
-              and we also use Google Analytics to see how the shop is used —
-              never advertising trackers.{' '}
-              <NavLink to="/privacy" className="text-brand-leaf hover:underline">
-                Read more
-              </NavLink>.
+              Essential cookies run the shop. Allow analytics so we can improve it.
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-3">
               <button
@@ -83,7 +77,7 @@ export function CookieBannerView({ onDecide }: { onDecide: (choice: 'accepted' |
                 onClick={() => onDecide('accepted')}
                 className={`${COOKIE_CHOICE_CLASS} border-brand-leaf bg-brand-leaf text-white hover:bg-brand-leaf-bright hover:border-brand-leaf-bright`}
               >
-                Accept
+                Allow analytics
               </button>
               <button
                 type="button"

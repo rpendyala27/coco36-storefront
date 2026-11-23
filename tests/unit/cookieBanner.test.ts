@@ -1,20 +1,19 @@
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { MemoryRouter } from 'react-router-dom';
 import { CookieBannerView, COOKIE_CHOICE_CLASS } from '../../src/components/CookieBanner';
 import { clearConsent, CONSENT_REOPEN_EVENT, readConsent, writeConsent } from '../../src/lib/consent';
 
 describe('cookie banner markup', () => {
-  it('shows Essential only as a text button the same size as Accept, with the full disclosure', () => {
-    const html = renderToStaticMarkup(
-      createElement(MemoryRouter, null, createElement(CookieBannerView, { onDecide: () => {} })),
-    );
-    expect(html).toContain('We use cookies to remember your cart, login, and pincode. Accept and we also use Google Analytics');
+  it('shows Essential only as a text button the same size as Allow analytics, with the disclosure', () => {
+    const html = renderToStaticMarkup(createElement(CookieBannerView, { onDecide: () => {} }));
+    expect(html).toContain('Essential cookies run the shop. Allow analytics so we can improve it.');
+    expect(html).not.toContain('never advertising trackers');
     expect(html).not.toContain('Cookies keep your cart');
+    expect(html).not.toContain('>Accept<');
     expect(html).not.toContain('truncate');
     const buttons = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].map((match) => match[0]);
-    const accept = buttons.find((button) => button.includes('>Accept<'));
+    const accept = buttons.find((button) => button.includes('>Allow analytics<'));
     const essential = buttons.find((button) => button.includes('>Essential only<'));
     expect(accept).toBeTruthy();
     expect(essential).toBeTruthy();
