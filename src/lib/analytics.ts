@@ -2,8 +2,10 @@
  * Google Analytics 4 (gtag.js) for the Vite storefront.
  *
  * gtag.js is not in the server HTML. This module injects it only after
- * Allow analytics. The head may contain a consent-default stub with no
- * script src (server/gaSnippet.ts). Until Allow analytics, trackPageView
+ * Allow analytics, and only once per page. The head may contain a
+ * consent-default stub with no script src (server/gaSnippet.ts). The loader
+ * queues gtag('js', new Date()) once, before config; without that command
+ * the library never sends collect hits. Until Allow analytics, trackPageView
  * is a no-op. Cookie settings revokes that grant for the rest of the page.
  *
  * 2. SPA-AWARE, WITHOUT DOUBLE COUNTING. gtag config uses send_page_view:
@@ -52,6 +54,10 @@ declare global {
 }
 
 let loaded = false;
+/** gtag('js') is queued once per page. Cookie settings does not clear this. */
+let gtagJsCommandSent = false;
+/** A gtag.js tag was found or appended. Cookie settings does not clear this. */
+let gtagScriptInjected = false;
 
 /** Orders already sent as `purchase` this tab. sessionStorage covers a refresh. */
 const purchaseMemory = new Set<string>();
@@ -63,8 +69,55 @@ const enabled = (): boolean =>
 
 const GTAG_SRC = 'www.googletagmanager.com/gtag/js';
 
-function snippetPresent(): boolean {
+function gtagScriptSrc(id: string): string {
+  return `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+}
+
+function readScriptSrc(script: HTMLScriptElement): string {
+  if (script.src) return script.src;
+  if (typeof script.getAttribute === 'function') return script.getAttribute('src') || '';
+  return '';
+}
+
+/** True when this document already has a gtag.js tag (same src, or the same path). */
+function snippetPresent(src: string): boolean {
+  const list = document.scripts;
+  if (list) {
+    for (let i = 0; i < list.length; i++) {
+      const current = readScriptSrc(list[i]);
+      if (current === src || current.includes(GTAG_SRC)) return true;
+    }
+  }
+  if (typeof document.querySelector !== 'function') return false;
   return !!document.querySelector(`script[src*="${GTAG_SRC}"]`);
+}
+
+/**
+ * gtag.js drops /g/collect hits until this command is on the dataLayer, and
+ * the command has to be ahead of config. Once per page: a second Allow,
+ * Cookie settings, or a route change must not push it again.
+ */
+function sendGtagJsCommand(): void {
+  if (gtagJsCommandSent) return;
+  const fn = window.gtag;
+  if (!fn) return;
+  gtagJsCommandSent = true;
+  fn('js', new Date());
+}
+
+/** One gtag.js request per page. A tag already in the head counts. */
+function injectGtagScript(id: string): void {
+  if (gtagScriptInjected || typeof document === 'undefined') return;
+  const src = gtagScriptSrc(id);
+  if (snippetPresent(src)) {
+    gtagScriptInjected = true;
+    return;
+  }
+  gtagScriptInjected = true;
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = src;
+  document.head.appendChild(s);
 }
 
 /**
@@ -84,20 +137,21 @@ function load(): void {
   if (!window.gtag) window.gtag = gtag;
 
   if (alreadyBooted) {
-    // Consent-default stub, or a previous grant in this tab. Grant storage
-    // and configure the property. send_page_view stays off.
+    // Consent-default stub, or a previous grant in this tab. Grant storage,
+    // then the one-time js command, then config. send_page_view stays off.
     window.gtag('consent', 'update', {
       ad_storage:         'denied',
       ad_user_data:       'denied',
       ad_personalization: 'denied',
       analytics_storage:  'granted',
     });
+    sendGtagJsCommand();
     window.gtag('config', MEASUREMENT_ID, {
       send_page_view: false,
       anonymize_ip:   true,
     });
   } else {
-    gtag('js', new Date());
+    sendGtagJsCommand();
     gtag('consent', 'default', {
       ad_storage:            'denied',
       ad_user_data:          'denied',
@@ -112,12 +166,7 @@ function load(): void {
     });
   }
 
-  if (!snippetPresent()) {
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(MEASUREMENT_ID)}`;
-    document.head.appendChild(s);
-  }
+  injectGtagScript(MEASUREMENT_ID);
 }
 
 /**
@@ -228,5 +277,7 @@ export function trackPurchase(order: { orderNumber: string; totalPaise: number; 
 /** Test hook. Production code does not call this. */
 export function resetAnalyticsForTests(): void {
   loaded = false;
+  gtagJsCommandSent = false;
+  gtagScriptInjected = false;
   purchaseMemory.clear();
 }
