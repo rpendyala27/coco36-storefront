@@ -10,8 +10,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  *
  * P21b: the hold comes from /api/orders/create (`unpaidHoldMinutes`,
  * `holdExpiresAt`); 30 minutes is only the fallback when those are absent.
- * F76 is handed to P21: the every-minute (`* * * * *`) expiry cron is merged
- * in coco36-next #67 and is NEEDS-YES to apply.
+ * F76 was done in P21 (coco36-next #67, live since 23 Nov): the expiry cron
+ * runs every minute (`* * * * *`).
  */
 
 vi.mock('../../src/lib/supabase', () => ({ API_URL: 'https://admin.example.test', supabase: {} }));
