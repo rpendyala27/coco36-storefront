@@ -28,3 +28,18 @@ export function writeConsent(choice: 'accepted' | 'rejected'): void {
     /* Storage unavailable — the choice applies for this page view only. */
   }
 }
+
+/** The banner listens for this and shows again. */
+export const CONSENT_REOPEN_EVENT = 'coco36:reopen-cookie-banner';
+
+/** Drop the stored choice and ask the banner to open. */
+export function clearConsent(): void {
+  try {
+    window.localStorage.removeItem(CONSENT_STORAGE_KEY);
+  } catch {
+    /* Storage unavailable — the banner can still open for this view. */
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(CONSENT_REOPEN_EVENT));
+  }
+}

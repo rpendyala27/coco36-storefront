@@ -1,4 +1,5 @@
 import type React from 'react';
+import { CookieSettingsButton } from '../components/CookieBanner';
 import { SupportContactLink } from '../components/SupportContact';
 
 /**
@@ -26,7 +27,7 @@ export const Privacy = () => {
           <li>Shipping addresses you save against your account.</li>
           <li>Order, payment status, and shipment tracking events.</li>
           <li>Cookies and local storage for cart state, session, and pincode preference.</li>
-          <li>Aggregate usage data (page views, errors) via Vercel + Sentry.</li>
+          <li>Aggregate usage data (page views, errors) via Vercel, Sentry and, if you allow analytics, Google Analytics.</li>
         </ul>
       </Section>
 
@@ -67,10 +68,13 @@ export const Privacy = () => {
 
       <Section title="Cookies">
         <p>
-          We use first-party cookies and browser local storage to keep your
-          cart, login session, and pincode preference. We do not run
-          third-party advertising trackers. You can clear cookies any time
-          via your browser settings.
+          Essential cookies run the shop: they keep your cart, login, and
+          pincode. Google Analytics runs only after you choose Allow
+          analytics. Vercel Web Analytics is cookieless. You can change your
+          choice any time with Cookie settings.
+        </p>
+        <p>
+          <CookieSettingsButton className="text-brand-leaf hover:underline" />
         </p>
       </Section>
 

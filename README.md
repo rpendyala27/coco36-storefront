@@ -30,7 +30,9 @@ See `.env.example`.
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Supabase project + public anon key |
 | `VITE_API_URL` | admin API base, `https://admin.coco36.com` |
 | `VITE_RAZORPAY_KEY_ID` | Razorpay public key id |
-| `VITE_GA_MEASUREMENT_ID` | Google Analytics (loaded only after cookie consent) |
+| `VITE_GA_ID` | Google Analytics 4 measurement id. Unset uses `G-H2E318VXJX`. Empty omits GA |
+| `VITE_GA_MEASUREMENT_ID` | Previous name for the measurement id. Used only when `VITE_GA_ID` is unset |
+| `VITE_GA_DEV` | Set to `true` to load gtag.js from `npm run dev`. Off by default |
 | `VITE_SENTRY_DSN` | public browser DSN only. Omit and the browser sends nothing |
 | `APP_URL` | site origin for server-rendered canonical URLs |
 | `SENTRY_DSN` | server DSN. Omit and `/api` sends nothing |
@@ -40,6 +42,12 @@ See `.env.example`.
 
 `VERCEL_GIT_COMMIT_SHA` and `VERCEL_ENV` are set by Vercel. They become the
 Sentry release and environment. Do not copy them into `VITE_` names.
+
+The server-rendered head has only an inline consent-default stub. `gtag.js`
+loads after the visitor chooses Allow analytics.
+
+Vercel Web Analytics (`@vercel/analytics`) runs in production builds only. It
+is cookieless and does not use an environment variable.
 
 ## Sentry check
 

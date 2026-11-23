@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { CartItem, Product, ProductSize } from '../types';
+import { trackAddToCart } from '../lib/analytics';
 import { API_URL } from '../lib/supabase';
 import { availableFor, clampQty, fetchStock, sellableSubtotal, stockIds, type Stock } from '../lib/stock';
 
@@ -39,6 +40,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [stock, setStock] = useState<Stock | null>(null);
   const stockRef = useRef<Stock | null>(null);
   stockRef.current = stock;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   useEffect(() => {
     try {
@@ -76,28 +79,46 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = useCallback((product: Product, size: ProductSize, quantity = 1) => {
     const cap = availableFor(stockRef.current, size.id);
-    setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product.id && i.sizeId === size.id);
-      if (existing) {
-        const q = Math.max(existing.quantity, clampQty(existing.quantity + quantity, cap));
-        return prev.map((i) =>
-          i.productId === product.id && i.sizeId === size.id ? { ...i, quantity: q } : i,
-        );
-      }
-      return [
+    const prev = itemsRef.current;
+    const existing = prev.find((i) => i.productId === product.id && i.sizeId === size.id);
+    let addedQty = 0;
+    let next: CartItem[];
+    if (existing) {
+      const q = Math.max(existing.quantity, clampQty(existing.quantity + quantity, cap));
+      addedQty = q - existing.quantity;
+      next = prev.map((i) =>
+        i.productId === product.id && i.sizeId === size.id
+          ? { ...i, quantity: q, sku: i.sku ?? size.sku }
+          : i,
+      );
+    } else {
+      addedQty = cap ? clampQty(quantity, cap) : quantity;
+      next = [
         ...prev,
         {
           productId: product.id,
           sizeId: size.id,
           // Unknown or sold-out stock: add as asked; the fetch that follows caps it or flags it.
-          quantity: cap ? clampQty(quantity, cap) : quantity,
+          quantity: addedQty,
           name: product.name,
           sizeLabel: size.label,
           unitPriceInPaise: size.priceInPaise,
           image: product.image,
+          ...(size.sku ? { sku: size.sku } : {}),
         },
       ];
-    });
+    }
+    itemsRef.current = next;
+    setItems(next);
+    if (addedQty > 0) {
+      trackAddToCart({
+        sku: size.sku ?? '',
+        name: product.name,
+        variant: size.label,
+        unitPricePaise: size.priceInPaise,
+        quantity: addedQty,
+      });
+    }
     setIsOpen(true);
   }, []);
 

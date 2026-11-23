@@ -10,7 +10,8 @@ import { authHeader } from '../lib/apiAuth';
 import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checkout';
 import { shippingFor, freeShippingRemaining } from '../lib/shipping';
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
-import { availableFor, soldOutItems, stockNote } from '../lib/stock';
+import { availableFor, sellableQty, soldOutItems, stockNote } from '../lib/stock';
+import { trackBeginCheckout, trackPurchase } from '../lib/analytics';
 import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
 import { AddressForm } from '../components/AddressForm';
 import { DeliveryAnswer } from '../components/CheckDelivery';
@@ -35,6 +36,29 @@ export const Checkout = () => {
 
   // Fresh stock on arrival: the cart caps lines and flags sold-out packs.
   useEffect(() => { refreshStock(); }, [refreshStock]);
+
+  // One begin_checkout per visit. Cleared timeout skips the strict-mode
+  // double mount. Sold-out lines are omitted; value is the sellable subtotal.
+  const beganCheckout = useRef(false);
+  useEffect(() => {
+    if (beganCheckout.current || !user || items.length === 0) return undefined;
+    const lines = items.flatMap((it) => {
+      const quantity = sellableQty(it, stock);
+      if (!it.sku || quantity <= 0) return [];
+      return [{
+        sku: it.sku,
+        name: it.name,
+        variant: it.sizeLabel,
+        unitPricePaise: it.unitPriceInPaise,
+        quantity,
+      }];
+    });
+    const t = setTimeout(() => {
+      beganCheckout.current = true;
+      trackBeginCheckout(lines, subtotal);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [user, items, stock, subtotal]);
   const soldOut = soldOutItems(items, stock);
 
   // ordering.enabled: closed per the store config (before the form), or the
@@ -313,6 +337,13 @@ export const Checkout = () => {
       }
 
       const { orderId, orderNumber, razorpayOrderId, amount } = payload;
+      const purchaseLines = items.map((it) => ({
+        sku: it.sku ?? '',
+        name: it.name,
+        variant: it.sizeLabel,
+        unitPricePaise: it.unitPriceInPaise,
+        quantity: it.quantity,
+      }));
 
       if (paymentMethod === 'cod') {
         freshAttempt();
@@ -339,8 +370,15 @@ export const Checkout = () => {
         handler:  () => {
           // Razorpay JS handler fires on successful authorisation.
           // The webhook on the server is the real source of truth — but for
-          // the user we show confirmation immediately.
+          // the user we show confirmation immediately. purchase is prepaid
+          // success only; COD never reaches this handler.
           freshAttempt();
+          trackPurchase({
+            orderNumber,
+            totalPaise: amount,
+            shippingPaise: totals.shipping_paise,
+            lines: purchaseLines,
+          });
           setConfirmedOrder({ orderNumber, total_paise: amount });
           setStep('confirmed');
           setTimeout(() => clear(), 300);

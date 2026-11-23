@@ -17,6 +17,7 @@ import { recipeMeta, recipesHubMeta } from '../src/seo/recipeMeta.js';
 import { guideMeta } from '../src/seo/guideMeta.js';
 import { DEFAULT_POLICY, SITE_HOST, SITE_ORIGIN } from '../src/seo/site.js';
 import { buildTree } from '../src/lib/categoryTree.js';
+import { gaHeadForEnv } from './gaSnippet.js';
 import { inject, isTemplate, renderHead } from './html.js';
 import { loadCatalog, loadConcealedProducts, loadLotPassport, type Catalog } from './catalog.js';
 import {
@@ -87,7 +88,7 @@ function page(status: number, meta: PageMeta, snapshot: string, extraHeaders: Re
   };
   // Mirror <meta name="robots"> as a header: honoured before the HTML is parsed.
   if (meta.robots) headers['X-Robots-Tag'] = meta.robots;
-  return { status, headers, body: inject(loadTemplate(), renderHead(meta), snapshot) };
+  return { status, headers, body: inject(loadTemplate(), renderHead(meta), snapshot, gaHeadForEnv()) };
 }
 
 /** Snapshot context when the catalogue isn't needed (static pages). */
