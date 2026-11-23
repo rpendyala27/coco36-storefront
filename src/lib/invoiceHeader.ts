@@ -6,7 +6,8 @@ import type { CustomerInvoiceHeader, InvoiceSeller, InvoiceSettings } from './in
  *
  * public.customer_invoice_header() is the only read for legal name, address,
  * GSTIN and FSSAI. The function returns no PAN and no bank details. A failed
- * or empty call leaves that block off the page; the invoice still renders.
+ * call, a null payload, or a header missing the legal name, an address, or
+ * the GSTIN is not printable: the page must not render a tax invoice.
  * store.name stays a public settings read (settings_public_read).
  */
 
@@ -30,7 +31,14 @@ function asHeader(data: unknown): Partial<CustomerInvoiceHeader> | null {
   return value as Partial<CustomerInvoiceHeader>;
 }
 
-/** Map the RPC payload. Extra keys (PAN, bank) are ignored. Blank means no block. */
+/** Legal name, GSTIN, and at least one address line. Anything less is not a tax invoice. */
+export function sellerHeaderReady(seller: InvoiceSeller | null): seller is InvoiceSeller {
+  if (!seller) return false;
+  const address = seller.addressLine1 || seller.addressLine2 || seller.city || seller.state || seller.pincode;
+  return seller.legalName.length > 0 && seller.gstin.length > 0 && address.length > 0;
+}
+
+/** Map the RPC payload. Extra keys (PAN, bank) are ignored. Incomplete means null. */
 export function mapCustomerInvoiceHeader(data: unknown): InvoiceSeller | null {
   const row = asHeader(data);
   if (!row) return null;
@@ -44,9 +52,7 @@ export function mapCustomerInvoiceHeader(data: unknown): InvoiceSeller | null {
     pincode:      text(row.pincode),
     fssaiLicNo:   text(row.fssai_lic_no) || null,
   };
-  const printable = seller.legalName || seller.gstin || seller.addressLine1 || seller.addressLine2
-    || seller.city || seller.state || seller.pincode || seller.fssaiLicNo;
-  return printable ? seller : null;
+  return sellerHeaderReady(seller) ? seller : null;
 }
 
 async function loadSellerHeader(): Promise<InvoiceSeller | null> {

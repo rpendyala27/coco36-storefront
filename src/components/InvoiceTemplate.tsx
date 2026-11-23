@@ -1,16 +1,20 @@
+import { Printer } from 'lucide-react';
 import type { InvoiceBreakup, InvoiceSeller, InvoiceSettings } from '../lib/invoice-types';
+import { sellerHeaderReady } from '../lib/invoiceHeader';
 
 /**
  * Customer-facing invoice template.
  *
  * Line items come from `invoices.gst_breakup`. The seller block comes from
  * public.customer_invoice_header() (legal name, address, GSTIN, FSSAI when
- * set). PAN and bank details are not printed. A missing seller block leaves
- * the wordmark and the rest of the invoice in place.
+ * set). PAN and bank details are not printed. Without a legal name, an
+ * address, and a GSTIN this does not render a tax invoice.
  *
  * Print-safe: the `.print:hidden` toolbar in the parent page disappears
  * on browser print; this template prints exactly as-rendered.
  */
+
+export const SELLER_DETAILS_UNAVAILABLE = "Seller details couldn't load. Please refresh the page.";
 
 interface Props {
   invoiceNumber: string;
@@ -31,18 +35,26 @@ export function InvoiceTemplate({
   invoiceNumber, invoiceDate, orderNumber, orderDate,
   paymentMethod, customer, ship, breakup, settings,
 }: Props) {
+  if (!sellerHeaderReady(settings.seller)) return null;
   const seller = settings.seller;
 
   return (
-    <div className="bg-white min-h-screen p-10 print:p-0 print:m-0 max-w-4xl mx-auto text-gray-900 text-[13px] leading-relaxed">
+    <div className="bg-white p-10 print:p-0 print:m-0 max-w-4xl mx-auto text-gray-900 text-[13px] leading-relaxed">
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-900">
         <div>
-          <div className="text-3xl font-extrabold">
+          <img
+            src="/coco36-floral.png"
+            alt="COCO36"
+            width={49}
+            height={48}
+            className="h-12 w-auto mb-3"
+          />
+          <div className="font-display text-3xl font-extrabold tracking-tight">
             COCO<span className="text-[#4e7d24]">36</span>
           </div>
-          {seller ? <SellerBlock seller={seller} /> : null}
+          <SellerBlock seller={seller} />
         </div>
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Tax Invoice</p>
@@ -160,6 +172,37 @@ export function InvoiceTemplate({
         Generated via {settings.storeName}
       </footer>
     </div>
+  );
+}
+
+/** Shown instead of the document when the seller header cannot be printed. */
+export function SellerDetailsUnavailable({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="px-6 pt-16 max-w-2xl mx-auto text-center">
+      <p className="text-sm text-red-700 bg-red-50 border border-red-200 px-4 py-3 mb-6">
+        {SELLER_DETAILS_UNAVAILABLE}
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="px-4 py-2 bg-brand-leaf text-white text-[11px] uppercase tracking-widest font-bold hover:bg-brand-leaf/90 transition-colors"
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
+/** Print control. The page mounts this only when the seller header is complete. */
+export function InvoicePrintButton() {
+  return (
+    <button
+      type="button"
+      onClick={() => window.print()}
+      className="flex items-center gap-2 px-4 py-2 bg-brand-leaf text-white text-[11px] uppercase tracking-widest font-bold hover:bg-brand-leaf/90 transition-colors"
+    >
+      <Printer size={13} /> Print / Save PDF
+    </button>
   );
 }
 

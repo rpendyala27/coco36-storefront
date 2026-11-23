@@ -6,7 +6,7 @@ import type { InvoiceBreakup, InvoiceSettings } from '../../src/lib/invoice-type
 /**
  * Customer invoice seller block. public.customer_invoice_header() supplies
  * legal name, address, GSTIN and FSSAI. PAN and bank details are never printed.
- * A failed or empty call leaves the block off; the invoice still renders.
+ * A failed, null, or incomplete header does not render a tax invoice.
  */
 
 const rpc = vi.hoisted(() => vi.fn());
@@ -19,8 +19,8 @@ vi.mock('../../src/lib/supabase', () => ({
   initialAuthLink: { recovery: false, error: null },
 }));
 
-const { loadInvoiceSettings } = await import('../../src/lib/invoiceHeader');
-const { InvoiceTemplate } = await import('../../src/components/InvoiceTemplate');
+const { loadInvoiceSettings, sellerHeaderReady } = await import('../../src/lib/invoiceHeader');
+const { InvoicePrintButton, InvoiceTemplate, SellerDetailsUnavailable } = await import('../../src/components/InvoiceTemplate');
 
 const HEADER = {
   legal_name: 'COCO36 Foods Pvt Ltd',
@@ -88,8 +88,12 @@ function mockStoreName(value: string | null = 'COCO36 Store') {
   });
 }
 
-function htmlFor(settings: InvoiceSettings): string {
-  return renderToStaticMarkup(createElement(InvoiceTemplate, {
+function viewHtml(settings: InvoiceSettings): string {
+  const ready = sellerHeaderReady(settings.seller);
+  const actions = ready
+    ? renderToStaticMarkup(createElement(InvoicePrintButton))
+    : renderToStaticMarkup(createElement(SellerDetailsUnavailable, { onRetry: () => {} }));
+  const doc = renderToStaticMarkup(createElement(InvoiceTemplate, {
     invoiceNumber: 'INV-1001',
     invoiceDate: new Date('2026-11-01T00:00:00+05:30'),
     orderNumber: 'C36-1001',
@@ -100,6 +104,15 @@ function htmlFor(settings: InvoiceSettings): string {
     breakup: BREAKUP,
     settings,
   }));
+  return actions + doc;
+}
+
+function refusesTaxInvoice(html: string) {
+  expect(html).toContain('Please refresh the page.');
+  expect(html).toContain('Retry');
+  expect(html).not.toContain('Tax Invoice');
+  expect(html).not.toContain('Print / Save PDF');
+  expect(html).not.toContain('FSSAI');
 }
 
 beforeEach(() => {
@@ -118,7 +131,7 @@ describe('customer invoice header', () => {
   it('renders the seller block from customer_invoice_header', async () => {
     rpc.mockResolvedValue({ data: HEADER, error: null });
     const settings = await loadInvoiceSettings();
-    const html = htmlFor(settings);
+    const html = viewHtml(settings);
 
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith('customer_invoice_header');
@@ -141,15 +154,18 @@ describe('customer invoice header', () => {
     expect(html).toContain('37AAAAA0000A1Z5');
     expect(html).toContain('FSSAI:');
     expect(html).toContain('10000000000000');
-    expect(html).toContain('INV-1001');
-    expect(html).toContain('Generated via COCO36 Store');
+    expect(html).toContain('Print / Save PDF');
+    expect(html).toContain('Tax Invoice');
+    expect(html).toContain('src="/coco36-floral.png"');
+    expect(html).toContain('font-display');
+    expect(html).not.toContain('min-h-screen');
   });
 
   it('hides the FSSAI line when the licence number is absent', async () => {
     for (const fssai of [null, '', '   ']) {
       rpc.mockResolvedValueOnce({ data: { ...HEADER, fssai_lic_no: fssai }, error: null });
       const settings = await loadInvoiceSettings();
-      const html = htmlFor(settings);
+      const html = viewHtml(settings);
       expect(settings.seller?.fssaiLicNo).toBeNull();
       expect(html).toContain('GSTIN:');
       expect(html).toContain('COCO36 Foods Pvt Ltd');
@@ -160,7 +176,7 @@ describe('customer invoice header', () => {
 
   it('never renders PAN or bank details', async () => {
     rpc.mockResolvedValue({ data: HEADER, error: null });
-    const html = htmlFor(await loadInvoiceSettings());
+    const html = viewHtml(await loadInvoiceSettings());
     expect(html).not.toContain('PAN:');
     expect(html).not.toContain('BBBBB9999B');
     expect(html).not.toContain('Bank Details');
@@ -171,53 +187,42 @@ describe('customer invoice header', () => {
     expect(html).not.toContain('TEST0000001');
   });
 
-  it('renders the invoice without the seller block when the RPC errors or is empty', async () => {
+  it('does not render a tax invoice when the RPC errors', async () => {
     const leaked = 'header-call-failed-detail';
     rpc.mockResolvedValueOnce({ data: null, error: { message: leaked, code: 'PGRST202' } });
-    const onError = await loadInvoiceSettings();
-    const errorHtml = htmlFor(onError);
+    const settings = await loadInvoiceSettings();
+    const html = viewHtml(settings);
 
-    expect(onError.seller).toBeNull();
-    expect(errorHtml).toContain('Tax Invoice');
-    expect(errorHtml).toContain('INV-1001');
-    expect(errorHtml).toContain('Vanilla beans');
-    expect(errorHtml).not.toContain('COCO36 Foods Pvt Ltd');
-    expect(errorHtml).not.toContain('GSTIN:');
-    expect(errorHtml).not.toContain('FSSAI');
-    expect(errorHtml).not.toContain(leaked);
+    expect(settings.seller).toBeNull();
+    refusesTaxInvoice(html);
+    expect(html).not.toContain(leaked);
     expect(console.error).toHaveBeenCalledWith('[invoice] customer_invoice_header unavailable');
     for (const call of vi.mocked(console.error).mock.calls) {
       expect(JSON.stringify(call)).not.toContain(leaked);
     }
 
-    vi.mocked(console.error).mockClear();
-    rpc.mockResolvedValueOnce({
-      data: {
-        legal_name: null,
-        address_line1: '   ',
-        address_line2: null,
-        city: null,
-        state: null,
-        pincode: null,
-        gstin: null,
-        fssai_lic_no: '',
-      },
-      error: null,
-    });
-    const empty = await loadInvoiceSettings();
-    const emptyHtml = htmlFor(empty);
-    expect(empty.seller).toBeNull();
-    expect(emptyHtml).toContain('INV-1001');
-    expect(emptyHtml).not.toContain('GSTIN:');
-    expect(emptyHtml).not.toContain('FSSAI');
-    expect(console.error).not.toHaveBeenCalled();
-
     rpc.mockRejectedValueOnce(new Error(leaked));
     const thrown = await loadInvoiceSettings();
     expect(thrown.seller).toBeNull();
-    expect(htmlFor(thrown)).toContain('INV-1001');
+    refusesTaxInvoice(viewHtml(thrown));
     for (const call of vi.mocked(console.error).mock.calls) {
       expect(JSON.stringify(call)).not.toContain(leaked);
     }
+  });
+
+  it('does not render a tax invoice when the RPC returns null', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    const settings = await loadInvoiceSettings();
+    expect(settings.seller).toBeNull();
+    refusesTaxInvoice(viewHtml(settings));
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it('does not render a tax invoice when the GSTIN is missing', async () => {
+    rpc.mockResolvedValueOnce({ data: { ...HEADER, gstin: null }, error: null });
+    const settings = await loadInvoiceSettings();
+    expect(settings.seller).toBeNull();
+    refusesTaxInvoice(viewHtml(settings));
+    expect(console.error).not.toHaveBeenCalled();
   });
 });

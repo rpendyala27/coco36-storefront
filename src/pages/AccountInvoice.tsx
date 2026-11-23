@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { loadInvoiceSettings } from '../lib/invoiceHeader';
-import { InvoiceTemplate } from '../components/InvoiceTemplate';
+import { loadInvoiceSettings, sellerHeaderReady } from '../lib/invoiceHeader';
+import { InvoicePrintButton, InvoiceTemplate, SellerDetailsUnavailable } from '../components/InvoiceTemplate';
 import type { InvoiceBreakup, InvoiceSettings } from '../lib/invoice-types';
 
 interface InvoiceRow {
@@ -32,8 +32,9 @@ interface OrderRow {
  *
  * The seller block is public.customer_invoice_header() (legal name, address,
  * GSTIN, FSSAI once set). It is not read from settings. store.name is still
- * a public settings row. If the header call fails or comes back empty, the
- * invoice renders without that block.
+ * a public settings row. If the header call fails, returns null, or is
+ * missing the legal name, an address, or the GSTIN, the tax invoice is not
+ * rendered and Print stays hidden.
  *
  * Browser print (File → Print → Save as PDF) gives the customer a takeaway PDF.
  *
@@ -121,8 +122,8 @@ export const AccountInvoice = () => {
     );
   }
 
-  // Normalize invoice → single object (Supabase returns array on 1:0..1 relations)
   const invoice = Array.isArray(order.invoice) ? order.invoice[0] ?? null : order.invoice;
+  const canPrint = sellerHeaderReady(settings.seller);
 
   // ── Invoice not yet issued ─────────────────────────────────────────────
   if (!invoice) {
@@ -157,41 +158,44 @@ export const AccountInvoice = () => {
           <ArrowLeft size={14} /> Back to order
         </Link>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-brand-muted">
-            Invoice <span className="font-mono font-bold text-brand-ink">{invoice.invoice_number}</span>
-          </span>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-leaf text-white text-[11px] uppercase tracking-widest font-bold hover:bg-brand-leaf/90 transition-colors"
-          >
-            <Printer size={13} /> Print / Save PDF
-          </button>
+          {canPrint ? (
+            <>
+              <span className="text-xs text-brand-muted">
+                Invoice <span className="font-mono font-bold text-brand-ink">{invoice.invoice_number}</span>
+              </span>
+              <InvoicePrintButton />
+            </>
+          ) : null}
         </div>
       </div>
 
-      <InvoiceTemplate
-        invoiceNumber={invoice.invoice_number}
-        invoiceDate={new Date(invoice.issued_at)}
-        orderNumber={order.order_number}
-        orderDate={new Date(order.placed_at)}
-        paymentMethod={order.payment_method}
-        customer={{
-          name:  order.customer?.name  ?? '',
-          email: order.customer?.email ?? '',
-          phone: order.customer?.phone ?? '',
-          gstin: order.customer?.gstin ?? null,
-        }}
-        ship={{
-          name:    order.ship?.name    ?? '',
-          line1:   order.ship?.line1   ?? '',
-          line2:   order.ship?.line2   ?? '',
-          city:    order.ship?.city    ?? '',
-          state:   order.ship?.state   ?? '',
-          pincode: order.ship?.pincode ?? '',
-        }}
-        breakup={invoice.gst_breakup}
-        settings={settings}
-      />
+      {canPrint ? (
+        <InvoiceTemplate
+          invoiceNumber={invoice.invoice_number}
+          invoiceDate={new Date(invoice.issued_at)}
+          orderNumber={order.order_number}
+          orderDate={new Date(order.placed_at)}
+          paymentMethod={order.payment_method}
+          customer={{
+            name:  order.customer?.name  ?? '',
+            email: order.customer?.email ?? '',
+            phone: order.customer?.phone ?? '',
+            gstin: order.customer?.gstin ?? null,
+          }}
+          ship={{
+            name:    order.ship?.name    ?? '',
+            line1:   order.ship?.line1   ?? '',
+            line2:   order.ship?.line2   ?? '',
+            city:    order.ship?.city    ?? '',
+            state:   order.ship?.state   ?? '',
+            pincode: order.ship?.pincode ?? '',
+          }}
+          breakup={invoice.gst_breakup}
+          settings={settings}
+        />
+      ) : (
+        <SellerDetailsUnavailable onRetry={() => window.location.reload()} />
+      )}
     </>
   );
 };
