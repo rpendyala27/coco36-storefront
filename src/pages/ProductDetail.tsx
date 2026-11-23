@@ -12,6 +12,8 @@ import { imageUrl, imageSrcSet } from '../lib/img';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
+import { allPacksOut, canBuy, isComingSoon, sizeAvailability } from '../lib/availability';
+import { useLiveStock } from '../lib/liveStock';
 import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../content/policyLabels';
 import { dispatchWindow } from '../seo/site';
 import { BULK_GUIDE_LABEL, bulkGuideHref } from '../content/bulkGuideLink';
@@ -24,9 +26,7 @@ import { Breadcrumbs } from '../components/Breadcrumbs';
 import { DesignationBadges } from '../components/DesignationBadges';
 import { GoodForChips } from '../components/GoodForChips';
 import { NotifyMe } from '../components/NotifyMe';
-import { productBadges } from '../lib/badges';
-import { allPacksOut, canBuy, isComingSoon, sizeAvailability } from '../lib/availability';
-import { useLiveStock } from '../lib/liveStock';
+import { isSoldOut, productBadges } from '../lib/badges';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 

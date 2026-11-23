@@ -326,7 +326,6 @@ export const Checkout = () => {
       }
 
       const { orderId, orderNumber, razorpayOrderId, amount } = payload;
-      if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
 
       if (paymentMethod === 'cod') {
         freshAttempt();
@@ -342,6 +341,7 @@ export const Checkout = () => {
 
       // The window closes before the unpaid hold ends (R08). Too little left:
       // this order is about to be released, so start again.
+      if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
       const windowSeconds = paymentWindowSeconds(attempt.current.placedAt);
       if (windowSeconds === null) {
         freshAttempt();

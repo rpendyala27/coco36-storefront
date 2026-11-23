@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { CartItem, Product, ProductSize } from '../types';
-import { API_URL, isSupabaseConfigured, supabase } from '../lib/supabase';
-import { cartVariantIds, splitArchived, type LiveVariantReader } from '../lib/cartReconcile';
+import { API_URL } from '../lib/supabase';
 import { availableFor, clampQty, fetchStock, sellableSubtotal, stockIds, type Stock } from '../lib/stock';
+
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { cartVariantIds, splitArchived, type LiveVariantReader } from '../lib/cartReconcile';
 
 interface CartContextType {
   items: CartItem[];
