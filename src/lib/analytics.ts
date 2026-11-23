@@ -1,26 +1,45 @@
 /**
  * Google Analytics 4 (gtag.js) for the Vite storefront.
  *
- * Two deliberate differences from the stock GA snippet:
+ * The async loader itself is in the server-rendered <head> (server/gaSnippet.ts)
+ * on production HTML, including 404 and static pages. This module does not
+ * inject a second copy of that script. It only turns collection on after the
+ * cookie banner's Accept, and it records SPA navigations.
  *
- * 1. CONSENT-GATED. The cookie banner offers "Essential only" and its copy
- *    promises no third-party advertising trackers. The stock snippet in
- *    index.html would fire on every visit regardless of that choice, which
- *    makes the banner decorative and the promise untrue. So gtag.js is never
- *    fetched until the visitor has actively accepted — before that, no request
- *    reaches Google at all. Ad storage stays denied even after acceptance.
+ * 1. CONSENT-GATED HITS. The banner offers "Essential only" and says
+ *    analytics is part of Accept, not of the essential set. The head snippet
+ *    starts Consent Mode with analytics_storage denied (ad storage stays
+ *    denied either way). The browser does fetch gtag.js, because the tag is
+ *    in the HTML. Until Accept, trackPageView is a no-op, so route hits are
+ *    not sent. Granting consent is what lets those page views out.
  *
- * 2. SPA-AWARE. The stock snippet sends exactly one page_view on hard load.
- *    This is a react-router SPA, so every in-app navigation would be invisible
- *    and GA would report one page per session. We send page_view manually on
- *    each route change instead (see trackPageView, wired up in App.tsx).
+ * 2. SPA-AWARE, WITHOUT DOUBLE COUNTING. gtag config uses send_page_view:
+ *    false, so the initial config does not emit a page_view. App.tsx calls
+ *    trackPageView on each route change (including the landing route and
+ *    query-string changes). We do not also listen for history events here;
+ *    that would count the same navigation twice. Enhanced measurement
+ *    "browser history" in the GA4 property is a separate switch in the GA
+ *    admin and is not turned on by this code.
  *
  * Quiet in local dev — same philosophy as lib/sentry.ts — so localhost traffic
  * never lands in the production property. Set VITE_GA_DEV=true to override.
+ * An explicit empty VITE_GA_ID disables the tag. The dev server does not run
+ * the SSR injector, so in dev this module is the only loader, and only when
+ * VITE_GA_DEV=true.
  */
 
-const MEASUREMENT_ID =
-  (import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined)?.trim() || 'G-H2E318VXJX';
+import { readGaIdEnv } from './gaId';
+
+function clientGaEnv(): { VITE_GA_ID?: string; VITE_GA_MEASUREMENT_ID?: string } {
+  const env: { VITE_GA_ID?: string; VITE_GA_MEASUREMENT_ID?: string } = {};
+  const id = import.meta.env.VITE_GA_ID as string | undefined;
+  const legacy = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
+  if (id !== undefined) env.VITE_GA_ID = id;
+  if (legacy !== undefined) env.VITE_GA_MEASUREMENT_ID = legacy;
+  return env;
+}
+
+const MEASUREMENT_ID = readGaIdEnv(clientGaEnv());
 
 type GtagFn = (...args: unknown[]) => void;
 
@@ -35,8 +54,14 @@ let loaded = false;
 
 /** Prod only, unless explicitly opted in for local debugging. */
 const enabled = (): boolean =>
-  Boolean(MEASUREMENT_ID) &&
+  MEASUREMENT_ID !== null &&
   (import.meta.env.PROD || import.meta.env.VITE_GA_DEV === 'true');
+
+const GTAG_SRC = 'www.googletagmanager.com/gtag/js';
+
+function snippetPresent(): boolean {
+  return !!document.querySelector(`script[src*="${GTAG_SRC}"]`);
+}
 
 /**
  * The canonical gtag shim. It must push the raw `arguments` object — gtag.js
@@ -46,36 +71,47 @@ const gtag: GtagFn = function () {
   (window.dataLayer = window.dataLayer || []).push(arguments);
 } as GtagFn;
 
-/** Inject gtag.js exactly once and configure the property. */
+/** Configure gtag once consent is granted, and fetch gtag.js if the SSR head
+ *  did not already include it (local dev with VITE_GA_DEV). */
 function load(): void {
-  if (loaded || !enabled() || typeof document === 'undefined') return;
+  if (loaded || !enabled() || typeof document === 'undefined' || !MEASUREMENT_ID) return;
   loaded = true;
 
-  window.gtag = gtag;
-  gtag('js', new Date());
+  const fromHead = typeof window.gtag === 'function' || snippetPresent();
+  if (!window.gtag) window.gtag = gtag;
 
-  // Consent Mode v2. Analytics is what the visitor agreed to; advertising
-  // storage stays denied to match what the cookie banner tells them.
-  gtag('consent', 'default', {
-    ad_storage:              'denied',
-    ad_user_data:            'denied',
-    ad_personalization:      'denied',
-    analytics_storage:       'granted',
-    functionality_storage:   'granted',
-    security_storage:        'granted',
-  });
+  if (fromHead) {
+    // The head snippet already pushed consent default (denied) and config
+    // with send_page_view false. Update consent only — a second config would
+    // be a second page_view if send_page_view were ever left on.
+    window.gtag('consent', 'update', {
+      ad_storage:         'denied',
+      ad_user_data:       'denied',
+      ad_personalization: 'denied',
+      analytics_storage:  'granted',
+    });
+  } else {
+    gtag('js', new Date());
+    gtag('consent', 'default', {
+      ad_storage:            'denied',
+      ad_user_data:          'denied',
+      ad_personalization:    'denied',
+      analytics_storage:     'granted',
+      functionality_storage: 'granted',
+      security_storage:      'granted',
+    });
+    gtag('config', MEASUREMENT_ID, {
+      send_page_view: false,
+      anonymize_ip:   true,
+    });
+  }
 
-  // send_page_view is off because we fire page_view per route ourselves;
-  // leaving it on would double-count the first page of every session.
-  gtag('config', MEASUREMENT_ID, {
-    send_page_view: false,
-    anonymize_ip:   true,
-  });
-
-  const s = document.createElement('script');
-  s.async = true;
-  s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(MEASUREMENT_ID)}`;
-  document.head.appendChild(s);
+  if (!snippetPresent()) {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(MEASUREMENT_ID)}`;
+    document.head.appendChild(s);
+  }
 }
 
 /**
@@ -95,12 +131,14 @@ export function initAnalytics(consent: 'accepted' | 'rejected' | null): void {
  */
 export function setAnalyticsConsent(choice: 'accepted' | 'rejected'): void {
   if (choice === 'rejected') {
-    // Nothing was loaded, so there is nothing to tear down. If a future change
-    // ever loads GA earlier, this still revokes storage rather than no-oping.
-    if (loaded) {
-      gtag('consent', 'update', {
-        ad_storage:        'denied',
-        analytics_storage: 'denied',
+    // The head snippet may already have installed gtag with storage denied.
+    // Say so again so a later grant in this tab cannot be assumed.
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('consent', 'update', {
+        ad_storage:         'denied',
+        ad_user_data:       'denied',
+        ad_personalization: 'denied',
+        analytics_storage:  'denied',
       });
     }
     return;

@@ -15,8 +15,9 @@ import { SUPPORT_EMAIL } from './lib/supportContact';
 // Strip the test secret from the URL before Sentry or analytics can read it.
 const sentryTestToken = takeSentryTestToken();
 initSentry();
-// Returning visitors who already accepted get GA straight away; everyone else
-// waits for the cookie banner. Nothing reaches Google before that.
+// Returning visitors who already accepted get collection straight away.
+// Production HTML loads gtag.js with analytics storage denied; this grants
+// it only when the stored choice is Accept. Page views wait for that grant.
 initAnalytics(readConsent());
 
 /**
