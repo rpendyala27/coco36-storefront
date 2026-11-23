@@ -28,6 +28,14 @@
  * VITE_GA_DEV=true.
  */
 
+import {
+  type GaLine,
+  addToCartParams,
+  beginCheckoutParams,
+  purchaseParams,
+  purchaseStorageKey,
+  viewItemParams,
+} from './gaCommerce';
 import { readGaIdEnv } from './gaId';
 
 function clientGaEnv(): { VITE_GA_ID?: string; VITE_GA_MEASUREMENT_ID?: string } {
@@ -51,6 +59,9 @@ declare global {
 }
 
 let loaded = false;
+
+/** Orders already sent as `purchase` this tab. sessionStorage covers a refresh. */
+const purchaseMemory = new Set<string>();
 
 /** Prod only, unless explicitly opted in for local debugging. */
 const enabled = (): boolean =>
@@ -161,4 +172,65 @@ export function trackPageView(path: string, title?: string): void {
 export function trackEvent(name: string, params: Record<string, unknown> = {}): void {
   if (!loaded) return;
   gtag('event', name, params);
+}
+
+function sendCommerce(name: string, params: Record<string, unknown> | null): void {
+  if (!loaded || !params) return;
+  gtag('event', name, params);
+}
+
+/** Product page. No-op until Accept, and when the pack has no SKU. */
+export function trackViewItem(line: GaLine): void {
+  sendCommerce('view_item', viewItemParams(line));
+}
+
+/** Quantity is the number of packs just added, not the new cart total. */
+export function trackAddToCart(line: GaLine): void {
+  sendCommerce('add_to_cart', addToCartParams(line));
+}
+
+/** Once per checkout visit. `subtotalPaise` is the sellable cart total. */
+export function trackBeginCheckout(lines: readonly GaLine[], subtotalPaise: number): void {
+  sendCommerce('begin_checkout', beginCheckoutParams(lines, subtotalPaise));
+}
+
+function purchaseAlreadySent(orderNumber: string): boolean {
+  if (purchaseMemory.has(orderNumber)) return true;
+  try {
+    return window.sessionStorage.getItem(purchaseStorageKey(orderNumber)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function rememberPurchase(orderNumber: string): void {
+  purchaseMemory.add(orderNumber);
+  try {
+    window.sessionStorage.setItem(purchaseStorageKey(orderNumber), '1');
+  } catch {
+    /* Private mode: the in-memory set still stops a second call this tab. */
+  }
+}
+
+/**
+ * Razorpay success only. No-op until Accept, and a second call for the same
+ * order number (refresh, revisit, or a double handler) does not send again.
+ * The payload is transaction id, value in rupees, INR, and item rows. No
+ * email, phone, name, or address.
+ */
+export function trackPurchase(order: { orderNumber: string; totalPaise: number; lines: readonly GaLine[] }): void {
+  if (!loaded) return;
+  const orderNumber = order.orderNumber.trim();
+  if (!orderNumber) return;
+  if (purchaseAlreadySent(orderNumber)) return;
+  const params = purchaseParams({ ...order, orderNumber });
+  if (!params) return;
+  rememberPurchase(orderNumber);
+  gtag('event', 'purchase', params);
+}
+
+/** Test hook. Production code does not call this. */
+export function resetAnalyticsForTests(): void {
+  loaded = false;
+  purchaseMemory.clear();
 }

@@ -25,6 +25,7 @@ import { DesignationBadges } from '../components/DesignationBadges';
 import { GoodForChips } from '../components/GoodForChips';
 import { NotifyMe } from '../components/NotifyMe';
 import { isSoldOut, productBadges } from '../lib/badges';
+import { trackViewItem } from '../lib/analytics';
 
 const countryOf = (origin: string) => (origin.split('·')[0] ?? '').trim() || origin;
 
@@ -73,6 +74,25 @@ export const ProductDetail = () => {
     return null;
   }, [product, resolution, tree, cfg]);
   useSeo(meta);
+
+  // One view_item per pack the visitor is looking at. The timeout is cleared
+  // on a strict-mode remount so the landing view is not sent twice. Quantity
+  // stays 1: changing the stepper is not a new view.
+  const viewedSize = product
+    ? (product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0])
+    : undefined;
+  useEffect(() => {
+    if (!product || !viewedSize?.sku) return undefined;
+    const line = {
+      sku: viewedSize.sku,
+      name: product.name,
+      variant: viewedSize.label,
+      unitPricePaise: viewedSize.priceInPaise,
+      quantity: 1,
+    };
+    const t = setTimeout(() => trackViewItem(line), 0);
+    return () => clearTimeout(t);
+  }, [product?.id, product?.name, viewedSize?.sku, viewedSize?.label, viewedSize?.priceInPaise]);
 
   // The ingredient guide this product belongs to, for the "read the guide" link.
   const guide = useMemo(

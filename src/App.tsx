@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigation } from './components/Navigation';
 import { CartDrawer } from './components/CartDrawer';
 import { CookieBanner } from './components/CookieBanner';
+import { StorefrontAnalytics } from './components/StorefrontAnalytics';
 import { QuickOrderDock } from './components/QuickOrderDock';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
 import { applyMeta, useSeo } from './lib/seo';
@@ -141,6 +142,7 @@ export default function App() {
         <Navigation />
         <CartDrawer />
         <CookieBanner />
+        <StorefrontAnalytics />
         <QuickOrderDock />
         <main>
           <Suspense fallback={<RouteFallback />}>

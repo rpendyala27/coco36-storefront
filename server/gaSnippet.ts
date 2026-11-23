@@ -8,10 +8,12 @@ import { readGaIdEnv } from '../src/lib/gaId.js';
  * first paint. The inline bootstrap is a few lines; gtag.js itself is the
  * async script.
  *
- * Consent Mode starts denied. The cookie banner still grants
- * analytics_storage only after Accept (src/lib/analytics.ts). Ad storage
- * stays denied. send_page_view is false so the config call does not emit a
- * hit that App.tsx would then emit again on the same route.
+ * Consent defaults stay denied. This is not Consent Mode advanced: there is
+ * no wait_for_update, so the snippet does not schedule a cookieless ping
+ * before the visitor chooses. The cookie banner grants analytics_storage
+ * only after Accept (src/lib/analytics.ts). Ad storage stays denied.
+ * send_page_view is false so the config call does not emit a hit that
+ * App.tsx would then emit again on the same route.
  *
  * Emitted only when NODE_ENV is production and the id is non-empty, so
  * `vite dev`, vitest, and an explicit empty VITE_GA_ID stay quiet.
@@ -38,8 +40,7 @@ export function renderGaHead(id: string): string {
     "        ad_personalization: 'denied',",
     "        analytics_storage: 'denied',",
     "        functionality_storage: 'granted',",
-    "        security_storage: 'granted',",
-    '        wait_for_update: 500',
+    "        security_storage: 'granted'",
     '      });',
     "      gtag('config', '" + id + "', { send_page_view: false, anonymize_ip: true });",
     '    </script>',

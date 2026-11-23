@@ -45,6 +45,9 @@ describe('GA head snippet', () => {
     expect(html).toContain('async src="https://www.googletagmanager.com/gtag/js?id=G-H2E318VXJX"');
     expect(html).toContain('send_page_view: false');
     expect(html).toContain("analytics_storage: 'denied'");
+    expect(html).not.toContain('wait_for_update');
+    expect(html).not.toContain('url_passthrough');
+    expect(html).not.toContain('ads_data_redaction');
   });
 });
 
