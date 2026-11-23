@@ -53,26 +53,39 @@ export interface InvoiceBreakup {
   totalAmountPaise:    number;
 }
 
-/** Settings the invoice template reads — mirror of getSettings() return shape (seller + invoice keys only). */
+/**
+ * JSON from public.customer_invoice_header().
+ * Legal name, address, GSTIN, and FSSAI once set. No PAN. No bank.
+ */
+export interface CustomerInvoiceHeader {
+  legal_name:    string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city:          string | null;
+  state:         string | null;
+  pincode:       string | null;
+  gstin:         string | null;
+  fssai_lic_no:  string | null;
+}
+
+/** Seller lines the customer invoice may print. FSSAI is omitted when blank. */
+export interface InvoiceSeller {
+  legalName:    string;
+  gstin:        string;
+  addressLine1: string;
+  addressLine2: string;
+  city:         string;
+  state:        string;
+  pincode:      string;
+  fssaiLicNo:   string | null;
+}
+
+/**
+ * What the customer invoice template reads.
+ * `seller` is null when the header RPC failed or returned nothing printable.
+ * `storeName` is the public `store.name` settings row.
+ */
 export interface InvoiceSettings {
-  seller: {
-    legalName:    string;
-    gstin:        string;
-    pan:          string;
-    addressLine1: string;
-    addressLine2: string;
-    city:         string;
-    state:        string;
-    pincode:      string;
-    fssaiLicNo:   string;
-  };
-  invoice: {
-    terms:        string;
-    bankName:     string;
-    bankAccount:  string;
-    bankIfsc:     string;
-    signatureUrl: string;
-    logoUrl:      string;
-  };
+  seller:    InvoiceSeller | null;
   storeName: string;
 }
