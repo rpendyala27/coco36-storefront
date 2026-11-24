@@ -78,7 +78,9 @@ export const productService = {
       if (refetchTimer) clearTimeout(refetchTimer);
       refetchTimer = setTimeout(async () => {
         const list = await productService.list();
-        callback(list);
+        // list() answers [] on a read error. After the first load, keep what
+        // is on screen rather than flash an empty shop (P38, F22).
+        if (list.length > 0) callback(list);
       }, 200);
     }
 

@@ -49,6 +49,11 @@ export function categoryPath(c: { slug: string }): string {
  * old URLs (e.g. /shop/ceylon-cinnamon). When the successor is live the
  * old URL 301s to it; otherwise it answers 410 Gone.
  *
+ * This is the one retired-slug rule (P38, F20): a retired product slug 301s
+ * only to a live, real equivalent, and answers 410 when there is none. Retired
+ * slugs from the live catalogue (renamed or split products) go here too, e.g.
+ * /shop/muscovado-cane-sugar, which split into dark and light muscovado.
+ *
  * /shop/bean-to-bar-kit is not in this map. The kit is not for sale, so that
  * URL 301s to /shop (see RETIRED_SLUG_TARGET) instead of a product or a 410.
  */
@@ -66,7 +71,9 @@ export const LEGACY_PRODUCT_SLUGS: Readonly<Record<string, string>> = {
   'spelt-flour': 'wholemeal-spelt-flour',
   'almond-flour-blanched': 'blanched-almond-flour',
   'buckwheat-flour': 'dark-buckwheat-flour',
-  'muscovado-sugar': 'muscovado-cane-sugar',
+  'muscovado-sugar': 'dark-muscovado-cane-sugar',
+  // Retired live-catalogue slug (F20). Dark muscovado is the same sugar.
+  'muscovado-cane-sugar': 'dark-muscovado-cane-sugar',
   'manuka-honey-15': 'manuka-honey-umf-15',
   'maple-syrup-grade-a': 'grade-a-dark-maple-syrup',
   'palm-sugar-jaggery': 'palm-sugar-jaggery',

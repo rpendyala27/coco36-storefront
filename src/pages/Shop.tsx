@@ -292,7 +292,12 @@ export const Shop = () => {
 
   // Browse tiles from designation tags on live products (not a fixed slug list).
   const designationTiles = useMemo(() => designationBrowseTiles(PRODUCTS), [PRODUCTS]);
-  const categoryTiles = useMemo(() => browseCategories(tree), [tree]);
+  const categoryTiles = useMemo(() => browseCategories(tree, PRODUCTS), [tree, PRODUCTS]);
+  // Pill bar: stocked roots only (F21), plus the active one so it stays highlighted.
+  const pillCategories = useMemo(
+    () => tree.roots.filter((c) => c.id === categoryId || productsInCategory(c, tree, PRODUCTS).length > 0),
+    [tree, PRODUCTS, categoryId],
+  );
   // The tile strip is the category nav now (the old pill row is gone), so it
   // stays visible whether or not something is selected.
   const showTiles = (categoryTiles.length + designationTiles.length) > 0;
@@ -472,7 +477,7 @@ export const Shop = () => {
                     </NavPill>
                   );
                 })}
-                {tree.roots.map((c) => {
+                {pillCategories.map((c) => {
                   const active = breadcrumb[0]?.id === c.id;
                   return (
                     <NavPill key={c.id} active={active} to={hrefFor(active ? null : c.id)} onClick={() => (active ? selectCategory(null) : (selectCategory(c.id), scrollToCatalog()))}>{c.name}</NavPill>
@@ -650,7 +655,10 @@ export const Shop = () => {
               </div>
             </div>
 
-            {loading && PRODUCTS.length === 0 ? (
+            {/* F22: skeleton until the products AND (for a category URL) the
+                category tree are in, so all products never flash before the
+                category filter applies. */}
+            {(loading && PRODUCTS.length === 0) || (!!categorySlug && treeLoading) ? (
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="card">

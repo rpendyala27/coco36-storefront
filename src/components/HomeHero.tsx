@@ -5,7 +5,7 @@ import { SearchBox } from './SearchBox';
 import { AmbientVideo } from './AmbientVideo';
 import { ScraperReveal } from './ScraperReveal';
 import { PHASES } from '../data/thirtySixSteps';
-import { PHASE_VIDEOS, PHASE_POSTERS, PHASE_VIDEO_START } from '../data/phaseVideos';
+import { PHASE_VIDEOS, PHASE_POSTERS, PHASE_VIDEO_START, HERO_VIDEO_PHASE } from '../data/phaseVideos';
 import type { Product } from '../types';
 
 // Forest/leaf/lime dot tones cycled across the live-sourcing ticker.
@@ -63,7 +63,7 @@ export const HomeHero = ({ products }: { products: Product[] }) => {
           sibling ticker below. */}
       <motion.div {...heroEnter(0.08)} className="relative w-full z-10">
         <div className="grid grid-cols-6 w-full h-[42vh] min-h-[300px] max-h-[520px]">
-          {PHASES.map((p) => PHASE_VIDEOS[p.id] && (
+          {PHASES.map((p, i) => PHASE_VIDEOS[p.id] && (
             <Link
               key={p.id}
               to={`/36-steps#${p.id}`}
@@ -74,7 +74,13 @@ export const HomeHero = ({ products }: { products: Product[] }) => {
                   mobile and hover-revealed on desktop, so crawlers (and
                   screen readers on phones) need an always-rendered name. */}
               <span className="sr-only">Phase {p.number} — {p.title}</span>
-              <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
+              {/* F66: every tile paints its poster first (a small JPEG); only
+                  one tile fetches a video, lazily, after window load. */}
+              {p.id === HERO_VIDEO_PHASE ? (
+                <AmbientVideo src={PHASE_VIDEOS[p.id]} poster={PHASE_POSTERS[p.id]} startAt={PHASE_VIDEO_START[p.id]} className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <img src={PHASE_POSTERS[p.id]} alt="" width={360} height={640} decoding="async" fetchPriority={i === 0 ? 'high' : 'auto'} className="absolute inset-0 w-full h-full object-cover" />
+              )}
               <span className="absolute inset-0 bg-brand-forest-deep/35 transition-colors duration-200 group-hover:bg-brand-forest-deep/15" />
               {/* Phase caption — desktop/laptop only, revealed on cursor
                   hover (number + phase name). Touch devices show a clean image

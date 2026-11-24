@@ -1,5 +1,5 @@
 import { ogImageFor, serializeJsonLd, type PageMeta } from '../src/seo/meta.js';
-import { BRAND, SITE_ORIGIN } from '../src/seo/site.js';
+import { BRAND, DEFAULT_OG_IMAGE, SITE_ORIGIN } from '../src/seo/site.js';
 
 /**
  * HTML string helpers for the render function. Everything that lands in the
@@ -32,8 +32,8 @@ export function renderHead(m: PageMeta): string {
     url && `<meta property="og:url" content="${attr(url)}" />`,
     `<meta property="og:image" content="${attr(image)}" />`,
     `<meta property="og:image:alt" content="${attr(m.imageAlt ?? m.title)}" />`,
-    !m.image && `<meta property="og:image:width" content="1200" />`,
-    !m.image && `<meta property="og:image:height" content="630" />`,
+    image === DEFAULT_OG_IMAGE && `<meta property="og:image:width" content="1200" />`,
+    image === DEFAULT_OG_IMAGE && `<meta property="og:image:height" content="630" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${attr(m.title)}" />`,
     `<meta name="twitter:description" content="${attr(m.description)}" />`,

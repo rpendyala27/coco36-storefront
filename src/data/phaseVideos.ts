@@ -18,6 +18,13 @@ export const PHASE_VIDEOS: Record<string, string> = {
   kitchen: 'https://videos.pexels.com/video-files/6181811/6181811-sd_360_640_30fps.mp4',   // piping frosting (was kneading-dough — too close to craft's bowl)
 };
 
+/**
+ * The one phase whose clip plays in the homepage hero (P38, F66). The other
+ * five tiles show their poster only, so the hero downloads one SD clip
+ * (about 1 MB) after load instead of six.
+ */
+export const HERO_VIDEO_PHASE = 'craft';
+
 export const PHASE_POSTERS: Record<string, string> = {
   origin:     '/hero-posters/7782542.jpg',
   processing: '/hero-posters/12540973.jpg',

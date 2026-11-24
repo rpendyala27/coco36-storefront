@@ -29,7 +29,7 @@ export const Home = () => {
   useSeo(useMemo(() => homeMeta(cfg), [cfg]));
 
   const featured   = useMemo(() => featuredProducts(products), [products]);
-  const categories = useMemo(() => browseCategories(tree), [tree]);
+  const categories = useMemo(() => browseCategories(tree, products), [tree, products]);
 
   return (
     <div className="pt-20 bg-brand-paper min-h-screen">

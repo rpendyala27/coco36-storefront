@@ -69,12 +69,12 @@ export const Navigation: React.FC = () => {
 
         {/* Header */}
         <nav className="h-[50px] bg-brand-paper border-b border-brand-line flex items-center">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12 grid grid-cols-[auto_1fr_auto] items-center gap-2 md:gap-6">
+          <div className="max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-8 lg:px-12 grid grid-cols-[minmax(0,auto)_1fr_auto] items-center gap-1 sm:gap-2 md:gap-6">
             {/* Logo */}
-            <NavLink to="/" className="flex items-center gap-2.5 shrink-0" aria-label="COCO36 — From crop to craft">
-              <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={41} height={40} alt="" className="h-10 w-auto" />
+            <NavLink to="/" className="flex items-center gap-2 sm:gap-2.5 min-w-0" aria-label="COCO36 — From crop to craft">
+              <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={41} height={40} alt="" className="h-9 sm:h-10 w-auto shrink-0" />
               <span className="flex flex-col items-start leading-none">
-                <span className="font-display text-[22px] font-semibold tracking-tight text-brand-forest">
+                <span className="font-display text-[20px] sm:text-[22px] font-semibold tracking-tight text-brand-forest whitespace-nowrap">
                   COCO<span className="text-brand-gold italic">36</span>
                 </span>
                 <span className="text-[8px] uppercase tracking-[0.26em] text-brand-leaf font-medium mt-1 hidden sm:block">From crop to craft</span>
@@ -89,8 +89,8 @@ export const Navigation: React.FC = () => {
             </div>
 
             {/* Right utility */}
-            <div className="flex items-center gap-2 md:gap-4 justify-end">
-              <button onClick={() => setSearchOpen(true)} className="p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label="Search">
+            <div className="flex items-center gap-0 sm:gap-2 md:gap-4 justify-end shrink-0">
+              <button onClick={() => setSearchOpen(true)} className="inline-flex size-11 items-center justify-center text-brand-forest hover:text-brand-leaf transition-colors" aria-label="Search">
                 <Search size={18} strokeWidth={1.75} />
               </button>
               {/* Shop is the primary browse link — surface it in the header at
@@ -98,7 +98,8 @@ export const Navigation: React.FC = () => {
                   collapsed into the hamburger (md→lg). Hidden at lg+, where the
                   center nav already carries Shop, to avoid a duplicate. */}
               <NavLink to="/shop" className="hidden md:inline-flex lg:hidden items-center py-2.5 text-sm font-medium text-brand-forest hover:text-brand-leaf transition-colors">Shop</NavLink>
-              <TradeBulkLink />
+              {/* Below sm the Trade link lives in the menu drawer, so the bar fits at 390px (F23). */}
+              <TradeBulkLink className="max-sm:!hidden" />
               {user ? (
                 <ProfileDropdown />
               ) : (
@@ -106,7 +107,7 @@ export const Navigation: React.FC = () => {
               )}
 
               {/* Cart */}
-              <button onClick={openCart} className="relative p-2 text-brand-forest hover:text-brand-leaf transition-colors" aria-label={`Open cart (${itemCount} items)`}>
+              <button onClick={openCart} className="relative inline-flex size-11 items-center justify-center text-brand-forest hover:text-brand-leaf transition-colors" aria-label={`Open cart (${itemCount} items)`}>
                 <ShoppingBag size={18} strokeWidth={1.75} />
                 <AnimatePresence>
                   {itemCount > 0 && (
@@ -116,7 +117,7 @@ export const Navigation: React.FC = () => {
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-gold text-brand-ink text-[10px] font-bold flex items-center justify-center px-1"
+                      className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand-gold text-brand-ink text-[10px] font-bold flex items-center justify-center px-1"
                     >
                       {itemCount > 99 ? '99+' : itemCount}
                     </motion.span>
@@ -124,7 +125,7 @@ export const Navigation: React.FC = () => {
                 </AnimatePresence>
               </button>
 
-              <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 text-brand-forest" aria-label="Menu">
+              <button type="button" onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden inline-flex size-11 items-center justify-center text-brand-forest" aria-label={mobileOpen ? 'Close menu' : 'Menu'} aria-expanded={mobileOpen}>
                 {mobileOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
@@ -144,7 +145,7 @@ export const Navigation: React.FC = () => {
             <motion.div
               initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }}
               transition={{ type: 'tween', duration: 0.3 }}
-              className="fixed top-20 left-0 w-80 h-[calc(100vh-80px)] bg-white z-40 lg:hidden p-8 overflow-y-auto shadow-2xl"
+              className="fixed top-20 left-0 w-80 max-w-[85vw] h-[calc(100vh-80px)] bg-white z-40 lg:hidden p-8 overflow-y-auto shadow-2xl"
             >
               <button
                 onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
