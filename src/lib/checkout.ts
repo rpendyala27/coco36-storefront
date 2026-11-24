@@ -53,10 +53,9 @@ export async function abandonCheckout(orderId: string): Promise<void> {
  * running every minute and the time between placing the order and opening
  * the window.
  *
- * F76 (handed to P21): the sweep moves from every five minutes to every
- * minute (`* * * * *`). That is merged in coco36-next #67 but is NEEDS-YES to
- * apply; until it is applied a release can lag the hold by up to five
- * minutes, which only makes this window more conservative.
+ * F76 (done in P21, coco36-next #67, live since 23 Nov): the sweep runs every
+ * minute (`* * * * *`), so a release lags the hold by at most about a minute,
+ * which the margin above covers.
  */
 /** Fallback only, when the API response has no hold (an older admin deploy). */
 export const UNPAID_HOLD_MINUTES = 30;
