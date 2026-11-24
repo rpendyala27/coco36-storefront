@@ -2,6 +2,7 @@ import type React from 'react';
 import { SupportContactLink } from '../components/SupportContact';
 import { useStoreConfig } from '../lib/storeConfig';
 import { REGISTERED_OFFICE_LINE } from '../seo/site';
+import { trackingLine } from '../content/orderFacts';
 
 /**
  * Soft-launch terms of sale. Covers the basics: who is selling, returns,
@@ -36,7 +37,7 @@ export const Terms = () => {
 
       <Section title="Orders and payment">
         <ul className="list-disc pl-6 space-y-1">
-          <li>An order is confirmed only after payment is captured (or COD is accepted at our discretion).</li>
+          <li>An order is confirmed only after payment is captured. Every order is paid online at checkout.</li>
           <li>Payments are processed by Razorpay. We do not store card or UPI credentials.</li>
           <li>We reserve the right to cancel an order before dispatch and refund in full.</li>
         </ul>
@@ -45,8 +46,8 @@ export const Terms = () => {
       <Section id="shipping" title="Shipping">
         <p>
           We ship through our courier partners. ETAs shown at checkout are estimates;
-          delays caused by courier or weather are outside our control. Live
-          tracking is available from your account once an AWB is assigned.
+          delays caused by courier or weather are outside our control.
+          {' '}{trackingLine()}
         </p>
       </Section>
 
@@ -56,8 +57,7 @@ export const Terms = () => {
           <li>Report it within {returnWindowDays} days of delivery, with your order number and photos of the item and its packaging.</li>
           <li>We do not accept change-of-mind returns.</li>
           <li>If the item is in stock we will send a replacement; otherwise we will refund you.</li>
-          <li>Refunds for prepaid orders go back to the original payment method. Your bank usually takes 5–7 business days to show the refund.</li>
-          <li>Refunds for cash-on-delivery orders are made by bank transfer (we will ask for bank details), since there is no original online payment method.</li>
+          <li>Refunds go back to the original payment method. Your bank usually takes 5–7 business days to show the refund.</li>
         </ul>
       </Section>
 

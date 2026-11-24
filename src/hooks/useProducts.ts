@@ -3,6 +3,7 @@ import { productService, type SearchProduct } from '../services/productService';
 import { PRODUCTS } from '../data/products';
 import { Product } from '../types';
 import { resolveProductParam, type ProductResolution } from '../lib/productPath';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface UseProductsResult {
   products: Product[];
@@ -47,15 +48,21 @@ export function useProducts(): UseProductsResult {
           // duplicate listings + non-UUID variant ids at checkout).
           setProducts(dbProducts);
           setFromSupabase(true);
+        } else if (isSupabaseConfigured) {
+          // Configured but nothing came back (empty catalogue or a failed
+          // read): show the real empty state. Never flash the static demo
+          // catalogue on the live site (P38, F22).
+          setProducts([]);
+          setFromSupabase(false);
         } else {
-          // Empty DB → pure static catalogue (development fallback).
+          // No Supabase credentials (local dev only) → static demo catalogue.
           setProducts(PRODUCTS);
           setFromSupabase(false);
         }
       });
     } catch {
-      // Supabase unreachable — fall back to static data silently
-      setProducts(PRODUCTS);
+      // Supabase unreachable. Demo data only when it was never configured.
+      setProducts(isSupabaseConfigured ? [] : PRODUCTS);
       setLoading(false);
     }
 

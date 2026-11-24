@@ -30,8 +30,17 @@ export function featuredProducts(products: readonly Product[], limit = 12): Prod
     .slice(0, limit);
 }
 
-/** Root categories shown as browse tiles (the admin gives them an image). */
-export const browseCategories = (tree: CategoryTree) => tree.roots.filter((c) => c.imageUrl);
+/**
+ * Root categories with at least one live product (P38, F21): an empty
+ * category stays out of the nav, the tiles and the sitemap even while it still
+ * exists in admin.
+ */
+export const stockedRootCategories = (tree: CategoryTree, products: readonly Product[]) =>
+  tree.roots.filter((c) => productsInCategory(c, tree, products).length > 0);
+
+/** Root categories shown as browse tiles: stocked, and the admin gave them an image. */
+export const browseCategories = (tree: CategoryTree, products: readonly Product[]) =>
+  stockedRootCategories(tree, products).filter((c) => c.imageUrl);
 
 /** Intro line under a listing H1 (/shop or a category) — server + client. */
 export function listingIntro(c: Category | null, count: number): string {

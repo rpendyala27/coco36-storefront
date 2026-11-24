@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ogImageFor, serializeJsonLd, type PageMeta } from '../seo/meta';
-import { SITE_ORIGIN } from '../seo/site';
+import { DEFAULT_OG_IMAGE, SITE_ORIGIN } from '../seo/site';
 
 /**
  * Client-side <head> manager. The server (api/render.ts) already sends the
@@ -49,7 +49,7 @@ export function applyMeta(m: PageMeta): void {
   upsertMeta('property', 'og:image', image);
   upsertMeta('property', 'og:image:alt', m.imageAlt ?? m.title);
   // Dimensions are only known for the default 1200×630 card.
-  const isDefault = !m.image;
+  const isDefault = image === DEFAULT_OG_IMAGE;
   upsertMeta('property', 'og:image:width', isDefault ? '1200' : null);
   upsertMeta('property', 'og:image:height', isDefault ? '630' : null);
   upsertMeta('name', 'twitter:title', m.title);

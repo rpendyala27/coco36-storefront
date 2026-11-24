@@ -287,7 +287,13 @@ export function goneMeta(): PageMeta {
 }
 
 /** Default Open Graph image when a page has none of its own. */
-export const ogImageFor = (m: PageMeta) => m.image ?? DEFAULT_OG_IMAGE;
+/**
+ * Share image. Interim Unsplash seed photos never become the OG image (P38,
+ * F08/F64): those pages fall back to the branded default until the admin
+ * gives the product or category a Cloudinary photo.
+ */
+export const ogImageFor = (m: PageMeta) =>
+  (m.image && !/^https:\/\/images\.unsplash\.com\//.test(m.image) ? m.image : DEFAULT_OG_IMAGE);
 
 /** JSON for a <script type="application/ld+json">; `<` escaped so text can't close the tag. */
 export const serializeJsonLd = (data: object) => JSON.stringify(data).replace(/</g, '\\u003c');

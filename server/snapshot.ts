@@ -3,7 +3,7 @@ import type { Category, CategoryTree } from '../src/lib/categoryTree';
 import type { Crumb } from '../src/seo/jsonld';
 import { categoryPath, productPath } from '../src/lib/productPath.js';
 import { imageSrcSet, imageUrl } from '../src/lib/img.js';
-import { browseCategories, featuredProducts, listingIntro, productsInCategory } from '../src/lib/catalog.js';
+import { browseCategories, featuredProducts, stockedRootCategories, listingIntro, productsInCategory } from '../src/lib/catalog.js';
 import { productBadges, useCaseTags } from '../src/lib/badges.js';
 import type { ClaimMark } from '../src/lib/claimMarks.js';
 import { comingSoonProducts } from '../src/lib/comingSoonProducts.js';
@@ -26,7 +26,7 @@ import { PHASES } from '../src/data/thirtySixSteps.js';
 import {
   LEGAL_NAME, REGISTERED_OFFICE_LINE, type StorePolicy, rupees,
 } from '../src/seo/site.js';
-import { policyBlurb } from '../src/content/orderFacts.js';
+import { policyBlurb, trackingLine } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
 import { bakingNoteCrumbs } from '../src/seo/bakingNoteMeta.js';
 import { recipeCrumbs, recipesHubCrumbs } from '../src/seo/recipeMeta.js';
@@ -55,8 +55,7 @@ export interface SnapshotCtx {
 const a = (href: string, text: string) => `<a href="${esc(href)}">${esc(text)}</a>`;
 
 /** Root categories that currently have live products (worth linking site-wide). */
-const stockedCategories = (ctx: SnapshotCtx) =>
-  ctx.tree.roots.filter((c) => productsInCategory(c, ctx.tree, ctx.products).length > 0);
+const stockedCategories = (ctx: SnapshotCtx) => stockedRootCategories(ctx.tree, ctx.products);
 
 function layout(ctx: SnapshotCtx, main: string, _opts?: { omitDispatchCity?: boolean }): string {
   const nav = [
@@ -160,7 +159,7 @@ export function homeSnapshot(ctx: SnapshotCtx): string {
     claimMarkList(ctx),
     `<p>${a('/shop', 'Shop all ingredients')}</p>`,
     '<h2>Shop by category</h2>',
-    `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
+    `<ul>${browseCategories(ctx.tree, ctx.products).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
     '<h2>Ingredient guides</h2>',
     guideList(GUIDES),
     `<p>${esc(deliveryLine(ctx.policy))}</p>`,
@@ -179,7 +178,7 @@ export function shopSnapshot(ctx: SnapshotCtx): string {
     claimMarkList(ctx),
     ...shopSeoBelowGrid().map((p) => `<p>${esc(p)}</p>`),
     '<h2>Categories</h2>',
-    `<ul>${browseCategories(ctx.tree).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
+    `<ul>${browseCategories(ctx.tree, ctx.products).map((c) => `<li>${a(categoryPath(c), c.name)}</li>`).join('')}</ul>`,
   ].join('\n'));
 }
 
@@ -380,7 +379,7 @@ export function staticSnapshot(ctx: SnapshotCtx, pathname: string, crumbs: Crumb
       : { h1: 'COCO36', lede: '' });
   const extra = pathname === '/36-steps'
     ? PHASES.map((ph) => `<h2>Phase ${esc(ph.number)}: ${esc(ph.title)}</h2><p>${esc(ph.description)}</p><ol>${ph.steps.map((s) => `<li>${esc(s.title)}: ${esc(s.description)}</li>`).join('')}</ol>`).join('\n')
-    : pathname === '/terms' ? `<p>${esc(REGISTERED_OFFICE_LINE)}</p><h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))}</p>`
+    : pathname === '/terms' ? `<p>${esc(REGISTERED_OFFICE_LINE)}</p><h2 id="shipping">Shipping</h2><p>${esc(deliveryLine(ctx.policy))} ${esc(trackingLine())}</p>`
     : pathname === '/trade' ? [
       '<h2>Four steps to start.</h2>',
       `<p>${a(TRADE_GUIDE_HREF, TRADE_GUIDE_LABEL)}</p>`,

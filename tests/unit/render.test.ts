@@ -270,7 +270,9 @@ describe('server-rendered pages', () => {
     const terms = await render('/terms', '', 'coco36.com');
     expect(home.body).toContain('missing');
     expect(terms.body).toContain('missing');
-    expect(terms.body).toContain('Refunds for cash-on-delivery orders are made by bank transfer');
+    // P38 (F24/F65): no cash-on-delivery promise in the policy copy.
+    expect(terms.body).not.toMatch(/cash.on.delivery|\bCOD\b/i);
+    expect(terms.body).toContain('tracking link once your order ships.');
     expect(home.body).toContain('our courier partners');
     expect(terms.body).toContain('our courier partners');
   });
