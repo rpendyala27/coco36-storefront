@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { RecipeHero } from '../components/RecipeHero';
 import { bakingNoteByPath, formatPublishDate, type NoteBlock, type NoteSection } from '../content/bakingNotes';
 import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../content/wholesaleGuide';
 import { useStoreConfig } from '../lib/storeConfig';
@@ -42,6 +43,7 @@ export function BakingNote() {
         <Breadcrumbs crumbs={bakingNoteCrumbs(note)} />
         <p className="eyebrow text-brand-leaf mt-8 mb-3">Ingredient notes</p>
         <h1 className="font-display text-4xl md:text-5xl leading-[1.05] text-brand-forest">{note.h1}</h1>
+        {note.recipe && <RecipeHero images={note.recipe.image} alt={note.recipe.name} />}
         {note.published && (
           <p className="mt-4 text-sm text-brand-muted">Published <time dateTime={note.published}>{formatPublishDate(note.published)}</time></p>
         )}

@@ -51,6 +51,14 @@ export interface NoteRecipe {
   recipeYield: string;
   ingredients: string[];
   steps: string[];
+  /**
+   * Optional photos of the finished dish. Absolute https://coco36.com URLs,
+   * meant to hold the 1:1, 4:3 and 16:9 crops, each at least 1200px wide.
+   * The first accepted URL is the visible hero on the baking-note page;
+   * Recipe JSON-LD lists every accepted URL. Relative paths and any other
+   * host are ignored. Omit this until the files exist — nothing is substituted.
+   */
+  image?: string[];
 }
 
 export interface BakingNote {

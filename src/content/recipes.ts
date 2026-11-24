@@ -1,8 +1,8 @@
 /**
  * /recipes and the first three baking recipes.
  * Wording is the batch-1 draft. Shop-opening dates, prices and the draft's
- * image notes are not page copy. There is no original photo yet, so Recipe
- * JSON-LD omits image.
+ * image notes are not page copy. Original photos are optional (`image`).
+ * Until that field is set, the page and Recipe JSON-LD omit the photo.
  *
  * RECIPES_PUBLISH_DATE is the batch date (10 November 2026). It is the
  * visible publish line and Recipe datePublished. Replace it if the live
@@ -53,6 +53,14 @@ export interface RecipeDoc {
   cookTime: string;
   totalTime: string;
   recipeYield: string[];
+  /**
+   * Optional photos of the finished dish. Absolute https://coco36.com URLs,
+   * meant to hold the 1:1, 4:3 and 16:9 crops, each at least 1200px wide.
+   * The first accepted URL is the visible hero; Recipe JSON-LD lists every
+   * accepted URL. Relative paths and any other host are ignored. Omit this
+   * until the files exist — nothing is substituted.
+   */
+  image?: string[];
 }
 
 export interface RecipesHub {
@@ -82,8 +90,8 @@ export const RECIPES: RecipeDoc[] = [
   {
     slug: 'fudgy-dutch-cocoa-brownies',
     path: '/recipes/fudgy-dutch-cocoa-brownies',
-    title: 'Fudgy Dutch-Process Cocoa Brownies | COCO36',
-    description: 'A fudgy brownie with Dutch-process cocoa, written in metric weights, with tips for a warm Indian kitchen.',
+    title: 'Fudgy Dutch Brownie Recipe (Dutch-Process Cocoa) | COCO36',
+    description: 'A fudgy Dutch brownie recipe with unsweetened Dutch-process cocoa, written in metric weights for a 20 cm tin, plus tips for a warm Indian kitchen.',
     h1: 'Fudgy Dutch-process cocoa brownies',
     opening: 'These fudgy brownies are made with Dutch-process cocoa, butter, sugar and a modest amount of maida, so the crumb stays dense and chocolate-forward rather than like a cocoa cake.',
     facts: [
@@ -144,8 +152,8 @@ export const RECIPES: RecipeDoc[] = [
   {
     slug: 'dark-couverture-ganache',
     path: '/recipes/dark-couverture-ganache',
-    title: 'Dark Couverture Ganache for Truffles or Tarts | COCO36',
-    description: 'A dark couverture ganache in two ratios: firm for truffles or a tart filling, softer for a glaze, with tips for a warm kitchen.',
+    title: 'Couverture Ganache Recipe for Truffles & Tarts | COCO36',
+    description: 'Make a dark couverture ganache in two ratios: firm 2:1 for truffles or a tart filling, and equal weights for a softer glaze, with tips for a warm kitchen.',
     h1: 'Dark couverture ganache for truffles or a tart filling',
     opening: 'This dark couverture ganache is a simple emulsion of chocolate and cream: use two parts chocolate to one part cream, by weight, for truffles or a firm tart filling, and equal weights for a softer glaze.',
     facts: [
