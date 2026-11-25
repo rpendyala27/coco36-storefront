@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BAKING_NOTES, COUVERTURE_BUYING_GUIDE_PUBLISH_DATE, formatPublishDate } from '../../src/content/bakingNotes';
+import { BAKING_NOTES, COUVERTURE_BUYING_GUIDE_PUBLISH_DATE, formatPublishDate, type BakingNote } from '../../src/content/bakingNotes';
+import { bakingNoteMeta } from '../../src/seo/bakingNoteMeta';
+import { bakingNoteSnapshot } from '../../server/snapshot';
 import { WHOLESALE_GUIDE_PATH, WHOLESALE_MINIMUMS, WHOLESALE_PAYMENT, wholesaleDispatchSentence } from '../../src/content/wholesaleGuide';
 import { bulkGuideHref } from '../../src/content/bulkGuideLink';
 import { PRODUCT_PAGE_SLUGS } from '../../src/content/productPages';
@@ -125,6 +127,60 @@ describe('ingredient notes', () => {
     expect(recipe.recipeIngredient?.join(' ')).not.toMatch(/cooking fat/i);
     expect(recipe.description).toContain('unsweetened pistachio-paste');
     expect(recipe.description).not.toMatch(/100%/);
+    expect(recipe).not.toHaveProperty('image');
+    expect(JSON.stringify(recipe)).not.toMatch(/og\.png|coco36-floral|hero-posters/);
+    expect(r.body).not.toContain('<img');
+  });
+
+  it('emits baking-note Recipe image only for accepted coco36.com photo URLs', () => {
+    const note = BAKING_NOTES.find((item) => item.path === '/guides/pistachio-paste-dubai-chocolate-at-home') as BakingNote;
+    const photos = [
+      'https://coco36.com/images/kataifi-bar-1x1.jpg',
+      'https://coco36.com/images/kataifi-bar-4x3.jpg',
+      'https://coco36.com/images/kataifi-bar-16x9.jpg',
+    ];
+    const withImages = (image?: string[]): BakingNote => ({
+      ...note,
+      recipe: { ...note.recipe!, image },
+    });
+    const ld = (image?: string[]) => bakingNoteMeta(withImages(image)).jsonLd
+      .find((block) => block.id === 'recipe')!.data as Record<string, unknown>;
+
+    expect(ld(undefined)).not.toHaveProperty('image');
+    expect(ld([])).not.toHaveProperty('image');
+    expect(ld([
+      '/og.png',
+      'https://images.unsplash.com/photo-1',
+      'http://coco36.com/images/kataifi.jpg',
+      'https://www.coco36.com/images/kataifi.jpg',
+      'https://coco36.com',
+      'not a url',
+    ])).not.toHaveProperty('image');
+    expect(ld(['/og.png', ...photos, 'https://images.unsplash.com/photo-1']).image).toEqual(photos);
+    expect(ld(photos).image).toEqual(photos);
+
+    const ctx = { products: [], tree: buildTree([]), policy: DEFAULT_POLICY };
+    expect(bakingNoteSnapshot(ctx, note)).not.toContain('<img');
+    const html = bakingNoteSnapshot(ctx, withImages(photos));
+    expect(html).toContain(`<img src="${photos[0]}" alt="${note.recipe!.name}" width="1200" height="900" sizes="(min-width: 768px) 720px, 100vw" decoding="async" />`);
+    expect(html).not.toContain(photos[1]);
+    expect(html).not.toContain('og.png');
+    expect(html).not.toContain('hero-posters');
+  });
+
+  it('rewrites only the sugars guide title and description', async () => {
+    const title = 'Dark Muscovado Sugar and Jaggery, Explained | COCO36';
+    const description = 'How dark muscovado sugar, muscovado and jaggery (Indian raw sugar) are made, how they taste, and how to bake with them. A guide to unrefined cane sugars.';
+    expect(title.length).toBeLessThanOrEqual(TITLE_MAX);
+    expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    const r = await render('/ingredients/sugars-jaggery', '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(titleOf(r.body)).toBe(title);
+    expect(titleOf(r.body).includes('| COCO36 | COCO36')).toBe(false);
+    const desc = decode(r.body.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? '');
+    expect(desc).toBe(description);
+    expect(r.body).toContain('<h1>Jaggery, muscovado and unrefined sugars</h1>');
+    expect(visible(r.body)).toContain('White sugar is all sweetness and no character.');
   });
 
   it('published HTML has no [CONFIRM], Shiprocket, Visakhapatnam, or Vizag', async () => {

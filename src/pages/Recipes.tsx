@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Breadcrumbs } from '../components/Breadcrumbs';
+import { RecipeHero } from '../components/RecipeHero';
 import {
   RECIPES_HUB, RECIPES_PUBLISH_DATE, RECIPES_PUBLISH_LABEL, RECIPE_INDEX_LINKS,
   recipeBySlug, type RecipeDoc, type RecipeLink,
@@ -65,6 +66,7 @@ function RecipeArticle({ recipe }: { recipe: RecipeDoc }) {
         <Breadcrumbs crumbs={recipeCrumbs(recipe)} />
         <p className="eyebrow text-brand-leaf mt-8 mb-3">Recipes</p>
         <h1 className="font-display text-4xl md:text-5xl leading-[1.05] text-brand-forest">{recipe.h1}</h1>
+        <RecipeHero images={recipe.image} alt={recipe.h1} />
         <p className="mt-4 text-sm text-brand-muted">Published <time dateTime={RECIPES_PUBLISH_DATE}>{RECIPES_PUBLISH_LABEL}</time></p>
         <p className="mt-5 text-lg leading-relaxed text-brand-ink/80">{recipe.opening}</p>
 

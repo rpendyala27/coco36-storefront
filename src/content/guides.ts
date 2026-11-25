@@ -142,8 +142,8 @@ export const GUIDES: Guide[] = [
   },
   {
     ...link('sugars-jaggery'),
-    title: 'Jaggery, Muscovado & Unrefined Sugar in India | COCO36',
-    description: 'How jaggery, muscovado and other unrefined cane sugars are made, how they taste and how to bake with them. Speciality sugars online in India from COCO36.',
+    title: 'Dark Muscovado Sugar and Jaggery, Explained | COCO36',
+    description: 'How dark muscovado sugar, muscovado and jaggery (Indian raw sugar) are made, how they taste, and how to bake with them. A guide to unrefined cane sugars.',
     eyebrow: 'Ingredient guide · Sugars & jaggery',
     h1: 'Jaggery, muscovado and unrefined sugars',
     intro: [

@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { formatPublishDate } from '../../src/content/bakingNotes';
 import {
   RECIPES, RECIPES_HUB, RECIPES_PUBLISH_DATE, RECIPES_PUBLISH_LABEL, RECIPE_INDEX_LINKS,
-  schemaIngredients,
+  schemaIngredients, type RecipeDoc,
 } from '../../src/content/recipes';
 import { DESCRIPTION_MAX, TITLE_MAX, stripMarkdown } from '../../src/seo/text';
 import { render, setTemplate } from '../../server/render';
@@ -12,6 +12,8 @@ import { resetCatalogCache } from '../../server/catalog';
 import { filterIndexNowUrls } from '../../server/indexnow';
 import { sitemapEntries } from '../../server/sitemap';
 import { buildTree } from '../../src/lib/categoryTree';
+import { recipeMeta } from '../../src/seo/recipeMeta';
+import { recipeSnapshot } from '../../server/snapshot';
 import { DEFAULT_POLICY, SITE_ORIGIN } from '../../src/seo/site';
 
 /**
@@ -128,6 +130,8 @@ describe('recipes batch 1', () => {
       expect(data.name).toBe(recipe.h1);
       expect(data.description).toBe(recipe.description);
       expect(data).not.toHaveProperty('image');
+      expect(JSON.stringify(data)).not.toMatch(/og\.png|coco36-floral|hero-posters/);
+      expect(r.body).not.toContain('<img');
       expect(data).not.toHaveProperty('nutrition');
       expect(data).not.toHaveProperty('aggregateRating');
       expect(data).not.toHaveProperty('review');
@@ -157,6 +161,78 @@ describe('recipes batch 1', () => {
       expect(text).not.toMatch(/repack/i);
       expect(text).not.toMatch(/\b100%\b/);
       expect(text).not.toMatch(/\bpure\b/i);
+    }
+  });
+
+  it('emits Recipe image only for accepted coco36.com photo URLs', () => {
+    const recipe = RECIPES[0];
+    const photos = [
+      'https://coco36.com/images/fudgy-dutch-cocoa-brownies-1x1.jpg',
+      'https://coco36.com/images/fudgy-dutch-cocoa-brownies-4x3.jpg',
+      'https://coco36.com/images/fudgy-dutch-cocoa-brownies-16x9.jpg',
+    ];
+    const ld = (image?: string[]) => recipeMeta({ ...recipe, image }).jsonLd
+      .find((block) => block.id === 'recipe')!.data as Record<string, unknown>;
+
+    expect(ld(undefined)).not.toHaveProperty('image');
+    expect(ld([])).not.toHaveProperty('image');
+    expect(ld([
+      '/og.png',
+      '/coco36-floral.png',
+      'http://coco36.com/images/brownie.jpg',
+      'https://www.coco36.com/images/brownie.jpg',
+      'https://images.unsplash.com/photo-1',
+      'https://coco36.com',
+      'not a url',
+    ])).not.toHaveProperty('image');
+    expect(ld([
+      '/og.png',
+      photos[0],
+      'https://images.unsplash.com/photo-1',
+      photos[1],
+      photos[2],
+    ]).image).toEqual(photos);
+    expect(ld(photos).image).toEqual(photos);
+
+    const ctx = { products: [], tree: buildTree([]), policy: DEFAULT_POLICY };
+    expect(recipeSnapshot(ctx, recipe)).not.toContain('<img');
+    const html = recipeSnapshot(ctx, { ...recipe, image: photos });
+    expect(html).toContain(`<img src="${photos[0]}" alt="${recipe.h1}" width="1200" height="900" sizes="(min-width: 768px) 720px, 100vw" decoding="async" />`);
+    expect(html).not.toContain(photos[1]);
+    const skipped = recipeSnapshot(ctx, { ...recipe, image: ['/og.png', photos[1]] });
+    expect(skipped).toContain(`src="${photos[1]}"`);
+    expect(skipped).not.toContain('src="/og.png"');
+    expect(html).not.toContain('og.png');
+    expect(html).not.toContain('coco36-floral');
+    expect(html).not.toContain('hero-posters');
+  });
+
+  it('keeps the rewritten brownie and ganache titles inside the limit, without a second suffix', async () => {
+    const expected: Record<string, { title: string; description: string }> = {
+      '/recipes/fudgy-dutch-cocoa-brownies': {
+        title: 'Fudgy Dutch Brownie Recipe (Dutch-Process Cocoa) | COCO36',
+        description: 'A fudgy Dutch brownie recipe with unsweetened Dutch-process cocoa, written in metric weights for a 20 cm tin, plus tips for a warm Indian kitchen.',
+      },
+      '/recipes/dark-couverture-ganache': {
+        title: 'Couverture Ganache Recipe for Truffles & Tarts | COCO36',
+        description: 'Make a dark couverture ganache in two ratios: firm 2:1 for truffles or a tart filling, and equal weights for a softer glaze, with tips for a warm kitchen.',
+      },
+    };
+    for (const [recipePath, copy] of Object.entries(expected)) {
+      const recipe = RECIPES.find((item) => item.path === recipePath) as RecipeDoc;
+      expect(copy.title.length, copy.title).toBeLessThanOrEqual(TITLE_MAX);
+      expect(copy.description.length, recipePath).toBeLessThanOrEqual(DESCRIPTION_MAX);
+      expect(recipe.title).toBe(copy.title);
+      expect(recipe.description).toBe(copy.description);
+      expect(recipe.h1).not.toBe(copy.title);
+      const r = await render(recipePath, '', 'coco36.com');
+      expect(titleOf(r.body)).toBe(copy.title);
+      expect(titleOf(r.body).includes('| COCO36 | COCO36')).toBe(false);
+      const desc = decode(r.body.match(/<meta name="description" content="([^"]*)"/)?.[1] ?? '');
+      expect(desc).toBe(copy.description);
+      const data = jsonLd(r.body).find((block) => block['@type'] === 'Recipe')!;
+      expect(data.description).toBe(copy.description);
+      expect(visible(r.body)).toContain(recipe.h1);
     }
   });
 

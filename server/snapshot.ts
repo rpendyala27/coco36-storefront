@@ -29,6 +29,7 @@ import {
 import { policyBlurb, trackingLine } from '../src/content/orderFacts.js';
 import { stripMarkdown } from '../src/seo/text.js';
 import { bakingNoteCrumbs } from '../src/seo/bakingNoteMeta.js';
+import { recipeHeroHtml } from '../src/seo/recipeImage.js';
 import { recipeCrumbs, recipesHubCrumbs } from '../src/seo/recipeMeta.js';
 import {
   RECIPES_HUB, RECIPES_PUBLISH_DATE, RECIPES_PUBLISH_LABEL, RECIPE_INDEX_LINKS,
@@ -297,11 +298,13 @@ export function bakingNoteSnapshot(_ctx: SnapshotCtx, note: BakingNote): string 
   const faqs = note.faqs.length
     ? `<h2>Frequently asked questions</h2>\n${note.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${richHtml(f.a, esc)}</p>`).join('\n')}`
     : '';
+  const hero = note.recipe ? recipeHeroHtml(note.recipe.image, note.recipe.name) : '';
   return layout(_ctx, [
     breadcrumbs(bakingNoteCrumbs(note)),
     '<article>',
     '<p>Ingredient notes</p>',
     `<h1>${esc(note.h1)}</h1>`,
+    ...(hero ? [hero] : []),
     note.published ? `<p>Published <time datetime="${esc(note.published)}">${esc(formatPublishDate(note.published))}</time></p>` : '',
     ...note.sections.map((section) => [
       section.heading ? `<h2>${esc(section.heading)}</h2>` : '',
@@ -427,11 +430,13 @@ export function recipeSnapshot(ctx: SnapshotCtx, recipe: RecipeDoc): string {
   const steps = `<h2>Method</h2><ol>${recipe.steps.map((step) => `<li>${richHtml(step, esc)}</li>`).join('')}</ol>`;
   const tips = `<h2>Warm-kitchen tips</h2><ul>${recipe.tips.map((tip) => `<li>${richHtml(tip, esc)}</li>`).join('')}</ul>`;
   const related = `<nav aria-label="Related pages"><h2>On this site</h2><ul>${recipe.related.map((link) => `<li>${recipeLink(link)}</li>`).join('')}</ul></nav>`;
+  const hero = recipeHeroHtml(recipe.image, recipe.h1);
   return layout(ctx, [
     breadcrumbs(recipeCrumbs(recipe)),
     '<article>',
     '<p>Recipes</p>',
     `<h1>${esc(recipe.h1)}</h1>`,
+    ...(hero ? [hero] : []),
     `<p>Published <time datetime="${esc(RECIPES_PUBLISH_DATE)}">${esc(RECIPES_PUBLISH_LABEL)}</time></p>`,
     `<p>${esc(recipe.opening)}</p>`,
     facts,

@@ -1,6 +1,7 @@
 import type { Recipe, Article, HowToStep } from 'schema-dts';
 import type { BakingNote, NoteRecipe } from '../content/bakingNotes.js';
 import { stripMarkdown } from './text.js';
+import { acceptedRecipeImages } from './recipeImage.js';
 import { faqJsonLd } from './jsonld.js';
 import { LEGAL_NAME, SITE_ORIGIN } from './site.js';
 import { crumbsLd, type PageMeta } from './meta.js';
@@ -11,7 +12,8 @@ import type { Crumb } from './jsonld.js';
  * page has a visible FAQ) + BreadcrumbList, from the same copy the page shows.
  * datePublished is set only when the note has a publish date. Recipe JSON-LD
  * is only the pistachio method, with untested [CONFIRM] lines already removed
- * from the source copy.
+ * from the source copy. `image` is included only when that recipe lists
+ * accepted photo URLs. There is no fallback image.
  */
 
 const HOME: Crumb = { name: 'Home', path: '/' };
@@ -43,6 +45,7 @@ function recipeJsonLd(recipe: NoteRecipe): Recipe & { '@context': 'https://schem
     '@type': 'HowToStep',
     text: stripMarkdown(step),
   }));
+  const images = acceptedRecipeImages(recipe.image);
   return {
     '@context': 'https://schema.org',
     '@type': 'Recipe',
@@ -53,6 +56,7 @@ function recipeJsonLd(recipe: NoteRecipe): Recipe & { '@context': 'https://schem
     recipeYield: recipe.recipeYield,
     recipeIngredient: recipe.ingredients.map((item) => stripMarkdown(item)),
     recipeInstructions: steps,
+    ...(images.length ? { image: images } : {}),
   };
 }
 

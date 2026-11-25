@@ -3,14 +3,16 @@ import {
   RECIPES_HUB, RECIPES_PUBLISH_DATE, schemaIngredients, type RecipeDoc,
 } from '../content/recipes.js';
 import { stripMarkdown } from './text.js';
+import { acceptedRecipeImages } from './recipeImage.js';
 import { BRAND, SITE_ORIGIN } from './site.js';
 import { crumbsLd, type PageMeta } from './meta.js';
 import type { Crumb } from './jsonld.js';
 
 /**
  * Head for /recipes and each recipe. Recipe JSON-LD uses the visible
- * ingredient lines and method steps. No image (there is no original photo),
- * and no nutrition, rating, review or cuisine.
+ * ingredient lines and method steps. `image` is included only when the
+ * recipe lists accepted https://coco36.com photo URLs. There is no
+ * fallback image, and no nutrition, rating, review or cuisine.
  */
 
 const HOME: Crumb = { name: 'Home', path: '/' };
@@ -30,6 +32,7 @@ function recipeJsonLd(recipe: RecipeDoc): Recipe & { '@context': 'https://schema
     '@type': 'HowToStep',
     text: stripMarkdown(step),
   }));
+  const images = acceptedRecipeImages(recipe.image);
   return {
     '@context': 'https://schema.org',
     '@type': 'Recipe',
@@ -44,6 +47,7 @@ function recipeJsonLd(recipe: RecipeDoc): Recipe & { '@context': 'https://schema
     recipeCategory: 'Dessert',
     recipeIngredient: schemaIngredients(recipe).map((item) => stripMarkdown(item)),
     recipeInstructions: steps,
+    ...(images.length ? { image: images } : {}),
     url,
     mainEntityOfPage: url,
   };
