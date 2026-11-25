@@ -1,6 +1,7 @@
 import { Printer } from 'lucide-react';
 import type { InvoiceBreakup, InvoiceSeller, InvoiceSettings } from '../lib/invoice-types';
 import { sellerHeaderReady } from '../lib/invoiceHeader';
+import { INVOICE_FOOTER } from '../content/accountCopy';
 
 /**
  * Customer-facing invoice template.
@@ -167,9 +168,7 @@ export function InvoiceTemplate({
 
       {/* ── Footer note ──────────────────────────────────────────────────── */}
       <footer className="text-center text-[10px] text-gray-400 mt-8 pt-4 border-t border-gray-100">
-        This is a computer-generated invoice — no physical signature required if e-invoicing is enabled.
-        {' · '}
-        Generated via {settings.storeName}
+        {INVOICE_FOOTER}
       </footer>
     </div>
   );

@@ -9,6 +9,9 @@ export const NOTIFY_REASSURANCE = "We'll message you once when it's back. No mar
 
 export const NOTIFY_CONFIRM = "You're on the list. We'll message you once when it's back. No marketing.";
 
+/** P37b (F44): a repeat sign-up for the same product and email. NEEDS ROHAN'S COPY YES. */
+export const NOTIFY_ALREADY = "You're already on the list for this one. We'll message you once when it's back. No marketing.";
+
 export const NOTIFY_UNAVAILABLE = "We couldn't save that just now. Please try again later.";
 
 export const NOTIFY_RATE_LIMIT = 'Please wait a moment, then try again.';

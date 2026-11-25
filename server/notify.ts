@@ -47,6 +47,8 @@ export interface NotifyResponse {
   status: number;
   body: {
     ok: boolean;
+    /** True when (product_key, email) was already on the list. No row was added. */
+    alreadyListed?: boolean;
     error?: string;
     fieldErrors?: { email?: string; phone?: string };
   };
@@ -137,6 +139,8 @@ export async function handleNotify(opts: {
   }
   const inserted = await opts.insert(parsed.row);
   if (inserted === 'unavailable') return { status: 503, body: { ok: false, error: NOTIFY_UNAVAILABLE } };
+  // F44: a repeat sign-up is not a new one. Say so instead of a false success.
+  if (inserted === 'duplicate') return { status: 200, body: { ok: true, alreadyListed: true } };
   return { status: 200, body: { ok: true } };
 }
 
@@ -165,27 +169,48 @@ function isDuplicate(status: number, body: string): boolean {
 }
 
 /**
+ * The live unique key: constraint back_in_stock_signups_one_per_email,
+ * unique (product_key, email), coco36-next migration 20261112050000.
+ * product_key is the product id; email is lower-cased by parseSignup.
+ */
+export const SIGNUP_CONFLICT_COLUMNS = 'product_key,email';
+
+/**
  * Insert with the service role only. Anon and authenticated have no rights
  * on this table (coco36-next migration 20261112050000). A missing key or a
- * failed insert, including a missing table, is unavailable. A unique
- * violation is a duplicate, which the handler treats as success.
+ * failed insert, including a missing table, is unavailable.
+ *
+ * ON CONFLICT (product_key, email) DO NOTHING: a repeat returns no row and
+ * is reported as a duplicate, so the shopper sees "already on the list"
+ * and no second row is written. A unique violation (409 / 23505) is also a
+ * duplicate. DO NOTHING needs INSERT only; the returned row needs SELECT,
+ * which the service role has.
  */
 export async function insertSignup(env: NotifyEnv, row: SignupInsert, fetchImpl: typeof fetch): Promise<InsertResult> {
   const creds = serviceCredentials(env);
   if (!creds) return 'unavailable';
   try {
-    const res = await fetchImpl(`${creds.url}/rest/v1/back_in_stock_signups`, {
+    const res = await fetchImpl(`${creds.url}/rest/v1/back_in_stock_signups?on_conflict=${SIGNUP_CONFLICT_COLUMNS}`, {
       method: 'POST',
       headers: {
         apikey: creds.key,
         Authorization: `Bearer ${creds.key}`,
         'Content-Type': 'application/json',
-        Prefer: 'resolution=ignore-duplicates,return=minimal',
+        Prefer: 'resolution=ignore-duplicates,return=representation',
       },
       body: JSON.stringify(signupPayload(row)),
     });
-    if (res.ok) return 'ok';
     const text = await res.text();
+    if (res.ok) {
+      // return=representation: the inserted row, or [] when the key exists.
+      try {
+        const rows = text ? JSON.parse(text) as unknown : null;
+        if (Array.isArray(rows) && rows.length === 0) return 'duplicate';
+      } catch {
+        // A 2xx without a JSON body still means the insert ran.
+      }
+      return 'ok';
+    }
     if (isDuplicate(res.status, text)) return 'duplicate';
     return 'unavailable';
   } catch {

@@ -23,6 +23,8 @@ interface OrderDetail {
   }[];
   shipping: { name: string; line1: string; line2: string | null; city: string; state: string; pincode: string } | null;
   shipment: { awb: string | null; courier: string | null; status: string } | null;
+  /** An issued invoice row (RLS: own orders only). */
+  has_invoice: boolean;
 }
 
 /** /account/orders/:id — full order detail, gated on the order being the
@@ -90,7 +92,8 @@ export const AccountOrderDetail = () => {
             )
           ),
           shipping:addresses!ship_address_id ( name, line1, line2, city, state, pincode ),
-          shipment:shipments ( awb, courier, status )
+          shipment:shipments ( awb, courier, status ),
+          invoice:invoices ( id )
         `)
         .eq('id', id)
         .eq('customer_id', user.id)
@@ -102,6 +105,7 @@ export const AccountOrderDetail = () => {
         setOrder({
           ...(data as any),
           shipment: Array.isArray((data as any).shipment) ? (data as any).shipment[0] ?? null : (data as any).shipment ?? null,
+          has_invoice: Array.isArray((data as any).invoice) ? (data as any).invoice.length > 0 : !!(data as any).invoice,
         });
       }
       setLoading(false);
@@ -140,6 +144,7 @@ export const AccountOrderDetail = () => {
                   {order.status === 'delivered' ? 'Delivered.' :
                    order.status === 'shipped'   ? 'On its way.' :
                    order.status === 'cancelled' ? 'Cancelled.' :
+                   order.status === 'returned'  ? 'Returned.' :
                    'We’re preparing your order.'}
                 </h1>
                 <p className="text-sm text-brand-muted mt-2">
@@ -171,8 +176,8 @@ export const AccountOrderDetail = () => {
               </section>
             )}
 
-            {/* ── Invoice link (status ≥ packed) ──────────────────────────── */}
-            {['packed', 'shipped', 'delivered'].includes(order.status) && (
+            {/* ── Invoice link (only once an invoice was issued) ─────────── */}
+            {order.has_invoice && (
               <Link
                 to={`/account/orders/${order.id}/invoice`}
                 className="block bg-brand-ink text-white p-6 hover:bg-brand-ink/90 transition-colors group"
