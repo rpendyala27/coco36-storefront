@@ -69,7 +69,7 @@ describe('notify validation', () => {
     expect(insert).not.toHaveBeenCalled();
   });
 
-  it('shows an error when the insert is unavailable, and success on a duplicate', async () => {
+  it('shows an error when the insert is unavailable, and already-on-the-list on a duplicate', async () => {
     const store = new Map<string, number[]>();
     const input = { productKey: ROW.product_key, productName: ROW.product_name, email: 'baker@example.com' };
     const failed = await handleNotify({ input, ip: '2.2.2.2', now: 0, store, insert: async () => 'unavailable' });
@@ -79,7 +79,7 @@ describe('notify validation', () => {
 
     const duplicate = await handleNotify({ input, ip: '2.2.2.3', now: 1, store, insert: async () => 'duplicate' });
     expect(duplicate.status).toBe(200);
-    expect(duplicate.body).toEqual({ ok: true });
+    expect(duplicate.body).toEqual({ ok: true, alreadyListed: true });
 
     for (let i = 0; i < 5; i++) allowRate(store, 'ip:9.9.9.9', 0, 5, 60_000);
     const limited = await handleNotify({
@@ -108,7 +108,10 @@ describe('notify validation', () => {
     const a = await handleNotify({ input, ip: '3.3.3.3', now: 0, store, insert });
     const b = await handleNotify({ input, ip: '4.4.4.4', now: 1, store, insert });
     expect(a.status).toBe(200);
+    expect(a.body).toEqual({ ok: true });
     expect(b.status).toBe(200);
+    expect(b.body).toEqual({ ok: true, alreadyListed: true });
+    expect(insert).toHaveBeenCalledTimes(2);
     expect(seen.size).toBe(1);
   });
 
@@ -122,7 +125,8 @@ describe('notify validation', () => {
     const ok = vi.fn(async () => new Response('', { status: 201 }));
     expect(await insertSignup(env, ROW, ok as unknown as typeof fetch)).toBe('ok');
     const call = ok.mock.calls[0] as unknown as [string, RequestInit];
-    expect(call[0]).toBe('https://db.example.test/rest/v1/back_in_stock_signups');
+    expect(call[0]).toBe('https://db.example.test/rest/v1/back_in_stock_signups?on_conflict=product_key,email');
+    expect(call[1].headers).toMatchObject({ Prefer: 'resolution=ignore-duplicates,return=representation' });
     expect(call[1].headers).toMatchObject({ Authorization: 'Bearer service-role' });
     expect(String((call[1].headers as Record<string, string>).Authorization)).not.toContain('anon');
     const body = JSON.parse(String(call[1].body)) as Record<string, unknown>;
@@ -135,6 +139,11 @@ describe('notify validation', () => {
     expect(await insertSignup(env, ROW, missing as unknown as typeof fetch)).toBe('unavailable');
     const conflict = vi.fn(async () => new Response('duplicate key value violates unique constraint', { status: 409 }));
     expect(await insertSignup(env, ROW, conflict as unknown as typeof fetch)).toBe('duplicate');
+    // ON CONFLICT DO NOTHING returns no row for an existing (product_key, email).
+    const repeat = vi.fn(async () => new Response('[]', { status: 201 }));
+    expect(await insertSignup(env, ROW, repeat as unknown as typeof fetch)).toBe('duplicate');
+    const inserted = vi.fn(async () => new Response(JSON.stringify([{ id: 'x' }]), { status: 201 }));
+    expect(await insertSignup(env, ROW, inserted as unknown as typeof fetch)).toBe('ok');
   });
 });
 

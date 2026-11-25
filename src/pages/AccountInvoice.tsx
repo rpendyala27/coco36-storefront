@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { loadInvoiceSettings, sellerHeaderReady } from '../lib/invoiceHeader';
 import { InvoicePrintButton, InvoiceTemplate, SellerDetailsUnavailable } from '../components/InvoiceTemplate';
 import type { InvoiceBreakup, InvoiceSettings } from '../lib/invoice-types';
+import { INVOICE_CANCELLED_NONE, INVOICE_CANCELLED_NOTE, INVOICE_NOT_YET } from '../content/accountCopy';
 
 interface InvoiceRow {
   id:             string;
@@ -17,6 +18,7 @@ interface InvoiceRow {
 interface OrderRow {
   id:             string;
   order_number:   string;
+  status:         string;
   payment_method: string;
   placed_at:      string;
   customer:       { name: string; email: string; phone: string | null; gstin: string | null } | null;
@@ -38,8 +40,10 @@ interface OrderRow {
  *
  * Browser print (File → Print → Save as PDF) gives the customer a takeaway PDF.
  *
- * If the order hasn't been packed yet there's no invoice — we show
- * a polite empty state instead of a confusing 404.
+ * The invoice is issued when the order ships (P22a-1, invoice at AWB). Before
+ * that, or for an order cancelled before it shipped, there is no invoice and
+ * the page says so instead of a confusing 404. A cancelled order that does
+ * have an invoice keeps it, with a note above it.
  */
 export const AccountInvoice = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,7 +69,7 @@ export const AccountInvoice = () => {
         const orderQuery = supabase
           .from('orders')
           .select(`
-            id, order_number, payment_method, placed_at,
+            id, order_number, status, payment_method, placed_at,
             customer:customers(name, email, phone, gstin),
             ship:addresses!ship_address_id(name, line1, line2, city, state, pincode),
             invoice:invoices(id, invoice_number, issued_at, gst_breakup)
@@ -125,15 +129,18 @@ export const AccountInvoice = () => {
   const invoice = Array.isArray(order.invoice) ? order.invoice[0] ?? null : order.invoice;
   const canPrint = sellerHeaderReady(settings.seller);
 
-  // ── Invoice not yet issued ─────────────────────────────────────────────
+  const cancelled = order.status === 'cancelled';
+
+  // ── Invoice not issued (not shipped yet, or cancelled before it shipped) ─
   if (!invoice) {
     return (
       <div className="min-h-screen pt-24 px-6 max-w-2xl mx-auto text-center">
         <div className="bg-white border border-brand-ink/10 p-10">
-          <h1 className="text-2xl font-bold text-brand-ink mb-3">Invoice not yet issued</h1>
+          <h1 className="text-2xl font-bold text-brand-ink mb-3">
+            {cancelled ? 'No invoice for this order' : 'Invoice not yet issued'}
+          </h1>
           <p className="text-sm text-brand-muted leading-relaxed mb-6">
-            Your tax invoice will be available here once your order is packed.
-            You'll also receive it by email at that point.
+            {cancelled ? INVOICE_CANCELLED_NONE : INVOICE_NOT_YET}
           </p>
           <Link
             to={`/account/orders/${order.id}`}
@@ -168,6 +175,12 @@ export const AccountInvoice = () => {
           ) : null}
         </div>
       </div>
+
+      {cancelled && (
+        <p className="print:hidden max-w-4xl mx-auto mt-6 px-6 py-3 text-sm text-brand-ink bg-brand-surface border border-brand-ink/10" role="status">
+          {INVOICE_CANCELLED_NOTE}
+        </p>
+      )}
 
       {canPrint ? (
         <InvoiceTemplate

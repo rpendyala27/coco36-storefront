@@ -3,13 +3,20 @@ import type * as React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Package, Truck, CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import { SupportContactLink } from '../components/SupportContact';
+import { trackView } from '../lib/trackStatus';
+import {
+  TRACK_CANCELLED, TRACK_MANUAL_NOTE, TRACK_NOT_FOUND, TRACK_RETURNED, TRACK_SIGN_IN,
+} from '../content/accountCopy';
 
 interface Shipment {
   awb:        string;
   courier:    string;
   status:     string;
   order_id:   string;
+  shiprocket_shipment_id: number | null;
+  order:      { status: string } | { status: string }[] | null;
 }
 
 /**
@@ -19,10 +26,13 @@ interface Shipment {
  * For real-time courier events we link out to the Shiprocket tracking
  * deep-link (until we wire the Shiprocket tracking webhook → tracking_events).
  *
- * Anyone with the AWB can view; no auth required.
+ * RLS (customers_read_own_shipments) returns the row only to the signed-in
+ * customer who placed the order. A manual AWB (no Shiprocket shipment id)
+ * follows the order status (F55) and has no Shiprocket link.
  */
 export const Track = () => {
   const { awb } = useParams<{ awb: string }>();
+  const { user } = useAuth();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +41,7 @@ export const Track = () => {
     (async () => {
       const { data } = await supabase
         .from('shipments')
-        .select('awb, courier, status, order_id')
+        .select('awb, courier, status, order_id, shiprocket_shipment_id, order:orders ( status )')
         .eq('awb', awb)
         .maybeSingle();
       setShipment(data as Shipment | null);
@@ -46,7 +56,10 @@ export const Track = () => {
     { id: 'delivered',        label: 'Delivered',         icon: <CheckCircle2 size={18} strokeWidth={1.5} /> },
   ];
 
-  const activeIndex = STATES.findIndex((s) => s.id === shipment?.status);
+  const orderRow = Array.isArray(shipment?.order) ? shipment?.order[0] ?? null : shipment?.order ?? null;
+  const manual = !!shipment && shipment.shiprocket_shipment_id == null;
+  const view = trackView({ shipmentStatus: shipment?.status, orderStatus: orderRow?.status, manual });
+  const activeIndex = view.activeIndex;
 
   return (
     <div className="bg-brand-paper min-h-screen pt-20 md:pt-24">
@@ -61,10 +74,19 @@ export const Track = () => {
 
         {!loading && !shipment && (
           <div className="bg-white border border-brand-ink/10 p-8 text-center">
-            <p className="text-sm text-brand-muted mb-4">No shipment found for this AWB.</p>
-            <Link to="/" className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline">
-              Back to home →
-            </Link>
+            <p className="text-sm text-brand-muted mb-4">{user ? TRACK_NOT_FOUND : TRACK_SIGN_IN}</p>
+            {user ? (
+              <Link to="/" className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline">
+                Back to home →
+              </Link>
+            ) : (
+              <Link
+                to={`/auth?redirect=${encodeURIComponent(`/track/${awb ?? ''}`)}`}
+                className="text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
+              >
+                Sign in →
+              </Link>
+            )}
           </div>
         )}
 
@@ -76,18 +98,28 @@ export const Track = () => {
                 <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-1">Courier</p>
                 <p className="font-bold text-brand-ink">{shipment.courier || '—'}</p>
               </div>
-              <a
-                href={`https://shiprocket.co/tracking/${shipment.awb}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
-              >
-                Live updates <ArrowRight size={12} />
-              </a>
+              {manual ? (
+                <p className="text-xs text-brand-muted text-right max-w-[14rem]">{TRACK_MANUAL_NOTE}</p>
+              ) : (
+                <a
+                  href={`https://shiprocket.co/tracking/${shipment.awb}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
+                >
+                  Live updates <ArrowRight size={12} />
+                </a>
+              )}
             </div>
 
+            {(view.cancelled || view.returned) && (
+              <p className="bg-white border border-brand-ink/10 p-4 text-sm text-brand-ink" role="status">
+                {view.cancelled ? TRACK_CANCELLED : TRACK_RETURNED}
+              </p>
+            )}
+
             {/* Timeline */}
-            <div className="bg-white border border-brand-ink/10 p-6">
+            {!view.cancelled && <div className="bg-white border border-brand-ink/10 p-6">
               <ol className="space-y-6">
                 {STATES.map((s, i) => {
                   const reached = activeIndex >= i;
@@ -115,7 +147,7 @@ export const Track = () => {
                   );
                 })}
               </ol>
-            </div>
+            </div>}
 
             <p className="text-xs text-brand-muted text-center">
               Need help?{' '}

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { COMING_SOON_NOTE } from '../content/comingSoon';
 import {
-  NOTIFY_AUDIENCES, NOTIFY_BUTTON, NOTIFY_CONFIRM, NOTIFY_EMAIL_INVALID, NOTIFY_PACKS,
+  NOTIFY_ALREADY, NOTIFY_AUDIENCES, NOTIFY_BUTTON, NOTIFY_CONFIRM, NOTIFY_EMAIL_INVALID, NOTIFY_PACKS,
   NOTIFY_PACK_LABEL, NOTIFY_PHONE_INVALID, NOTIFY_RATE_LIMIT, NOTIFY_REASSURANCE,
   NOTIFY_UNAVAILABLE, NOTIFY_AUDIENCE_LABEL,
 } from '../content/notifyCopy';
@@ -34,7 +34,7 @@ export function validateNotifyFields(fields: Pick<NotifyFields, 'email' | 'phone
 interface FormProps {
   productName: string;
   comingSoon?: boolean;
-  status: 'form' | 'submitting' | 'done' | 'error';
+  status: 'form' | 'submitting' | 'done' | 'already' | 'error';
   message?: string;
   fields: NotifyFields;
   fieldErrors: NotifyFieldErrors;
@@ -49,7 +49,7 @@ export function NotifyForm({
 }: FormProps) {
   const titleId = useId();
   const emailRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (status !== 'done') emailRef.current?.focus({ preventScroll: true }); }, [status]);
+  useEffect(() => { if (status !== 'done' && status !== 'already') emailRef.current?.focus({ preventScroll: true }); }, [status]);
 
   return (
     <div
@@ -74,8 +74,10 @@ export function NotifyForm({
           </button>
         </div>
 
-        {status === 'done' ? (
-          <p className="mt-5 text-sm leading-relaxed text-brand-forest" role="status">{NOTIFY_CONFIRM}</p>
+        {status === 'done' || status === 'already' ? (
+          <p className="mt-5 text-sm leading-relaxed text-brand-forest" role="status">
+            {status === 'already' ? NOTIFY_ALREADY : NOTIFY_CONFIRM}
+          </p>
         ) : (
           <form
             className="mt-5 space-y-4"
@@ -259,7 +261,9 @@ export function NotifyMe({ productKey, productName, comingSoon = false, classNam
           company: fields.company,
         }),
       });
-      const body = await res.json().catch(() => null) as { ok?: boolean; error?: string; fieldErrors?: NotifyFieldErrors } | null;
+      const body = await res.json().catch(() => null) as {
+        ok?: boolean; alreadyListed?: boolean; error?: string; fieldErrors?: NotifyFieldErrors;
+      } | null;
       if (res.status === 429) {
         setStatus('error');
         setMessage(body?.error || NOTIFY_RATE_LIMIT);
@@ -271,7 +275,7 @@ export function NotifyMe({ productKey, productName, comingSoon = false, classNam
         setMessage(body?.error || NOTIFY_UNAVAILABLE);
         return;
       }
-      setStatus('done');
+      setStatus(body.alreadyListed ? 'already' : 'done');
     } catch {
       setStatus('error');
       setMessage(NOTIFY_UNAVAILABLE);

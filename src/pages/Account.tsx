@@ -21,6 +21,8 @@ interface OrderRow {
   placed_at:    string;
   payment_method: string;
   item_count?:  number;
+  /** An issued invoice row (RLS: own orders only). The icon shows only then. */
+  has_invoice:  boolean;
 }
 
 /**
@@ -57,7 +59,7 @@ export const Account = () => {
     (async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, status, total_paise, placed_at, payment_method, order_items(id)')
+        .select('id, order_number, status, total_paise, placed_at, payment_method, order_items(id), invoice:invoices(id)')
         .eq('customer_id', user.id)
         .order('placed_at', { ascending: false })
         .limit(50);
@@ -72,6 +74,7 @@ export const Account = () => {
             placed_at:      o.placed_at,
             payment_method: o.payment_method,
             item_count:     o.order_items?.length ?? 0,
+            has_invoice:    Array.isArray(o.invoice) ? o.invoice.length > 0 : !!o.invoice,
           })),
         );
       }
@@ -183,8 +186,8 @@ export const Account = () => {
                       <div className="flex items-center gap-6">
                         <StatusBadge status={o.status} />
                         <span className="font-bold text-brand-ink">{formatMoney(o.total_paise)}</span>
-                        {/* Invoice icon — only when order is invoiceable (packed and beyond) */}
-                        {['packed', 'shipped', 'delivered'].includes(o.status) ? (
+                        {/* Invoice icon: only when an invoice was issued (at ship), including returned or cancelled orders */}
+                        {o.has_invoice ? (
                           <Link
                             to={`/account/orders/${o.id}/invoice`}
                             onClick={(e) => e.stopPropagation()}
