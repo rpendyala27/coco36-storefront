@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../lib/supabase';
+import { SALES_AUTO_REPLY, type EnquirySource } from '../content/enquiryCopy';
 import {
   Boxes, FileCheck2, CalendarClock, Sprout, ArrowRight, Send, Check,
 } from 'lucide-react';
@@ -76,7 +77,7 @@ export const Trade = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source: 'wholesale',
+          source: 'trade' satisfies EnquirySource,
           name: form.name,
           email: form.email,
           phone: form.phone || undefined,
@@ -209,7 +210,7 @@ export const Trade = () => {
               </div>
               <h2 className="text-5xl mb-6">Enquiry received.</h2>
               <p className="text-lg text-brand-paper/70 leading-relaxed font-display italic max-w-md mx-auto">
-                Our trade desk will respond within 48 hours with pricing, documentation or next steps.
+                {SALES_AUTO_REPLY}
               </p>
             </motion.div>
           ) : (
