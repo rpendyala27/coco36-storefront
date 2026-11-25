@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../lib/supabase';
+import { SALES_AUTO_REPLY, type EnquirySource } from '../content/enquiryCopy';
 import {
   Beaker, Layers, Tag, Cpu, ArrowRight, Building2, IceCream, CookingPot, Wine, Send, Check,
 } from 'lucide-react';
@@ -63,7 +64,7 @@ export const Partnerships = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source: 'partnerships',
+          source: 'partnerships' satisfies EnquirySource,
           name: form.name,
           email: form.email,
           organisation: form.company,
@@ -236,7 +237,7 @@ export const Partnerships = () => {
               </div>
               <h2 className="text-5xl mb-6">Brief received.</h2>
               <p className="text-lg text-brand-paper/70 leading-relaxed font-display italic max-w-md mx-auto">
-                Our partnerships team will respond within 48 hours with next steps and a discovery call invite.
+                {SALES_AUTO_REPLY}
               </p>
             </motion.div>
           ) : (

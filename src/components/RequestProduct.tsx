@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Check, Send } from 'lucide-react';
 import { API_URL } from '../lib/supabase';
+import { SUPPORT_AUTO_REPLY, type EnquirySource } from '../content/enquiryCopy';
 
 /**
  * "Request this product" — shown when a search yields no catalogue match.
- * Posts to the existing admin `/api/enquiry` (source: 'contact') so the request
+ * Posts to the existing admin `/api/enquiry` (source: 'product_request') so the request
  * lands in the same inbox as other enquiries. No admin/DB change required.
  *
  * `compact` renders the inline variant used inside the search dropdown; the
@@ -41,7 +42,7 @@ export function RequestProduct({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source: 'contact',
+          source: 'product_request' satisfies EnquirySource,
           name: name.trim(),
           email: email.trim(),
           message: `Product request via storefront search: "${query}". Customer would like us to stock / notify them about this.`,
@@ -66,7 +67,7 @@ export function RequestProduct({
           <Check size={20} strokeWidth={2} />
         </div>
         <p className="text-sm text-brand-forest font-medium">Request logged — thank you.</p>
-        <p className="text-[12px] text-brand-muted mt-1">We'll be in touch about “{query}”.</p>
+        <p className="text-[12px] text-brand-muted mt-1">{SUPPORT_AUTO_REPLY}</p>
       </div>
     );
   }
