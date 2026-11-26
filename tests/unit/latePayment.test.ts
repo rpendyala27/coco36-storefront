@@ -22,11 +22,13 @@ vi.mock('react-router-dom', () => ({
 }));
 
 const {
-  attemptForCart, isOrderConfirmedStatus, paymentWindowMarginSeconds, paymentWindowSeconds,
-  pollUntilPaymentConfirmed, razorpayDisplayConfig, readOwnOrderStatus,
+  attemptForCart, attemptSignature, confirmingTimeoutMs, isCheckoutExpired, isOrderConfirmedStatus,
+  paymentWindowMarginSeconds, paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed,
+  razorpayDisplayConfig, readOwnOrderStatus,
   CONFIRMING_PAYMENT_MESSAGE, ORDER_CONFIRMED_EMAIL, ORDER_CONFIRMED_HEADING,
   PAYMENT_CONFIRM_INTERVAL_MS, PAYMENT_CONFIRM_TIMEOUT_MS, PAYMENT_STILL_CHECKING_MESSAGE,
-  PAYMENT_WINDOW_CLOSED_MESSAGE, PAYMENT_WINDOW_MIN_SECONDS, orderConfirmedThanks,
+  PAYMENT_WINDOW_CLOSED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, PAYMENT_WINDOW_MIN_SECONDS,
+  orderConfirmedThanks,
 } = await import('../../src/lib/checkout');
 const { PaymentResult } = await import('../../src/components/PaymentResult');
 
@@ -152,40 +154,144 @@ describe('payment confirmation poll', () => {
   });
 });
 
+const details = {
+  items: [{ sizeId: 'v1', quantity: 1 }],
+  shipAddressId: 'ship-1',
+  billAddressId: 'bill-1',
+  paymentMethod: 'prepaid' as const,
+  name: 'Asha',
+  phone: '9848022338',
+};
+
 describe('same order when the window closes', () => {
-  const attempt = { key: 'chk_same', cart: 'v1:1', placedAt: 50 };
+  const signature = attemptSignature(details);
+  const attempt = { key: 'chk_same', signature, placedAt: 50, paymentMethod: 'prepaid' as const };
 
-  it('keeps the key and the placement time when the cart is unchanged', () => {
-    expect(attemptForCart(attempt, 'v1:1')).toEqual(attempt);
+  it('keeps the key and the placement time when the attempt signature is unchanged', () => {
+    expect(attemptForCart(attempt, signature)).toEqual(attempt);
   });
 
-  it('mints a new key only when the cart changes, and drops the old placement time', () => {
-    const next = attemptForCart(attempt, 'v1:2');
+  it('mints a new key when the cart changes, and drops the old placement time', () => {
+    const next = attemptForCart(attempt, attemptSignature({ ...details, items: [{ sizeId: 'v1', quantity: 2 }] }));
     expect(next.key).not.toBe(attempt.key);
-    expect(next.cart).toBe('v1:2');
+    expect(next.signature).not.toBe(signature);
     expect(next.placedAt).toBeUndefined();
+    expect(next.paymentMethod).toBeUndefined();
   });
 
-  it('keeps a fresh attempt key the first time a cart is attached', () => {
-    expect(attemptForCart({ key: 'chk_new', cart: '' }, 'v1:1')).toEqual({ key: 'chk_new', cart: 'v1:1' });
+  it('mints a new key when the address, payment method, name, or phone changes and the cart does not', () => {
+    const changes = [
+      { shipAddressId: 'ship-2' },
+      { billAddressId: 'bill-2' },
+      { paymentMethod: 'cod' as const },
+      { name: 'Meera' },
+      { phone: '9876543210' },
+    ];
+    for (const change of changes) {
+      const next = attemptForCart(attempt, attemptSignature({ ...details, ...change }));
+      expect(next.key).not.toBe(attempt.key);
+      expect(next.paymentMethod).toBeUndefined();
+    }
+  });
+
+  it('keeps a fresh attempt key the first time a signature is attached', () => {
+    expect(attemptForCart({ key: 'chk_new', signature: '' }, signature)).toEqual({ key: 'chk_new', signature });
   });
 
   it('checkout reuses the attempt on dismiss and does not release the order', () => {
     const src = read('src/pages/Checkout.tsx');
     const dismiss = sliceBetween(src, 'ondismiss:', 'rzp.on(');
-    expect(dismiss).toContain('attempt.current = attemptForCart(attempt.current, cartSignature(items));');
+    expect(dismiss).toContain('attempt.current = attemptForCart(attempt.current, sig);');
     expect(dismiss).not.toContain('freshAttempt');
     expect(dismiss).not.toContain('abandonCheckout');
     expect(dismiss).toContain('setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));');
     expect(src).not.toContain('abandonCheckout');
+    expect(src).toContain('shipAddressId: selectedShipId');
+    expect(src).toContain('billAddressId,');
+    expect(src).toContain('name: form.name.trim()');
+    expect(src).toContain('phone: customerPhone');
 
     const tooShort = sliceBetween(src, 'if (windowSeconds === null)', 'let lastFailure');
     expect(tooShort).not.toContain('freshAttempt');
-    expect(tooShort).toContain("setError(paymentMessage('timed_out'));");
+    expect(tooShort).toContain('setError(PAYMENT_WINDOW_ENDED_MESSAGE);');
+    expect(tooShort).not.toContain("paymentMessage('timed_out')");
+    expect(tooShort).not.toContain('don\'t pay again');
 
     const handler = sliceBetween(src, 'handler:', 'modal:');
     expect(handler).toContain('freshAttempt()');
     expect(handler).toContain("phase: typeof orderId === 'string' && orderId ? 'confirming' : 'checking'");
+    expect(handler).toContain('confirmStartedAt: Date.now()');
+  });
+});
+
+describe('payment method on a reused order', () => {
+  it('follows the server method, so switching to COD does not confirm a prepaid order', () => {
+    expect(placedOrderMethod({
+      serverPaymentMethod: 'prepaid',
+      requested: 'cod',
+      attemptMethod: 'prepaid',
+    })).toEqual({ method: 'prepaid', mismatch: false });
+    expect(placedOrderMethod({
+      serverPaymentMethod: 'cod',
+      requested: 'cod',
+    })).toEqual({ method: 'cod', mismatch: false });
+  });
+
+  it('a reused order with no payment_method and a different method is a new attempt', () => {
+    expect(placedOrderMethod({
+      serverPaymentMethod: undefined,
+      requested: 'cod',
+      attemptMethod: 'prepaid',
+    })).toEqual({ method: 'prepaid', mismatch: true });
+    expect(placedOrderMethod({
+      serverPaymentMethod: null,
+      requested: 'prepaid',
+    })).toEqual({ method: 'prepaid', mismatch: false });
+  });
+
+  it('checkout confirms only the method the server returned', () => {
+    const src = read('src/pages/Checkout.tsx');
+    const decided = sliceBetween(src, 'const placedMethod = placedOrderMethod({', 'Prepaid — open Razorpay');
+    expect(decided).toContain('serverPaymentMethod: payload.payment_method');
+    expect(decided).toContain('if (placedMethod.mismatch)');
+    expect(decided).toContain('freshAttempt()');
+    expect(decided).toContain("if (placedMethod.method === 'cod')");
+    expect(decided).not.toContain("if (paymentMethod === 'cod')");
+  });
+});
+
+describe('payment window ended', () => {
+  it('uses the ended copy, not the don\'t-pay-again copy', () => {
+    expect(PAYMENT_WINDOW_ENDED_MESSAGE).toBe(
+      "This payment window has ended. If you paid, we'll confirm your order automatically. Otherwise you can try again in a few minutes.",
+    );
+    expect(PAYMENT_WINDOW_ENDED_MESSAGE).not.toMatch(/don't pay again/i);
+  });
+
+  it('409 checkout_expired is the signal to mint a new attempt', () => {
+    expect(isCheckoutExpired(409, 'checkout_expired')).toBe(true);
+    expect(isCheckoutExpired(409, 'out_of_stock')).toBe(false);
+    expect(isCheckoutExpired(400, 'checkout_expired')).toBe(false);
+    const src = read('src/pages/Checkout.tsx');
+    const expired = sliceBetween(src, 'if (isCheckoutExpired(orderRes.status, payload.code))', 'The server answered');
+    expect(expired).toContain('freshAttempt()');
+    expect(expired).toContain('setError(PAYMENT_WINDOW_ENDED_MESSAGE);');
+  });
+});
+
+describe('confirming screen without a signed-in user', () => {
+  it('the fallback is 60 seconds from when confirmation started, and never negative', () => {
+    expect(confirmingTimeoutMs(1_000, 1_000)).toBe(PAYMENT_CONFIRM_TIMEOUT_MS);
+    expect(confirmingTimeoutMs(1_000, 1_000 + 10_000)).toBe(50_000);
+    expect(confirmingTimeoutMs(1_000, 1_000 + PAYMENT_CONFIRM_TIMEOUT_MS + 5)).toBe(0);
+  });
+
+  it('checkout still leaves Confirming when the user id is missing', () => {
+    const src = read('src/pages/Checkout.tsx');
+    const effect = sliceBetween(src, 'const remaining = confirmingTimeoutMs(confirmStartedAt);', '}, [watchId, customerId, confirmStartedAt]);');
+    expect(effect).toContain('if (!customerId)');
+    expect(effect).toContain("const timer = setTimeout(() => apply('pending'), remaining);");
+    expect(effect).toContain('timeoutMs: remaining');
   });
 });
 

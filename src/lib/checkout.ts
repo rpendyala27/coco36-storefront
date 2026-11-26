@@ -7,9 +7,9 @@ import { ORDER_STATUS_FLOW, type OrderStatus } from './order-status';
  * order it already made for a key it has seen, so a double-click or a retry
  * after a network error never creates a second order or takes stock twice.
  * Closing the Razorpay window keeps the key, so Pay again returns that order
- * and its Razorpay order while the cart is unchanged. A new key is made when
- * the cart changes, when the server refuses the order, or once payment is
- * confirmed.
+ * and its Razorpay order while the attempt signature is unchanged. A new key
+ * is made when the cart, address, payment method, name, or phone changes,
+ * when the server refuses the order, or once payment is confirmed.
  */
 export function newIdempotencyKey(): string {
   const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -23,31 +23,88 @@ export function cartSignature(items: { sizeId: string; quantity: number }[]): st
   return items.map((i) => `${i.sizeId}:${i.quantity}`).sort().join('|');
 }
 
+export type CheckoutPaymentMethod = 'prepaid' | 'cod';
+
 /** The in-flight checkout attempt. `placedAt` is when its order was first placed. */
 export interface CheckoutAttempt {
   key: string;
-  cart: string;
+  /** Cart, addresses, payment method, name, and phone. Empty until the first submit. */
+  signature: string;
   placedAt?: number;
+  /** Method this key's order was placed with, once create has answered. */
+  paymentMethod?: CheckoutPaymentMethod;
+}
+
+/** Everything that must match to reuse an idempotency key. */
+export interface AttemptSignatureInput {
+  items: { sizeId: string; quantity: number }[];
+  shipAddressId: string;
+  billAddressId: string;
+  paymentMethod: string;
+  name: string;
+  phone: string;
 }
 
 /**
- * Key to send on the next place-order call. The same key while the cart
- * signature matches, so Pay again hits the order already placed for it.
- * A changed cart is a new attempt.
+ * One string for the cart and the details place_order stores on the order.
+ * Any change means a new order, not a retry of the previous one.
  */
-export function attemptForCart(attempt: CheckoutAttempt, cart: string): CheckoutAttempt {
-  if (attempt.cart && attempt.cart !== cart) return { key: newIdempotencyKey(), cart };
-  return { ...attempt, cart };
+export function attemptSignature(input: AttemptSignatureInput): string {
+  return [
+    cartSignature(input.items),
+    input.shipAddressId,
+    input.billAddressId,
+    input.paymentMethod,
+    input.name.trim(),
+    input.phone,
+  ].join('\u001f');
 }
 
 /**
- * Ask the API to release stock held by an unpaid order (it checks with
- * Razorpay first). Best-effort; the server also releases unpaid orders once
- * the unpaid hold ends (settings orders.unpaid_hold_minutes, 30 by default).
+ * Key to send on the next place-order call. The same key while the signature
+ * matches, so Pay again hits the order already placed for it. A changed
+ * cart, address, payment method, name, or phone is a new attempt.
+ */
+export function attemptForCart(attempt: CheckoutAttempt, signature: string): CheckoutAttempt {
+  if (attempt.signature && attempt.signature !== signature) return { key: newIdempotencyKey(), signature };
+  return { ...attempt, signature };
+}
+
+/** The create response's payment_method when it is one we know. */
+export function serverPaymentMethod(value: unknown): CheckoutPaymentMethod | null {
+  return value === 'prepaid' || value === 'cod' ? value : null;
+}
+
+/**
+ * Which method the success screen follows. The server's payment_method wins.
+ * If the response omits it and this key already placed an order for a
+ * different method, that response is the old order: do not confirm it.
+ */
+export function placedOrderMethod(input: {
+  serverPaymentMethod: unknown;
+  requested: CheckoutPaymentMethod;
+  attemptMethod?: CheckoutPaymentMethod;
+}): { method: CheckoutPaymentMethod; mismatch: boolean } {
+  const server = serverPaymentMethod(input.serverPaymentMethod);
+  if (server) return { method: server, mismatch: false };
+  if (input.attemptMethod && input.attemptMethod !== input.requested) {
+    return { method: input.attemptMethod, mismatch: true };
+  }
+  return { method: input.requested, mismatch: false };
+}
+
+/** 409 checkout_expired: the reused order can no longer be paid. A new key is allowed. */
+export function isCheckoutExpired(status: number, code: unknown): boolean {
+  return status === 409 && code === 'checkout_expired';
+}
+
+/**
+ * POST /api/orders/abandon.
  *
  * Checkout does not call this when the Razorpay window closes. That order
- * stays open so a payment that lands late can still confirm it, and Pay
- * again reuses it. The hold sweep releases an order that is never paid.
+ * stays so a payment that lands late can still be confirmed, and Pay again
+ * reuses it while the attempt signature matches. A new order waits until
+ * the server answers 409 checkout_expired.
  */
 export async function abandonCheckout(orderId: string): Promise<void> {
   const auth = await authHeader();
@@ -60,7 +117,7 @@ export async function abandonCheckout(orderId: string): Promise<void> {
       keepalive: true,
     });
   } catch {
-    /* the unpaid-hold sweep covers it */
+    /* best-effort; checkout does not depend on this call */
   }
 }
 
@@ -184,6 +241,14 @@ function detail(err: RazorpayFailure | null | undefined): string {
 export const PAYMENT_WINDOW_CLOSED_MESSAGE =
   "Payment not completed. If money left your account, don't pay again — we'll confirm your order automatically or refund you.";
 
+/**
+ * The reused order's Razorpay window has under a minute left, so it is not
+ * opened. Unlike a window that was actually shown, this does not tell the
+ * shopper that money may already have left their account.
+ */
+export const PAYMENT_WINDOW_ENDED_MESSAGE =
+  "This payment window has ended. If you paid, we'll confirm your order automatically. Otherwise you can try again in a few minutes.";
+
 export const PAYMENT_MESSAGES = {
   cancelled: PAYMENT_WINDOW_CLOSED_MESSAGE,
   timedOut: PAYMENT_WINDOW_CLOSED_MESSAGE,
@@ -229,6 +294,15 @@ export function outcomeOnDismiss(
 export const PAYMENT_CONFIRM_INTERVAL_MS = 3_000;
 /** Stop polling after this and show the "we're checking" message. */
 export const PAYMENT_CONFIRM_TIMEOUT_MS = 60_000;
+
+/** Milliseconds left before a confirming screen must fall back to "still checking". */
+export function confirmingTimeoutMs(
+  startedAt: number,
+  now = Date.now(),
+  limit = PAYMENT_CONFIRM_TIMEOUT_MS,
+): number {
+  return Math.max(0, limit - Math.max(0, now - startedAt));
+}
 
 export const CONFIRMING_PAYMENT_MESSAGE = 'Confirming your payment…';
 export const ORDER_CONFIRMED_HEADING = 'Order confirmed';

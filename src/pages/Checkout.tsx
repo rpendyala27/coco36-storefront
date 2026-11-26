@@ -6,7 +6,7 @@ import { AuthPending, useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID, supabase } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
-import { cartSignature, newIdempotencyKey } from '../lib/checkout';
+import { newIdempotencyKey } from '../lib/checkout';
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
 import { availableFor, sellableQty, soldOutItems, stockNote } from '../lib/stock';
 import { trackBeginCheckout, trackPurchase } from '../lib/analytics';
@@ -17,9 +17,10 @@ import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/deliv
 import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
 import { summarizeCart } from '../lib/cartSummary';
 import {
-  attemptForCart, classifyPaymentFailure, outcomeOnDismiss, paymentMessage, paymentWindowSeconds,
-  pollUntilPaymentConfirmed, razorpayDisplayConfig, readOwnOrderStatus,
-  type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
+  attemptForCart, attemptSignature, classifyPaymentFailure, confirmingTimeoutMs, isCheckoutExpired,
+  outcomeOnDismiss, PAYMENT_WINDOW_ENDED_MESSAGE, paymentMessage,
+  paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed, razorpayDisplayConfig,
+  readOwnOrderStatus, type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
 } from '../lib/checkout';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { RemovedLinesNotice } from '../components/CartSummary';
@@ -88,6 +89,7 @@ export const Checkout = () => {
     orderNumber: string;
     total_paise: number;
     phase: PaymentConfirmPhase;
+    confirmStartedAt?: number;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,33 +97,41 @@ export const Checkout = () => {
   // One idempotency key per checkout attempt: a double-click or a retry after
   // a network error returns the same order instead of a second one. Closing
   // the payment window keeps the key, so Pay again reuses that order while
-  // the cart is unchanged. A new key when the cart changes, the server
-  // refuses the order, or the Razorpay success callback has fired.
+  // the cart, addresses, payment method, name, and phone are unchanged.
   // placedAt: when this attempt's order was first placed, so the Razorpay
   // window can close before the unpaid hold ends (R08; hold from the API, P21b).
-  const attempt = useRef<CheckoutAttempt>({ key: newIdempotencyKey(), cart: '' });
-  const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), cart: '' }; };
+  const attempt = useRef<CheckoutAttempt>({ key: newIdempotencyKey(), signature: '' });
+  const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), signature: '' }; };
 
   // After Razorpay authorises a payment, wait until this customer's order
   // is confirmed (webhook) before saying so. RLS orders_read is own rows.
+  // If the signed-in user isn't available yet, still leave "Confirming…"
+  // after 60 seconds.
   const watchId = confirmedOrder?.phase === 'confirming' ? confirmedOrder.orderId ?? null : null;
+  const confirmStartedAt = confirmedOrder?.phase === 'confirming' ? confirmedOrder.confirmStartedAt ?? null : null;
   const customerId = user?.id ?? null;
   useEffect(() => {
-    if (!watchId || !customerId) return undefined;
+    if (!watchId || confirmStartedAt == null) return undefined;
     let cancelled = false;
-    void pollUntilPaymentConfirmed(
-      () => readOwnOrderStatus(supabase, watchId, customerId),
-      { shouldStop: () => cancelled },
-    ).then((result) => {
+    const apply = (result: 'confirmed' | 'pending' | 'stopped') => {
       if (cancelled || result === 'stopped') return;
       setConfirmedOrder((prev) => (
-        prev && prev.orderId === watchId
+        prev && prev.orderId === watchId && prev.phase === 'confirming'
           ? { ...prev, phase: result === 'confirmed' ? 'confirmed' : 'checking' }
           : prev
       ));
-    });
+    };
+    const remaining = confirmingTimeoutMs(confirmStartedAt);
+    if (!customerId) {
+      const timer = setTimeout(() => apply('pending'), remaining);
+      return () => { cancelled = true; clearTimeout(timer); };
+    }
+    void pollUntilPaymentConfirmed(
+      () => readOwnOrderStatus(supabase, watchId, customerId),
+      { shouldStop: () => cancelled, timeoutMs: remaining },
+    ).then(apply);
     return () => { cancelled = true; };
-  }, [watchId, customerId]);
+  }, [watchId, customerId, confirmStartedAt]);
 
   // ── Address book ──────────────────────────────────────────────────────────
   const [addresses, setAddresses]       = useState<BookAddress[]>([]);
@@ -354,7 +364,14 @@ export const Checkout = () => {
       }
     }
 
-    const sig = cartSignature(items);
+    const sig = attemptSignature({
+      items,
+      shipAddressId: selectedShipId,
+      billAddressId,
+      paymentMethod,
+      name: form.name.trim(),
+      phone: customerPhone,
+    });
     attempt.current = attemptForCart(attempt.current, sig);
 
     try {
@@ -376,6 +393,13 @@ export const Checkout = () => {
 
       const payload = await orderRes.json();
       if (!orderRes.ok) {
+        // The reused order can no longer be paid. The next click is a new attempt.
+        if (isCheckoutExpired(orderRes.status, payload.code)) {
+          freshAttempt();
+          setError(PAYMENT_WINDOW_ENDED_MESSAGE);
+          setSubmitting(false);
+          return;
+        }
         // The server answered: the order was refused, or cancelled after a
         // gateway error. The next try is a new attempt. (A network failure
         // throws before this and keeps the key, so a retry can't double-order.)
@@ -391,6 +415,19 @@ export const Checkout = () => {
       }
 
       const { orderId, orderNumber, razorpayOrderId, amount, unpaidHoldMinutes, holdExpiresAt } = payload;
+      // Follow the order the server actually returned. A reused prepaid order
+      // must not show "Order confirmed" just because the shopper then chose COD.
+      const placedMethod = placedOrderMethod({
+        serverPaymentMethod: payload.payment_method,
+        requested: paymentMethod,
+        attemptMethod: attempt.current.paymentMethod,
+      });
+      if (placedMethod.mismatch) {
+        freshAttempt();
+        setSubmitting(false);
+        return;
+      }
+      if (!attempt.current.paymentMethod) attempt.current.paymentMethod = placedMethod.method;
       const purchaseLines = items.map((it) => ({
         sku: it.sku ?? '',
         name: it.name,
@@ -399,7 +436,7 @@ export const Checkout = () => {
         quantity: it.quantity,
       }));
 
-      if (paymentMethod === 'cod') {
+      if (placedMethod.method === 'cod') {
         freshAttempt();
         setConfirmedOrder({ orderNumber, total_paise: amount, phase: 'confirmed' });
         setStep('confirmed');
@@ -411,13 +448,13 @@ export const Checkout = () => {
       // Prepaid — open Razorpay checkout
       if (!razorpayOrderId) throw new Error('Payment gateway not initialised');
 
-      // The window closes before the unpaid hold ends (R08). Too little left
-      // to open Razorpay: keep this attempt so another click cannot place a
-      // second order. A late payment on the open order can still confirm it.
+      // The window closes before the unpaid hold ends (R08). Under a minute
+      // left: don't open Razorpay. This is not a completed payment attempt.
+      // The same key stays until the server returns 409 checkout_expired.
       if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
       const windowSeconds = paymentWindowSeconds(attempt.current.placedAt, Date.now(), { unpaidHoldMinutes, holdExpiresAt });
       if (windowSeconds === null) {
-        setError(paymentMessage('timed_out'));
+        setError(PAYMENT_WINDOW_ENDED_MESSAGE);
         setSubmitting(false);
         return;
       }
@@ -456,16 +493,17 @@ export const Checkout = () => {
             orderNumber,
             total_paise: amount,
             phase: typeof orderId === 'string' && orderId ? 'confirming' : 'checking',
+            confirmStartedAt: Date.now(),
           });
           setStep('confirmed');
           setTimeout(() => clear(), 300);
         },
         modal: {
           // Closed without a completed payment. Keep this attempt while the
-          // cart is unchanged so Pay again returns the same order and its
-          // Razorpay order. Do not release it: a late payment can still confirm.
+          // signature is unchanged so Pay again returns the same order and its
+          // Razorpay order. A late payment can still confirm it.
           ondismiss: () => {
-            attempt.current = attemptForCart(attempt.current, cartSignature(items));
+            attempt.current = attemptForCart(attempt.current, sig);
             setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));
             setSubmitting(false);
           },
