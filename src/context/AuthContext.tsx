@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { initialAuthLink, supabase } from '../lib/supabase';
-import { syncCustomerProfile } from '../lib/apiAuth';
+import { customerProfileHints, syncCustomerProfile } from '../lib/apiAuth';
 import { browserStores, clearPerUserStorage } from '../lib/userStorage';
 
 interface CustomerProfile {
@@ -123,7 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
         syncedFor = session.user.id;
         const u = session.user;
-        void syncCustomerProfile(session.access_token).then(() => { if (active && currentUid === u.id) void loadProfile(u); });
+        // Name from Google is user_metadata.full_name; email sign-up uses .name.
+        void syncCustomerProfile(session.access_token, customerProfileHints(u)).then(() => { if (active && currentUid === u.id) void loadProfile(u); });
       }
       // Normally already set from the URL on the first render; kept as a
       // backstop for links the URL check doesn't recognise.

@@ -39,3 +39,19 @@ export function safeRedirectPath(next: string | null | undefined, fallback = '/'
   if (/[\u0000-\u001f\u007f]/.test(next)) return fallback;
   return next;
 }
+
+/**
+ * Name and phone to send with POST /api/customers/signup.
+ * Google stores the display name as `full_name` (and usually `name`); email
+ * sign-up stores `name` and optional `phone`. Empty values are omitted so a
+ * Google session (which has no phone) cannot clear or invalidate the row.
+ */
+export function customerProfileHints(
+  user: { user_metadata?: Record<string, unknown> | null } | null | undefined,
+): { name?: string; phone?: string } {
+  const meta = user?.user_metadata ?? {};
+  const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  const name = text(meta.full_name) ?? text(meta.name);
+  const phone = text(meta.phone);
+  return { ...(name ? { name } : {}), ...(phone ? { phone } : {}) };
+}

@@ -1,3 +1,5 @@
+import { isGoogleOAuthReturn } from './googleAuth';
+
 /**
  * What a Supabase Auth email link (password reset, signup confirmation) put in
  * the URL when it landed on the storefront.
@@ -26,6 +28,8 @@ export const EXPIRED_LINK_MESSAGE =
   'That email link has expired or has already been used. Enter your email and choose "Forgot password?" to get a new one.';
 export const FAILED_LINK_MESSAGE =
   'That email link didn’t work. Enter your email and choose "Forgot password?" to get a new one.';
+export const GOOGLE_SIGNIN_ERROR_MESSAGE =
+  'Google sign-in didn’t work. Please try again.';
 
 const NONE: AuthLinkState = { recovery: false, error: null, signupConfirmed: false };
 
@@ -43,7 +47,10 @@ export function readAuthLink(href: string): AuthLinkState {
   if (errorCode || param('error')) {
     // error_description is NOT shown: it comes from the URL, so anyone could
     // put their own text on our page with a crafted link.
-    return { recovery: false, error: errorCode === 'otp_expired' ? EXPIRED_LINK_MESSAGE : FAILED_LINK_MESSAGE, signupConfirmed: false };
+    const error = isGoogleOAuthReturn(href)
+      ? GOOGLE_SIGNIN_ERROR_MESSAGE
+      : errorCode === 'otp_expired' ? EXPIRED_LINK_MESSAGE : FAILED_LINK_MESSAGE;
+    return { recovery: false, error, signupConfirmed: false };
   }
 
   const withToken = hash.has('access_token');
