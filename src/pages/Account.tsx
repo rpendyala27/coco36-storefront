@@ -3,7 +3,7 @@ import type * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Package, MapPin, User, LogOut, ChevronRight, Plus, Star, Pencil, Trash2 } from 'lucide-react';
 import { FileText } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
 import { getOrderStatusMeta } from '../lib/order-status';
@@ -36,7 +36,7 @@ interface OrderRow {
  * Gated on auth — if not signed in, redirect to /auth.
  */
 export const Account = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [addresses, setAddresses] = useState<BookAddress[]>([]);
@@ -52,6 +52,7 @@ export const Account = () => {
   }, []);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/auth');
       return;
@@ -84,7 +85,7 @@ export const Account = () => {
 
       setLoading(false);
     })();
-  }, [user, navigate]);
+  }, [authLoading, user, navigate]);
 
   async function handleSignOut() {
     await signOut();
@@ -123,6 +124,7 @@ export const Account = () => {
     await refreshAddresses();
   };
 
+  if (authLoading) return <AuthPending />;
   if (!user) return null;
 
   return (

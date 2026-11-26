@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, RotateCcw, Plus, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { AuthPending, useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
 import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
@@ -35,7 +35,7 @@ type PaymentMethod = 'prepaid' | 'cod';
 
 export const Checkout = () => {
   const { items, clear, subtotal, stock, refreshStock, removedLines, dismissRemovedLines } = useCart();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const cfg = useStoreConfig();
 
@@ -161,11 +161,12 @@ export const Checkout = () => {
 
   // ── Login required ──────────────────────────────────────────────────────────
   // Checkout is gated so orders attach to the customer profile and the saved
-  // address book works. AuthProvider only renders children once auth resolves,
-  // so `user` is final here — no loading race.
+  // address book works. Wait until the session is known; otherwise a signed-in
+  // shopper would be sent to /auth during the getSession() window.
   useEffect(() => {
+    if (authLoading) return;
     if (!user) navigate('/auth?redirect=/checkout', { replace: true });
-  }, [user, navigate]);
+  }, [authLoading, user, navigate]);
 
   // ── Load the address book ─────────────────────────────────────────────────
   // RLS returns only this customer's live rows. Preselect the default (or first)
@@ -437,7 +438,8 @@ export const Checkout = () => {
     }
   };
 
-  // While redirecting unauthenticated users to /auth, render nothing.
+  // Wait for the session, then redirect unsigned visitors to /auth.
+  if (authLoading) return <AuthPending />;
   if (!user) return null;
 
   // ── Empty cart guard ────────────────────────────────────────────────────────

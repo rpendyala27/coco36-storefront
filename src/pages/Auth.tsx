@@ -5,7 +5,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { safeRedirectPath } from '../lib/apiAuth';
-import { useAuth } from '../context/AuthContext';
+import { AuthPending, useAuth } from '../context/AuthContext';
 import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
 
 /**
@@ -19,7 +19,7 @@ import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
 const PASSWORD_HINT = 'At least 8 characters, using letters and numbers.';
 
 export const AuthPage = () => {
-  const { user, passwordRecovery, clearPasswordRecovery, authLinkError, clearAuthLinkError } = useAuth();
+  const { user, passwordRecovery, clearPasswordRecovery, authLinkError, clearAuthLinkError, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
@@ -41,8 +41,9 @@ export const AuthPage = () => {
   // have a session — move them along. EXCEPT mid password-recovery, where we
   // want to keep them here to set a new password.
   useEffect(() => {
+    if (authLoading) return;
     if (user && !passwordRecovery) navigate(redirectTo, { replace: true });
-  }, [user, passwordRecovery, navigate, redirectTo]);
+  }, [authLoading, user, passwordRecovery, navigate, redirectTo]);
 
   // The link's message is now on screen; don't show it again on a later visit.
   useEffect(() => {
@@ -136,6 +137,8 @@ export const AuthPage = () => {
   };
 
   const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
+
+  if (authLoading) return <AuthPending />;
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-brand-surface px-6 py-12">

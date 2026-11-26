@@ -44,10 +44,13 @@
     <link rel="apple-touch-icon" href="/coco36-floral.png" />
 
     <!-- Pre-React boot loader: paints instantly on direct entry / refresh so the
-         SPA never shows a blank white screen while the JS bundle loads. React
-         clears #root on mount, which removes it automatically. -->
+         SPA never shows a blank white screen while the JS bundle loads. When
+         the server already injected a .ssr snapshot, hide the cover so that
+         content is the first paint. React clears #root on mount, which
+         removes the loader automatically. -->
     <style>
       #app-boot{position:fixed;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;background:#f3f1e8}
+      #root:has(.ssr) #app-boot{display:none}
       /* Server-rendered snapshot (api/render.ts): real, crawlable content in
          the first HTML response. It sits under the boot loader until React
          mounts and replaces #root; with JavaScript off it is the page. */
