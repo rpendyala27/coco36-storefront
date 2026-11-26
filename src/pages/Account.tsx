@@ -7,6 +7,8 @@ import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
 import { getOrderStatusMeta } from '../lib/order-status';
+import { PHONE_INVALID_MESSAGE } from '../lib/phone';
+import { customerNameError, updateOwnProfile } from '../lib/profile';
 import {
   listAddresses, addAddress, replaceAddress, softDeleteAddress, setDefaultAddress,
   type BookAddress, type AddressInput,
@@ -36,7 +38,7 @@ interface OrderRow {
  * Gated on auth — if not signed in, redirect to /auth.
  */
 export const Account = () => {
-  const { user, profile, signOut, loading: authLoading } = useAuth();
+  const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [addresses, setAddresses] = useState<BookAddress[]>([]);
@@ -46,6 +48,44 @@ export const Account = () => {
   const [adding, setAdding]   = useState(false);
   const [editing, setEditing] = useState<BookAddress | null>(null);
   const [busy, setBusy]       = useState(false);
+
+  // Profile edit state (name + phone; email stays read-only)
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileName, setProfileName]       = useState('');
+  const [profilePhone, setProfilePhone]     = useState('');
+  const [profileError, setProfileError]     = useState<string | null>(null);
+  const [profileBusy, setProfileBusy]       = useState(false);
+
+  const startProfileEdit = () => {
+    setProfileName(profile?.name ?? '');
+    setProfilePhone(profile?.phone ?? '');
+    setProfileError(null);
+    setEditingProfile(true);
+  };
+
+  const cancelProfileEdit = () => {
+    setEditingProfile(false);
+    setProfileError(null);
+    setProfileBusy(false);
+  };
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nameErr = customerNameError(profileName);
+    if (nameErr) { setProfileError(nameErr); return; }
+    if (!profilePhone.trim()) { setProfileError(PHONE_INVALID_MESSAGE); return; }
+    setProfileBusy(true);
+    setProfileError(null);
+    const result = await updateOwnProfile({ name: profileName, phone: profilePhone });
+    if ('error' in result) {
+      setProfileError(result.error);
+      setProfileBusy(false);
+      return;
+    }
+    await refreshProfile();
+    setProfileBusy(false);
+    setEditingProfile(false);
+  };
 
   const refreshAddresses = useCallback(async () => {
     setAddresses(await listAddresses());
@@ -148,11 +188,60 @@ export const Account = () => {
 
         {/* ── Profile card ─────────────────────────────────────────────── */}
         <section>
-          <SectionHeader icon={<User size={14} />} title="Profile" />
-          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <Detail label="Name"  value={profile?.name  ?? '—'} />
-            <Detail label="Email" value={profile?.email ?? user.email ?? '—'} />
-            <Detail label="Phone" value={profile?.phone ?? '—'} />
+          <SectionHeader
+            icon={<User size={14} />}
+            title="Profile"
+            action={!editingProfile ? (
+              <button
+                type="button"
+                onClick={startProfileEdit}
+                className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
+              >
+                <Pencil size={14} /> Edit
+              </button>
+            ) : undefined}
+          />
+          <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6">
+            {editingProfile ? (
+              <form onSubmit={saveProfile} className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  <ProfileField
+                    label="Name"
+                    value={profileName}
+                    onChange={setProfileName}
+                    autoComplete="name"
+                    required
+                  />
+                  <Detail label="Email" value={profile?.email ?? user.email ?? '—'} />
+                  <ProfileField
+                    label="Phone"
+                    type="tel"
+                    value={profilePhone}
+                    onChange={setProfilePhone}
+                    autoComplete="tel"
+                    placeholder="+91 …"
+                    required
+                  />
+                </div>
+                {profileError && (
+                  <p className="text-sm text-red-700" role="alert">{profileError}</p>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button type="submit" disabled={profileBusy} className="btn-primary !px-6 !py-3 disabled:opacity-50 w-full sm:w-auto">
+                    {profileBusy ? 'Saving…' : 'Save changes'}
+                  </button>
+                  <button type="button" onClick={cancelProfileEdit} disabled={profileBusy} className="btn-ghost !px-6 !py-3 w-full sm:w-auto">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <Detail label="Name"  value={profile?.name  ?? '—'} />
+                <Detail label="Email" value={profile?.email ?? user.email ?? '—'} />
+                <Detail label="Phone" value={profile?.phone ?? '—'} />
+              </div>
+            )}
           </div>
         </section>
 
@@ -300,13 +389,16 @@ export const Account = () => {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
+function SectionHeader({ icon, title, subtitle, action }: { icon: React.ReactNode; title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-end justify-between mb-4">
+    <div className="flex items-end justify-between gap-3 mb-4">
       <h2 className="flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-ink">
         <span className="text-brand-leaf">{icon}</span> {title}
       </h2>
-      {subtitle && <span className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{subtitle}</span>}
+      <div className="flex items-center gap-3 shrink-0">
+        {subtitle && <span className="text-[10px] uppercase tracking-widest text-brand-muted font-bold">{subtitle}</span>}
+        {action}
+      </div>
     </div>
   );
 }
@@ -315,7 +407,29 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-widest text-brand-muted font-bold mb-1">{label}</p>
-      <p className="text-sm text-brand-ink">{value}</p>
+      <p className="text-sm text-brand-ink break-words">{value}</p>
+    </div>
+  );
+}
+
+function ProfileField({
+  label, value, onChange, type = 'text', required, placeholder, autoComplete,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; required?: boolean; placeholder?: string; autoComplete?: string;
+}) {
+  return (
+    <div className="space-y-1 min-w-0">
+      <label className="text-[10px] uppercase tracking-widest text-brand-muted font-bold block">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="w-full bg-transparent border-b border-brand-line py-2.5 focus:outline-none focus:border-brand-leaf text-base placeholder:text-brand-muted/50"
+      />
     </div>
   );
 }

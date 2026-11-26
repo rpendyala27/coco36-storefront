@@ -8,7 +8,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session } }) } },
 }));
 
-const { authHeader, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
+const { authHeader, customerProfileHints, hintsForSignInSync, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
 
 beforeEach(() => { session = null; vi.restoreAllMocks(); });
 
@@ -51,3 +51,42 @@ describe('safeRedirectPath', () => {
     expect(safeRedirectPath(input as string | null)).toBe(out);
   });
 });
+
+describe('customerProfileHints', () => {
+  it('prefers Google full_name over name', () => {
+    expect(customerProfileHints({
+      user_metadata: { full_name: 'Asha Rao', name: 'Asha' },
+    })).toEqual({ name: 'Asha Rao' });
+  });
+  it('falls back to name (email sign-up metadata)', () => {
+    expect(customerProfileHints({
+      user_metadata: { name: 'Asha', phone: '9876543210' },
+    })).toEqual({ name: 'Asha', phone: '9876543210' });
+  });
+  it('omits empty or missing fields', () => {
+    expect(customerProfileHints({ user_metadata: { full_name: '  ', name: '' } })).toEqual({});
+    expect(customerProfileHints({ user_metadata: {} })).toEqual({});
+    expect(customerProfileHints(null)).toEqual({});
+  });
+});
+
+describe('hintsForSignInSync', () => {
+  it('sends metadata hints when there is no customer row yet', () => {
+    expect(hintsForSignInSync({ name: 'Asha', phone: '9876543210' }, null)).toEqual({
+      name: 'Asha', phone: '9876543210',
+    });
+  });
+  it('prefers the saved profile so a later sign-in does not revert an edit', () => {
+    expect(hintsForSignInSync(
+      { name: 'Google Name', phone: '9111111111' },
+      { name: 'Asha Rao', phone: '9876543210' },
+    )).toEqual({ name: 'Asha Rao', phone: '9876543210' });
+  });
+  it('fills only the blank field from metadata', () => {
+    expect(hintsForSignInSync(
+      { name: 'Asha', phone: '9876543210' },
+      { name: 'Asha Rao', phone: null },
+    )).toEqual({ name: 'Asha Rao', phone: '9876543210' });
+  });
+});
+

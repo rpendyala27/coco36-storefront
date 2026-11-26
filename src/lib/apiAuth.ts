@@ -39,3 +39,33 @@ export function safeRedirectPath(next: string | null | undefined, fallback = '/'
   if (/[\u0000-\u001f\u007f]/.test(next)) return fallback;
   return next;
 }
+
+/**
+ * Name and phone from auth user_metadata, used when the customers row is
+ * missing those fields. Google stores the display name as `full_name` (and
+ * usually `name`); email sign-up stores `name` and optional `phone`.
+ */
+export function customerProfileHints(
+  user: { user_metadata?: Record<string, unknown> | null } | null | undefined,
+): { name?: string; phone?: string } {
+  const meta = user?.user_metadata ?? {};
+  const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
+  const name = text(meta.full_name) ?? text(meta.name);
+  const phone = text(meta.phone);
+  return { ...(name ? { name } : {}), ...(phone ? { phone } : {}) };
+}
+
+/**
+ * Body for POST /api/customers/signup on sign-in. Prefer the customers row so
+ * a later sign-in cannot overwrite an /account edit with stale user_metadata
+ * (the admin API falls back to metadata when the body omits a field).
+ */
+export function hintsForSignInSync(
+  hints: { name?: string; phone?: string },
+  existing: { name?: string | null; phone?: string | null } | null | undefined,
+): { name?: string; phone?: string } {
+  const name = existing?.name?.trim() || hints.name;
+  const phone = existing?.phone?.trim() || hints.phone;
+  return { ...(name ? { name } : {}), ...(phone ? { phone } : {}) };
+}
+
