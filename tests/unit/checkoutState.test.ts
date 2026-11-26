@@ -70,22 +70,25 @@ describe('payment outcomes (F28)', () => {
 });
 
 describe('Razorpay window vs the unpaid hold (R08)', () => {
-  it('without a hold from the API: 30 minutes less a 1-minute margin, less time since the order was placed', () => {
+  it('without a hold from the API: 30 minutes less a 10-minute margin, less time since the order was placed', () => {
     expect(UNPAID_HOLD_MINUTES).toBe(30);
-    expect(PAYMENT_WINDOW_MARGIN_SECONDS).toBe(60);
+    expect(PAYMENT_WINDOW_MARGIN_SECONDS).toBe(600);
     const placed = 5_000_000;
-    expect(paymentWindowSeconds(placed, placed)).toBe(29 * 60);
-    expect(paymentWindowSeconds(placed, placed + 10 * 60_000)).toBe(19 * 60);
-    expect(paymentWindowSeconds(placed, placed + 28 * 60_000)).toBe(60);
-    expect(paymentWindowSeconds(placed, placed + 28 * 60_000 + 1000)).toBeNull();
+    expect(paymentWindowSeconds(placed, placed)).toBe(20 * 60);
+    expect(paymentWindowSeconds(placed, placed + 10 * 60_000)).toBe(10 * 60);
+    expect(paymentWindowSeconds(placed, placed + 15 * 60_000)).toBe(5 * 60);
+    expect(paymentWindowSeconds(placed, placed + 15 * 60_000 + 1000)).toBe(5 * 60 - 1);
+    expect(paymentWindowSeconds(placed, placed + 19 * 60_000)).toBe(60);
+    expect(paymentWindowSeconds(placed, placed + 19 * 60_000 + 1000)).toBeNull();
   });
 
   it('never outlasts the hold', () => {
     const placed = 0;
-    for (const elapsedMin of [0, 1, 5, 15, 27]) {
+    for (const elapsedMin of [0, 1, 5, 15]) {
       const w = paymentWindowSeconds(placed, elapsedMin * 60_000)!;
       expect(elapsedMin * 60 + w).toBeLessThan(UNPAID_HOLD_MINUTES * 60);
     }
+    expect(paymentWindowSeconds(0, 27 * 60_000)).toBeNull();
   });
 
   it('checkout passes it as Razorpay `timeout`, with the API hold, and keeps the first placement time per attempt', () => {
@@ -101,36 +104,43 @@ describe('Razorpay window from the API hold (P21b)', () => {
   const placed = Date.parse('2026-11-23T10:00:00.000Z');
   const iso = (ms: number) => new Date(ms).toISOString();
 
-  it('is derived from holdExpiresAt, less the 1-minute margin', () => {
+  it('is derived from holdExpiresAt, less the 10-minute margin', () => {
     const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 30 * 60_000) };
-    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
-    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(19 * 60);
-    expect(paymentWindowSeconds(placed, placed + 28 * 60_000, hold)).toBe(60);
-    expect(paymentWindowSeconds(placed, placed + 28 * 60_000 + 1000, hold)).toBeNull();
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(20 * 60);
+    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(10 * 60);
+    expect(paymentWindowSeconds(placed, placed + 15 * 60_000, hold)).toBe(5 * 60);
+    expect(paymentWindowSeconds(placed, placed + 19 * 60_000, hold)).toBe(60);
+    expect(paymentWindowSeconds(placed, placed + 19 * 60_000 + 1000, hold)).toBeNull();
   });
 
   it('follows a longer or shorter hold set in admin settings', () => {
-    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 45, holdExpiresAt: iso(placed + 45 * 60_000) })).toBe(44 * 60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 45, holdExpiresAt: iso(placed + 45 * 60_000) })).toBe(35 * 60);
+    // 10 minutes cannot spare a 10-minute margin and still leave 5, so the old 60-second margin.
     expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 10, holdExpiresAt: iso(placed + 10 * 60_000) })).toBe(9 * 60);
-    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 120, holdExpiresAt: iso(placed + 120 * 60_000) })).toBe(119 * 60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 15, holdExpiresAt: iso(placed + 15 * 60_000) })).toBe(5 * 60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 120, holdExpiresAt: iso(placed + 120 * 60_000) })).toBe(110 * 60);
   });
 
   it('an order placed on the server earlier (a reused order) gets only what is left of its hold', () => {
-    // The browser first saw this order now, but the server placed it 20 minutes ago.
+    // The browser first saw this order now, but the server hold ends in 10 minutes.
+    // The 10-minute margin consumes that, so the window does not open.
     const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 10 * 60_000) };
-    expect(paymentWindowSeconds(placed, placed, hold)).toBe(9 * 60);
+    expect(paymentWindowSeconds(placed, placed, hold)).toBeNull();
+    const stillOpen = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 20 * 60_000) };
+    expect(paymentWindowSeconds(placed, placed, stillOpen)).toBe(10 * 60);
   });
 
   it('a device clock running behind the server cannot stretch the window past the hold', () => {
     // Server expiry looks 40 minutes away to a slow clock; the 30-minute hold since placement still caps it.
     const hold = { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 40 * 60_000) };
-    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(20 * 60);
   });
 
-  it('an expiry already past (or inside the margin) means place the order again', () => {
+  it('an expiry already past (or inside the margin) means do not open the window', () => {
     expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed - 1000) })).toBeNull();
-    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 119_000) })).toBeNull();
-    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 120_000) })).toBe(60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 10 * 60_000 + 59_000) })).toBeNull();
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 11 * 60_000) })).toBe(60);
+    expect(paymentWindowSeconds(placed, placed, { unpaidHoldMinutes: 30, holdExpiresAt: iso(placed + 15 * 60_000) })).toBe(5 * 60);
   });
 
   it.each([
@@ -139,12 +149,12 @@ describe('Razorpay window from the API hold (P21b)', () => {
     ['an unparsable expiry and bad minutes', { unpaidHoldMinutes: '45', holdExpiresAt: 'soon' }],
     ['minutes out of range', { unpaidHoldMinutes: 500 }],
   ])('falls back to 30 minutes when the hold is %s', (_n, hold) => {
-    expect(paymentWindowSeconds(placed, placed, hold)).toBe(29 * 60);
-    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(19 * 60);
+    expect(paymentWindowSeconds(placed, placed, hold)).toBe(20 * 60);
+    expect(paymentWindowSeconds(placed, placed + 10 * 60_000, hold)).toBe(10 * 60);
   });
 
   it('minutes without an expiry still size the window from the placement time', () => {
-    expect(paymentWindowSeconds(placed, placed + 5 * 60_000, { unpaidHoldMinutes: 45 })).toBe(39 * 60);
+    expect(paymentWindowSeconds(placed, placed + 5 * 60_000, { unpaidHoldMinutes: 45 })).toBe(30 * 60);
   });
 
   it('holdMinutes accepts whole minutes 10–120 only', () => {
@@ -152,9 +162,12 @@ describe('Razorpay window from the API hold (P21b)', () => {
     expect([9, 121, 30.5, '45', null, undefined, Number.NaN].map(holdMinutes)).toEqual([30, 30, 30, 30, 30, 30, 30]);
   });
 
-  it('the timeout copy is unchanged and says nothing about a fixed number of minutes', () => {
+  it('closing the window does not say the order was released, and names no fixed number of minutes', () => {
     expect(paymentMessage('timed_out')).toBe(PAYMENT_MESSAGES.timedOut);
-    expect(PAYMENT_MESSAGES.timedOut).toBe('The payment window timed out and the order was released. Your bag is unchanged; place the order again when you are ready.');
+    expect(paymentMessage('cancelled')).toBe(PAYMENT_MESSAGES.cancelled);
+    expect(PAYMENT_MESSAGES.timedOut).toBe("Payment not completed. If money left your account, don't pay again — we'll confirm your order automatically or refund you.");
+    expect(PAYMENT_MESSAGES.cancelled).toBe(PAYMENT_MESSAGES.timedOut);
+    expect(Object.values(PAYMENT_MESSAGES).map(String).join(' ')).not.toMatch(/released/i);
     expect(Object.values(PAYMENT_MESSAGES).map(String).join(' ')).not.toMatch(/\d+\s*min/i);
   });
 });
