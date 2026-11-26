@@ -117,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Create/refresh the customers row once per signed-in user per tab: on
     // sign-in, on signup without email confirmation, and when an email
     // confirmation link lands with a fresh session. The admin API takes the
-    // user id + email from the access token; name/phone come from user_metadata.
+    // user id + email from the access token. Name and phone prefer the saved
+    // customers row, then user_metadata (Google full_name, or email sign-up).
     let syncedFor: string | null = null;
 
     // Future changes — profile loads in the background, never blocks render.
@@ -126,8 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
         syncedFor = session.user.id;
         const u = session.user;
-        // Prefer the customers row so a later sign-in does not overwrite an
-        // /account edit with stale user_metadata (the API falls back to it).
+        // Prefer the saved customers row so a later sign-in does not overwrite an
+        // /account edit. customerProfileHints still supplies Google full_name
+        // (or the email sign-up name/phone) for any field the row does not have.
         void (async () => {
           const { data: existing, error } = await supabase
             .from('customers')

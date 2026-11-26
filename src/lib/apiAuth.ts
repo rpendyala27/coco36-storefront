@@ -41,9 +41,12 @@ export function safeRedirectPath(next: string | null | undefined, fallback = '/'
 }
 
 /**
- * Name and phone from auth user_metadata, used when the customers row is
- * missing those fields. Google stores the display name as `full_name` (and
- * usually `name`); email sign-up stores `name` and optional `phone`.
+ * Name and phone from auth user_metadata for POST /api/customers/signup.
+ * Google stores the display name as `full_name` (and usually `name`); email
+ * sign-up stores `name` and optional `phone`. Empty values are omitted so a
+ * Google session (which has no phone) cannot clear or invalidate the row.
+ * Sign-in applies these only where the customers row is still blank
+ * (see hintsForSignInSync).
  */
 export function customerProfileHints(
   user: { user_metadata?: Record<string, unknown> | null } | null | undefined,

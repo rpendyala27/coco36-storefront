@@ -63,7 +63,7 @@ describe('customerProfileHints', () => {
       user_metadata: { name: 'Asha', phone: '9876543210' },
     })).toEqual({ name: 'Asha', phone: '9876543210' });
   });
-  it('omits empty or missing fields', () => {
+  it('omits empty or missing fields so a Google user does not clear phone', () => {
     expect(customerProfileHints({ user_metadata: { full_name: '  ', name: '' } })).toEqual({});
     expect(customerProfileHints({ user_metadata: {} })).toEqual({});
     expect(customerProfileHints(null)).toEqual({});

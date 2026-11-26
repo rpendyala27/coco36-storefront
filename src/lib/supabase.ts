@@ -64,6 +64,12 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      // Implicit is the supabase-js default and matches email confirmation /
+      // password-reset links, which land as #access_token=… (see authLink.ts).
+      // PKCE would switch those links to ?code= and break recovery detection.
+      // Google OAuth also returns hash tokens under this flow; detectSessionInUrl
+      // picks the session up after the redirect back to /auth.
+      flowType: 'implicit',
       detectSessionInUrl: true,
     },
   },

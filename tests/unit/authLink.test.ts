@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXPIRED_LINK_MESSAGE, FAILED_LINK_MESSAGE, readAuthLink } from '../../src/lib/authLink';
+import { EXPIRED_LINK_MESSAGE, FAILED_LINK_MESSAGE, GOOGLE_SIGNIN_ERROR_MESSAGE, readAuthLink } from '../../src/lib/authLink';
 
 /** src/lib/authLink.ts: what a Supabase email link left in the URL. */
 
@@ -53,5 +53,24 @@ describe('readAuthLink: signup confirmation', () => {
     expect(readAuthLink(`${base}/auth#access_token=a.b.c&type=recovery`).signupConfirmed).toBe(false);
     expect(readAuthLink(`${base}/auth#access_token=a.b.c&type=magiclink`).signupConfirmed).toBe(false);
     expect(readAuthLink(`${base}/auth#error=access_denied&error_code=otp_expired&type=signup`).signupConfirmed).toBe(false);
+  });
+});
+
+describe('readAuthLink: Google OAuth return', () => {
+  it('uses a Google-specific message when the return URL is marked oauth=google', () => {
+    expect(readAuthLink(`${base}/auth?oauth=google&redirect=%2Fcheckout#error=access_denied&error_code=access_denied`))
+      .toEqual({ recovery: false, error: GOOGLE_SIGNIN_ERROR_MESSAGE, signupConfirmed: false });
+    expect(readAuthLink(`${base}/auth?oauth=google&error=server_error&error_description=Call+0000`))
+      .toEqual({ recovery: false, error: GOOGLE_SIGNIN_ERROR_MESSAGE, signupConfirmed: false });
+  });
+
+  it('does not treat a successful Google return (hash tokens, no type) as recovery or signup', () => {
+    expect(readAuthLink(`${base}/auth?oauth=google&redirect=%2Fcheckout#access_token=a.b.c&refresh_token=r&token_type=bearer`))
+      .toEqual({ recovery: false, error: null, signupConfirmed: false });
+  });
+
+  it('leaves ordinary email-link errors unchanged when oauth=google is absent', () => {
+    expect(readAuthLink(`${base}/auth#error=access_denied&error_code=otp_expired`).error).toBe(EXPIRED_LINK_MESSAGE);
+    expect(readAuthLink(`${base}/auth#error=server_error`).error).toBe(FAILED_LINK_MESSAGE);
   });
 });
