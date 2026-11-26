@@ -22,8 +22,10 @@ import {
 } from '../lib/checkout';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { RemovedLinesNotice } from '../components/CartSummary';
+import {
+  browserStores, clearCheckoutDraft, EMPTY_CHECKOUT_DRAFT, readCheckoutDraft, writeCheckoutDraft, type CheckoutDraft,
+} from '../lib/userStorage';
 
-const DRAFT_KEY = 'coco36.checkout-draft';
 
 declare global {
   interface Window {
@@ -101,32 +103,40 @@ export const Checkout = () => {
   const [busyAddr, setBusyAddr]         = useState(false);
 
   // ── Contact + payment form ────────────────────────────────────────────────
-  // Address lives in the book now; this form only holds contact + payment.
-  // Restored from sessionStorage so a refresh/back-button doesn't lose input.
-  const [form, setForm] = useState(() => {
-    const empty = {
-      name:    profile?.name ?? '',
-      email:   profile?.email ?? user?.email ?? '',
-      phone:   profile?.phone ?? '',
-      paymentMethod: 'prepaid' as PaymentMethod,
-    };
-    if (typeof window === 'undefined') return empty;
-    try {
-      const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      if (!raw) return empty;
-      return { ...empty, ...JSON.parse(raw) };
-    } catch { return empty; }
-  });
+  // Address lives in the book now; this form only holds name, phone and the
+  // payment method. The email is never part of it: it is always the signed-in
+  // account's own (user.email). The draft survives a refresh/back-button, is
+  // keyed by user id, and is only read once the user is known (the tree now
+  // renders before getSession() resolves), so another account in the same tab
+  // never sees it (src/lib/userStorage.ts).
+  const [form, setForm] = useState<CheckoutDraft>(EMPTY_CHECKOUT_DRAFT);
+  // Whose draft `form` holds. Saving waits until it matches the user, so the
+  // previous account's values are never written under the new id.
+  const [draftUid, setDraftUid] = useState<string | null>(null);
+  const uid = user?.id ?? null;
+  const accountEmail = user?.email ?? profile?.email ?? '';
 
-  // Prefill once auth loads (only fills empties — preserves user edits)
+  // New (or no) account: start from that account's own draft, and forget the
+  // previous account's address choices.
   useEffect(() => {
+    setAddresses([]);
+    setShipId(null);
+    setBillId(null);
+    if (!uid) { setForm(EMPTY_CHECKOUT_DRAFT); setDraftUid(null); return; }
+    setForm(readCheckoutDraft(browserStores().session, uid) ?? EMPTY_CHECKOUT_DRAFT);
+    setDraftUid(uid);
+  }, [uid]);
+
+  // Prefill from this account's profile once it loads (only fills empties —
+  // preserves user edits). A profile row for another account is ignored.
+  useEffect(() => {
+    if (!uid || !profile || profile.id !== uid) return;
     setForm((f) => ({
       ...f,
-      name:  f.name  || profile?.name  || '',
-      email: f.email || profile?.email || user?.email || '',
-      phone: f.phone || profile?.phone || '',
+      name:  f.name  || profile.name  || '',
+      phone: f.phone || profile.phone || '',
     }));
-  }, [user, profile]);
+  }, [uid, profile]);
 
   // ── Delivery to the chosen address (Phase 2A) ─────────────────────────────
   // The server refuses an undeliverable address anyway; this tells the shopper
@@ -184,10 +194,11 @@ export const Checkout = () => {
     return () => { active = false; };
   }, [user]);
 
-  // Persist contact + payment draft on every change.
+  // Persist this account's contact + payment draft on every change.
   useEffect(() => {
-    try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch { /* quota */ }
-  }, [form]);
+    if (!uid || draftUid !== uid) return;
+    writeCheckoutDraft(browserStores().session, uid, form);
+  }, [form, uid, draftUid]);
 
   // ── Load Razorpay SDK ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -363,7 +374,7 @@ export const Checkout = () => {
         freshAttempt();
         setConfirmedOrder({ orderNumber, total_paise: amount });
         setStep('confirmed');
-        try { window.sessionStorage.removeItem(DRAFT_KEY); } catch {}
+        clearCheckoutDraft(browserStores().session, uid);
         setTimeout(() => clear(), 300);
         return;
       }
@@ -393,7 +404,7 @@ export const Checkout = () => {
         name:     'COCO36',
         description: `Order ${orderNumber}`,
         order_id: razorpayOrderId,
-        prefill:  { name: form.name, email: form.email, contact: form.phone },
+        prefill:  { name: form.name, email: accountEmail, contact: form.phone },
         notes:    { orderId, orderNumber },
         theme:    { color: '#4e7d24' },
         timeout:  windowSeconds,
@@ -553,11 +564,11 @@ export const Checkout = () => {
                 Contact
               </h2>
               <p className="text-sm text-brand-muted mb-5 ml-10">
-                Signed in as <span className="font-medium text-brand-forest">{form.email}</span>.
+                Signed in as <span className="font-medium text-brand-forest">{accountEmail}</span>.
               </p>
               <div className="grid grid-cols-1 gap-5 mt-4">
                 <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required autoComplete="name" />
-                <Field label="Email" type="email" value={form.email} onChange={() => {}} required readOnly autoComplete="email" />
+                <Field label="Email" type="email" value={accountEmail} onChange={() => {}} required readOnly autoComplete="email" />
                 <Field label="Phone" type="tel" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required placeholder="+91 …" autoComplete="tel" />
               </div>
             </section>

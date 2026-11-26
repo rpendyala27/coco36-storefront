@@ -55,7 +55,7 @@ const PLACEHOLDER_URL = 'https://unconfigured.invalid';
  * session only after a tick). See src/lib/authLink.ts.
  */
 export const initialAuthLink: AuthLinkState =
-  typeof window === 'undefined' ? { recovery: false, error: null } : readAuthLink(window.location.href);
+  typeof window === 'undefined' ? { recovery: false, error: null, signupConfirmed: false } : readAuthLink(window.location.href);
 
 export const supabase = createClient(
   supabaseUrl || PLACEHOLDER_URL,

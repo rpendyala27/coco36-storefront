@@ -7,6 +7,9 @@ import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { safeRedirectPath } from '../lib/apiAuth';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
+import {
+  classifySignUp, SIGNUP_CONFIRM_MESSAGE, SIGNUP_EXISTS_MESSAGE, SIGNUP_NEUTRAL_MESSAGE,
+} from '../lib/signup';
 
 /**
  * Customer auth page — login + signup + password reset, all on Supabase Auth.
@@ -77,19 +80,15 @@ export const AuthPage = () => {
         });
         if (signUpErr) throw signUpErr;
 
-        // Email-enumeration protection: a duplicate signup returns NO error and
-        // NO session — and on this supabase-js version, a null `user` as well
-        // (a genuine new signup always returns data.user). So a null user here
-        // means the email is already registered. Show that instead of the
-        // misleading "check your email to confirm".
-        if (!data.user && !data.session) {
-          setError('An account with this email already exists — please sign in below.');
+        // New account (confirm email), duplicate (enumeration-protected, empty
+        // identities), or neither — see src/lib/signup.ts.
+        const outcome = classifySignUp(data);
+        if (outcome === 'signed_in') navigate(redirectTo);
+        else if (outcome === 'already_registered') {
+          setError(SIGNUP_EXISTS_MESSAGE);
           setIsLogin(true);
-          return;
-        }
-
-        if (data.session) navigate(redirectTo);
-        else setMessage('Check your email to confirm your account.');
+        } else if (outcome === 'confirm_email') setMessage(SIGNUP_CONFIRM_MESSAGE);
+        else setMessage(SIGNUP_NEUTRAL_MESSAGE);
       }
     } catch (err: any) {
       setError(err?.message ?? 'Something went wrong. Please try again.');

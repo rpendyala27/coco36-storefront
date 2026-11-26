@@ -16,7 +16,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { rpc, from },
   isSupabaseConfigured: true,
   API_URL: '',
-  initialAuthLink: { recovery: false, error: null },
+  initialAuthLink: { recovery: false, error: null, signupConfirmed: false },
 }));
 
 const { loadInvoiceSettings, sellerHeaderReady } = await import('../../src/lib/invoiceHeader');

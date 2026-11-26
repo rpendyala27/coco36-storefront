@@ -184,8 +184,9 @@ describe('phone rule (F49)', () => {
     const checkout = read('src/pages/Checkout.tsx');
     expect(checkout).toContain('const customerPhone = normaliseIndianMobile(form.phone);');
     expect(checkout).toContain('customerPhone,');
-    expect(checkout).toContain("phone:   profile?.phone ?? '',");
-    expect(checkout).toContain("phone: f.phone || profile?.phone || '',");
+    // F30 prefill: the account's own profile phone fills an empty field
+    // (per-account draft since the user-switch fix, src/lib/userStorage.ts).
+    expect(checkout).toContain("phone: f.phone || profile.phone || '',");
   });
 });
 

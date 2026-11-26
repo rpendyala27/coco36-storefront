@@ -1,4 +1,5 @@
 import { API_URL } from './supabase';
+import { PIN_STORAGE_KEY } from './userStorage';
 
 /**
  * Delivery check (Phase 2A): asks the admin API whether we deliver to a PIN,
@@ -19,7 +20,7 @@ export interface DeliveryCheck {
   restrictedItems: { productId: string; name: string }[];
 }
 
-const PIN_KEY = 'coco36.pincode';
+const PIN_KEY = PIN_STORAGE_KEY;
 export const PIN_RE = /^[1-9][0-9]{5}$/;
 
 /**
