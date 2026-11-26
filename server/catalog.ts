@@ -9,6 +9,7 @@ import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
 import { readHandlingDaysLive } from './dispatchZone.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
 import { marksFromClaims, type ClaimMark } from '../src/lib/claimMarks.js';
+import { cleanClaimRows, type ClaimRow } from '../src/lib/claimsHandoff.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
 import { COD_ENABLED_SETTING, codEnabledFrom, refuseCodOrder, type CodOrderRefusal } from '../src/lib/codGate.js';
@@ -33,6 +34,8 @@ export interface Catalog {
   policy: StorePolicy;
   /** Claim types product_claims() returned. Absent or empty means show none. */
   claimMarks?: ClaimMark[];
+  /** The product_claims() rows, handed to the browser in the page (F14). Null when unknown. */
+  claimRows?: ClaimRow[] | null;
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -184,6 +187,7 @@ async function fetchCatalog(): Promise<Catalog> {
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
     claimMarks: claimRows ? marksFromClaims(claimRows) : [],
+    claimRows,
   };
 }
 
@@ -212,7 +216,7 @@ export function resetCatalogCache(): void {
  * SUPABASE_SERVICE_ROLE_KEY when set (Production); with no key (Preview) no
  * request is made and claim badges stay hidden. Does not log the key.
  */
-async function readClaimRows(): Promise<{ product_id: string; claim: string }[] | null> {
+async function readClaimRows(): Promise<ClaimRow[] | null> {
   const creds = serviceCredentials(process.env);
   if (!creds) return null;
   try {
@@ -225,8 +229,7 @@ async function readClaimRows(): Promise<{ product_id: string; claim: string }[] 
       console.error('[catalog] product claims HTTP', res.status);
       return null;
     }
-    const body = await res.json();
-    return Array.isArray(body) ? body : null;
+    return cleanClaimRows(await res.json());
   } catch {
     console.error('[catalog] product claims unavailable');
     return null;

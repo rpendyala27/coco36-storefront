@@ -1,17 +1,19 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product } from '../types';
 import { PRODUCT_SELECT, mapSupabaseProduct } from './productMapper';
-import { applyClaims, type Claims } from '../lib/claims';
+import { applyClaims, claimsFromRows, type Claims } from '../lib/claims';
+import { readClaimsHandoff } from '../lib/claimsHandoff';
 
 /**
  * Which certification badges are backed by a valid certificate today; null if
- * unknown (badges are then hidden). F14: the browser no longer calls
- * public.product_claims() as anon (EXECUTE is being revoked from anon/public),
- * so claims are always unknown here and claim badges stay hidden client-side.
- * No request is made, so nothing is logged.
+ * unknown (badges are then hidden). F14: the browser never calls
+ * public.product_claims() (EXECUTE is revoked from anon/public). It reuses the
+ * rows the server render read and embedded in the page, so the browser shows
+ * the same badges the server did. No block in the page means no badges.
  */
 async function loadClaims(): Promise<Claims | null> {
-  return null;
+  const rows = readClaimsHandoff();
+  return rows ? claimsFromRows(rows) : null;
 }
 
 /**
