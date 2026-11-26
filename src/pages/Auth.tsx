@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { safeRedirectPath } from '../lib/apiAuth';
 import { googleOAuthRedirectTo } from '../lib/googleAuth';
+import { AlreadyRegisteredNotice } from '../components/AlreadyRegisteredNotice';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
 import {
@@ -59,6 +60,12 @@ export const AuthPage = () => {
   // "Auth session missing!", so show the sign-in form instead.
   const settingPassword = passwordRecovery && !!user;
 
+  // Sign-in mode, with the email they just typed left in the field.
+  const showSignIn = () => {
+    setIsLogin(true);
+    setEmail(email);
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setMessage(''); setLoading(true);
@@ -86,8 +93,9 @@ export const AuthPage = () => {
         const outcome = classifySignUp(data);
         if (outcome === 'signed_in') navigate(redirectTo);
         else if (outcome === 'already_registered') {
+          // The notice's Sign in, Google, and reset actions use this same email.
           setError(SIGNUP_EXISTS_MESSAGE);
-          setIsLogin(true);
+          showSignIn();
         } else if (outcome === 'confirm_email') setMessage(SIGNUP_CONFIRM_MESSAGE);
         else setMessage(SIGNUP_NEUTRAL_MESSAGE);
       }
@@ -253,7 +261,15 @@ export const AuthPage = () => {
             {!isLogin && <p id="password-hint" className="text-xs text-brand-muted">{PASSWORD_HINT}</p>}
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error === SIGNUP_EXISTS_MESSAGE ? (
+            <AlreadyRegisteredNotice
+              onSignIn={showSignIn}
+              onGoogle={handleGoogle}
+              onResetPassword={handleReset}
+            />
+          ) : error ? (
+            <p className="text-red-600 text-sm">{error}</p>
+          ) : null}
           {message && <p className="text-brand-leaf text-sm">{message}</p>}
 
           <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">

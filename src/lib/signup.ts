@@ -26,7 +26,38 @@ export function classifySignUp(data: SignUpAnswer | null | undefined): SignUpOut
 }
 
 export const SIGNUP_CONFIRM_MESSAGE = 'Check your email to confirm your account.';
-export const SIGNUP_EXISTS_MESSAGE = 'An account with this email already exists — please sign in below.';
+
+/** Tappable phrases inside SIGNUP_EXISTS_MESSAGE. Labels are the visible copy. */
+export const EXISTING_ACCOUNT_SIGN_IN_LABEL = 'Sign in';
+export const EXISTING_ACCOUNT_GOOGLE_LABEL = 'continue with Google';
+export const EXISTING_ACCOUNT_RESET_LABEL = 'reset your password';
+
+export const SIGNUP_EXISTS_MESSAGE =
+  `You already have an account with this email. ${EXISTING_ACCOUNT_SIGN_IN_LABEL}, ${EXISTING_ACCOUNT_GOOGLE_LABEL}, or ${EXISTING_ACCOUNT_RESET_LABEL}.`;
+
+export type ExistingAccountAction = 'sign_in' | 'google' | 'reset_password';
+
+export interface ExistingAccountPart {
+  text: string;
+  action?: ExistingAccountAction;
+}
+
+/**
+ * The already-registered sentence split so the three actions can be buttons
+ * without changing the approved copy. Joining `text` is SIGNUP_EXISTS_MESSAGE.
+ */
+export function existingAccountParts(): readonly ExistingAccountPart[] {
+  return [
+    { text: 'You already have an account with this email. ' },
+    { text: EXISTING_ACCOUNT_SIGN_IN_LABEL, action: 'sign_in' },
+    { text: ', ' },
+    { text: EXISTING_ACCOUNT_GOOGLE_LABEL, action: 'google' },
+    { text: ', or ' },
+    { text: EXISTING_ACCOUNT_RESET_LABEL, action: 'reset_password' },
+    { text: '.' },
+  ];
+}
+
 export const SIGNUP_NEUTRAL_MESSAGE =
   'Check your email to confirm your account. Already registered? Sign in below or choose "Forgot password?".';
 export const SIGNUP_CONFIRMED_MESSAGE = 'Email confirmed — you’re signed in.';
