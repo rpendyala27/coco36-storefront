@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, Truck, Check, ArrowLeft, IndianRupee, Wallet, RotateCcw, Plus, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import { formatMoney } from '../lib/currency';
-import { API_URL, RAZORPAY_KEY_ID } from '../lib/supabase';
+import { API_URL, RAZORPAY_KEY_ID, supabase } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
-import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checkout';
+import { cartSignature, newIdempotencyKey } from '../lib/checkout';
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
 import { availableFor, sellableQty, soldOutItems, stockNote } from '../lib/stock';
 import { trackBeginCheckout, trackPurchase } from '../lib/analytics';
@@ -18,10 +17,13 @@ import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/deliv
 import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
 import { summarizeCart } from '../lib/cartSummary';
 import {
-  classifyPaymentFailure, outcomeOnDismiss, paymentMessage, paymentWindowSeconds, type RazorpayFailure,
+  attemptForCart, classifyPaymentFailure, outcomeOnDismiss, paymentMessage, paymentWindowSeconds,
+  pollUntilPaymentConfirmed, razorpayDisplayConfig, readOwnOrderStatus,
+  type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
 } from '../lib/checkout';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { RemovedLinesNotice } from '../components/CartSummary';
+import { PaymentResult } from '../components/PaymentResult';
 import {
   browserStores, clearCheckoutDraft, EMPTY_CHECKOUT_DRAFT, readCheckoutDraft, writeCheckoutDraft, type CheckoutDraft,
 } from '../lib/userStorage';
@@ -81,17 +83,45 @@ export const Checkout = () => {
   const legacyItemCount = items.filter((it) => !isUuid(it.sizeId)).length;
 
   const [step, setStep] = useState<'details' | 'confirmed'>('details');
-  const [confirmedOrder, setConfirmedOrder] = useState<{ orderNumber: string; total_paise: number } | null>(null);
+  const [confirmedOrder, setConfirmedOrder] = useState<{
+    orderId?: string;
+    orderNumber: string;
+    total_paise: number;
+    phase: PaymentConfirmPhase;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   // One idempotency key per checkout attempt: a double-click or a retry after
-  // a network error returns the same order instead of a second one. A new key
-  // once the cart changes or the attempt ended (paid, cancelled, failed).
+  // a network error returns the same order instead of a second one. Closing
+  // the payment window keeps the key, so Pay again reuses that order while
+  // the cart is unchanged. A new key when the cart changes, the server
+  // refuses the order, or the Razorpay success callback has fired.
   // placedAt: when this attempt's order was first placed, so the Razorpay
   // window can close before the unpaid hold ends (R08; hold from the API, P21b).
-  const attempt = useRef<{ key: string; cart: string; placedAt?: number }>({ key: newIdempotencyKey(), cart: '' });
+  const attempt = useRef<CheckoutAttempt>({ key: newIdempotencyKey(), cart: '' });
   const freshAttempt = () => { attempt.current = { key: newIdempotencyKey(), cart: '' }; };
+
+  // After Razorpay authorises a payment, wait until this customer's order
+  // is confirmed (webhook) before saying so. RLS orders_read is own rows.
+  const watchId = confirmedOrder?.phase === 'confirming' ? confirmedOrder.orderId ?? null : null;
+  const customerId = user?.id ?? null;
+  useEffect(() => {
+    if (!watchId || !customerId) return undefined;
+    let cancelled = false;
+    void pollUntilPaymentConfirmed(
+      () => readOwnOrderStatus(supabase, watchId, customerId),
+      { shouldStop: () => cancelled },
+    ).then((result) => {
+      if (cancelled || result === 'stopped') return;
+      setConfirmedOrder((prev) => (
+        prev && prev.orderId === watchId
+          ? { ...prev, phase: result === 'confirmed' ? 'confirmed' : 'checking' }
+          : prev
+      ));
+    });
+    return () => { cancelled = true; };
+  }, [watchId, customerId]);
 
   // ── Address book ──────────────────────────────────────────────────────────
   const [addresses, setAddresses]       = useState<BookAddress[]>([]);
@@ -325,8 +355,7 @@ export const Checkout = () => {
     }
 
     const sig = cartSignature(items);
-    if (attempt.current.cart && attempt.current.cart !== sig) freshAttempt();
-    attempt.current.cart = sig;
+    attempt.current = attemptForCart(attempt.current, sig);
 
     try {
       const orderRes = await fetch(`${API_URL}/api/orders/create`, {
@@ -372,7 +401,7 @@ export const Checkout = () => {
 
       if (paymentMethod === 'cod') {
         freshAttempt();
-        setConfirmedOrder({ orderNumber, total_paise: amount });
+        setConfirmedOrder({ orderNumber, total_paise: amount, phase: 'confirmed' });
         setStep('confirmed');
         clearCheckoutDraft(browserStores().session, uid);
         setTimeout(() => clear(), 300);
@@ -382,12 +411,12 @@ export const Checkout = () => {
       // Prepaid — open Razorpay checkout
       if (!razorpayOrderId) throw new Error('Payment gateway not initialised');
 
-      // The window closes before the unpaid hold ends (R08). Too little left:
-      // this order is about to be released, so start again.
+      // The window closes before the unpaid hold ends (R08). Too little left
+      // to open Razorpay: keep this attempt so another click cannot place a
+      // second order. A late payment on the open order can still confirm it.
       if (!attempt.current.placedAt) attempt.current.placedAt = Date.now();
       const windowSeconds = paymentWindowSeconds(attempt.current.placedAt, Date.now(), { unpaidHoldMinutes, holdExpiresAt });
       if (windowSeconds === null) {
-        freshAttempt();
         setError(paymentMessage('timed_out'));
         setSubmitting(false);
         return;
@@ -408,11 +437,13 @@ export const Checkout = () => {
         notes:    { orderId, orderNumber },
         theme:    { color: '#4e7d24' },
         timeout:  windowSeconds,
+        // Hide UPI Collect (VPA entry). Intent and QR stay.
+        config:   razorpayDisplayConfig(),
         handler:  () => {
-          // Razorpay JS handler fires on successful authorisation.
-          // The webhook on the server is the real source of truth — but for
-          // the user we show confirmation immediately. purchase is prepaid
-          // success only; COD never reaches this handler.
+          // Razorpay JS handler fires on successful authorisation. The order
+          // is confirmed only once orders.status moves; until then the screen
+          // says we are confirming the payment. purchase is prepaid success
+          // only; COD never reaches this handler.
           freshAttempt();
           trackPurchase({
             orderNumber,
@@ -420,16 +451,21 @@ export const Checkout = () => {
             shippingPaise: totals.shipping_paise,
             lines: purchaseLines,
           });
-          setConfirmedOrder({ orderNumber, total_paise: amount });
+          setConfirmedOrder({
+            orderId: typeof orderId === 'string' && orderId ? orderId : undefined,
+            orderNumber,
+            total_paise: amount,
+            phase: typeof orderId === 'string' && orderId ? 'confirming' : 'checking',
+          });
           setStep('confirmed');
           setTimeout(() => clear(), 300);
         },
         modal: {
-          // Closed without paying: release the stock this order holds (the
-          // API checks with Razorpay first) and start a new attempt next time.
+          // Closed without a completed payment. Keep this attempt while the
+          // cart is unchanged so Pay again returns the same order and its
+          // Razorpay order. Do not release it: a late payment can still confirm.
           ondismiss: () => {
-            freshAttempt();
-            void abandonCheckout(orderId);
+            attempt.current = attemptForCart(attempt.current, cartSignature(items));
             setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));
             setSubmitting(false);
           },
@@ -468,34 +504,11 @@ export const Checkout = () => {
   // ── Confirmation step ───────────────────────────────────────────────────────
   if (step === 'confirmed' && confirmedOrder) {
     return (
-      <div className="min-h-screen pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
-        <motion.div
-          initial={{ scale: 0, rotate: -90 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-          className="w-20 h-20 rounded-full bg-brand-leaf/10 text-brand-leaf flex items-center justify-center mb-10"
-        >
-          <Check size={36} strokeWidth={1.5} />
-        </motion.div>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-brand-leaf font-bold mb-4">
-          Order {confirmedOrder.orderNumber}
-        </p>
-        <h1 className="text-5xl mb-6">Order Confirmed.</h1>
-        <p className="text-lg text-brand-muted font-display italic mb-2 leading-relaxed">
-          Thank you for your order — total {formatMoney(confirmedOrder.total_paise)}.
-        </p>
-        <p className="text-sm text-brand-muted mb-12">
-          A confirmation email is on its way. You'll receive tracking details once your shipment leaves origin.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link to="/shop" className="btn-primary !px-8 !py-4">
-            Continue shopping
-          </Link>
-          <button onClick={() => navigate('/')} className="btn-ghost !px-8 !py-4">
-            Back to home
-          </button>
-        </div>
-      </div>
+      <PaymentResult
+        phase={confirmedOrder.phase}
+        orderNumber={confirmedOrder.orderNumber}
+        totalPaise={confirmedOrder.total_paise}
+      />
     );
   }
 
