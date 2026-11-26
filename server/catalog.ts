@@ -9,6 +9,7 @@ import { DEFAULT_POLICY, type StorePolicy } from '../src/seo/site.js';
 import { readHandlingDaysLive } from './dispatchZone.js';
 import { applyClaims, claimsFromRows } from '../src/lib/claims.js';
 import { marksFromClaims, type ClaimMark } from '../src/lib/claimMarks.js';
+import { cleanClaimRows, type ClaimRow } from '../src/lib/claimsHandoff.js';
 import type { LotPassport } from '../src/lib/lotPassport.js';
 import { parseLotCode } from '../src/lib/lotCode.js';
 import { COD_ENABLED_SETTING, codEnabledFrom, refuseCodOrder, type CodOrderRefusal } from '../src/lib/codGate.js';
@@ -33,6 +34,8 @@ export interface Catalog {
   policy: StorePolicy;
   /** Claim types product_claims() returned. Absent or empty means show none. */
   claimMarks?: ClaimMark[];
+  /** The product_claims() rows, handed to the browser in the page (F14). Null when unknown. */
+  claimRows?: ClaimRow[] | null;
 }
 
 const TTL_MS = 60_000;          // per warm instance; the CDN caches pages too
@@ -172,11 +175,8 @@ async function fetchCatalog(): Promise<Catalog> {
     // Policy numbers fall back to defaults. The COD gate fails closed (off).
     readPublicSettings(Object.values(SETTINGS_KEYS)),
     // Certification badges only where a certificate is valid today; if this
-    // fails, no claim is shown (null).
-    rest<{ product_id: string; claim: string }[]>('rpc/product_claims').catch((e) => {
-      console.error(e);
-      return null;
-    }),
+    // fails or is not configured, no claim is shown (null).
+    readClaimRows(),
   ]);
   const policy = policyFrom(settings);
   const liveDays = await readHandlingDaysLive(process.env, fetch);
@@ -187,6 +187,7 @@ async function fetchCatalog(): Promise<Catalog> {
     tree: buildTree(cats.map(mapCategoryRow)),
     policy,
     claimMarks: claimRows ? marksFromClaims(claimRows) : [],
+    claimRows,
   };
 }
 
@@ -207,6 +208,32 @@ export function resetCatalogCache(): void {
   concealedCache = null;
   concealedInflight = null;
   concealedGeneration += 1;
+}
+
+/**
+ * product_claims() rows (product id + claim slug), or null. F14: never called
+ * with the anon key (EXECUTE is being revoked from anon/public). Uses
+ * SUPABASE_SERVICE_ROLE_KEY when set (Production); with no key (Preview) no
+ * request is made and claim badges stay hidden. Does not log the key.
+ */
+async function readClaimRows(): Promise<ClaimRow[] | null> {
+  const creds = serviceCredentials(process.env);
+  if (!creds) return null;
+  try {
+    const res = await fetch(`${creds.url}/rest/v1/rpc/product_claims`, {
+      headers: { apikey: creds.key, Authorization: `Bearer ${creds.key}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.arrayBuffer().catch(() => undefined);
+      console.error('[catalog] product claims HTTP', res.status);
+      return null;
+    }
+    return cleanClaimRows(await res.json());
+  } catch {
+    console.error('[catalog] product claims unavailable');
+    return null;
+  }
 }
 
 /**

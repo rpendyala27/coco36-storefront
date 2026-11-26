@@ -1,25 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { marksFromClaims, type ClaimMark } from '../lib/claimMarks';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { readClaimsHandoff } from '../lib/claimsHandoff';
 
-/** Claim types from product_claims(). Starts empty and stays empty on failure. */
+/**
+ * Claim marks for the browser trust band. F14: public.product_claims() is not
+ * called from the browser (EXECUTE is revoked from anon/public). The marks come
+ * from the rows the server render embedded in the page, so they match what the
+ * server showed. No block in the page means no marks.
+ */
 export function useClaimMarks(enabled = true): ClaimMark[] {
-  const [marks, setMarks] = useState<ClaimMark[]>([]);
-
-  useEffect(() => {
-    if (!enabled || !isSupabaseConfigured) return;
-    let active = true;
-    void (async () => {
-      try {
-        const { data, error } = await supabase.rpc('product_claims');
-        if (!active) return;
-        setMarks(error ? [] : marksFromClaims(data as { claim: string }[] | null));
-      } catch {
-        if (active) setMarks([]);
-      }
-    })();
-    return () => { active = false; };
-  }, [enabled]);
-
-  return marks;
+  return useMemo(() => (enabled ? marksFromClaims(readClaimsHandoff()) : []), [enabled]);
 }

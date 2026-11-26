@@ -2,16 +2,18 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product } from '../types';
 import { PRODUCT_SELECT, mapSupabaseProduct } from './productMapper';
 import { applyClaims, claimsFromRows, type Claims } from '../lib/claims';
+import { readClaimsHandoff } from '../lib/claimsHandoff';
 
-/** Which certification badges are backed by a valid certificate today; null if unknown (badges are then hidden). */
+/**
+ * Which certification badges are backed by a valid certificate today; null if
+ * unknown (badges are then hidden). F14: the browser never calls
+ * public.product_claims() (EXECUTE is revoked from anon/public). It reuses the
+ * rows the server render read and embedded in the page, so the browser shows
+ * the same badges the server did. No block in the page means no badges.
+ */
 async function loadClaims(): Promise<Claims | null> {
-  const { data, error } = await supabase.rpc('product_claims');
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('[productService.claims]', error);
-    return null;
-  }
-  return claimsFromRows(data as { product_id: string; claim: string }[]);
+  const rows = readClaimsHandoff();
+  return rows ? claimsFromRows(rows) : null;
 }
 
 /**

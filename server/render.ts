@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { categoryPath, isConcealedProductSlug, productPath, resolveProductParam } from '../src/lib/productPath.js';
+import { categoryAliasTarget, categoryPath, isConcealedProductSlug, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { bakingNoteByPath } from '../src/content/bakingNotes.js';
 import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../src/content/wholesaleGuide.js';
@@ -17,6 +17,7 @@ import { recipeMeta, recipesHubMeta } from '../src/seo/recipeMeta.js';
 import { guideMeta } from '../src/seo/guideMeta.js';
 import { DEFAULT_POLICY, SITE_HOST, SITE_ORIGIN } from '../src/seo/site.js';
 import { buildTree } from '../src/lib/categoryTree.js';
+import { claimsHandoffScript, type ClaimRow } from '../src/lib/claimsHandoff.js';
 import { gaHeadForEnv } from './gaSnippet.js';
 import { inject, isTemplate, renderHead } from './html.js';
 import { loadCatalog, loadConcealedProducts, loadLotPassport, type Catalog } from './catalog.js';
@@ -80,7 +81,14 @@ function redirect(location: string): RenderResult {
   };
 }
 
-function page(status: number, meta: PageMeta, snapshot: string, extraHeaders: Record<string, string> = {}): RenderResult {
+/**
+ * One HTML page. `claims` are the product_claims() rows this render used; they
+ * go into the head as inert JSON so the browser shows the same badges (F14).
+ */
+function page(
+  status: number, meta: PageMeta, snapshot: string, extraHeaders: Record<string, string> = {},
+  claims: readonly ClaimRow[] | null = null,
+): RenderResult {
   const headers: Record<string, string> = {
     'Content-Type': HTML,
     'Cache-Control': status === 200 ? CACHE.page : status === 503 ? CACHE.noStore : CACHE.error,
@@ -88,7 +96,7 @@ function page(status: number, meta: PageMeta, snapshot: string, extraHeaders: Re
   };
   // Mirror <meta name="robots"> as a header: honoured before the HTML is parsed.
   if (meta.robots) headers['X-Robots-Tag'] = meta.robots;
-  return { status, headers, body: inject(loadTemplate(), renderHead(meta), snapshot, gaHeadForEnv()) };
+  return { status, headers, body: inject(loadTemplate(), renderHead(meta), snapshot, [gaHeadForEnv(), claimsHandoffScript(claims)].filter(Boolean).join('\n')) };
 }
 
 /** Snapshot context when the catalogue isn't needed (static pages). */
@@ -102,6 +110,11 @@ export async function render(pathname: string, search: string, host: string): Pr
   // Retired kit URL. vercel.json 301s /shop/bean-to-bar-kit (and the trailing
   // slash) to /shop at the edge, after the www → apex hop. This is the
   // backstop so a direct function hit, or the slash spelling, never answers 410.
+  // Claims the catalogue read for this render; written into the page (F14).
+  let claims: ClaimRow[] | null = null;
+  const pg = (status: number, meta: PageMeta, snapshot: string, extraHeaders: Record<string, string> = {}) =>
+    page(status, meta, snapshot, extraHeaders, claims);
+
   const bare = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   if (bare.toLowerCase() === '/shop/bean-to-bar-kit') return redirect('/shop');
 
@@ -124,9 +137,9 @@ export async function render(pathname: string, search: string, host: string): Pr
   // catalogue only adds footer links and live shipping policy.
   if (staticPageMeta(pathname)) {
     let ctx = emptyCtx();
-    try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (static page)', err); }
+    try { const c = await loadCatalog(); ctx = c; claims = c.claimRows ?? null; } catch (err) { console.error('[render] catalogue unavailable (static page)', err); }
     const meta = staticPageMeta(pathname, ctx.policy)!;
-    return withHost(page(200, meta, staticSnapshot(ctx, pathname, staticPageCrumbs(pathname))));
+    return withHost(pg(200, meta, staticSnapshot(ctx, pathname, staticPageCrumbs(pathname))));
   }
 
   // Ingredient Notes (/guides). Same resilience as the info pages: the copy
@@ -134,24 +147,24 @@ export async function render(pathname: string, search: string, host: string): Pr
   const note = bakingNoteByPath(pathname);
   if (note) {
     let ctx = emptyCtx();
-    try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (baking note)', err); }
+    try { const c = await loadCatalog(); ctx = c; claims = c.claimRows ?? null; } catch (err) { console.error('[render] catalogue unavailable (baking note)', err); }
     const live = note.path === WHOLESALE_GUIDE_PATH ? wholesaleGuide(ctx.policy) : note;
-    return withHost(page(200, bakingNoteMeta(live), bakingNoteSnapshot(ctx, live)));
+    return withHost(pg(200, bakingNoteMeta(live), bakingNoteSnapshot(ctx, live)));
   }
 
   // Recipes. Copy does not depend on the catalogue. Unknown slugs fall through
   // to the 404 below once the catalogue is available.
   if (pathname === RECIPES_HUB_PATH) {
     let ctx = emptyCtx();
-    try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (recipes)', err); }
-    return withHost(page(200, recipesHubMeta(), recipesHubSnapshot(ctx)));
+    try { const c = await loadCatalog(); ctx = c; claims = c.claimRows ?? null; } catch (err) { console.error('[render] catalogue unavailable (recipes)', err); }
+    return withHost(pg(200, recipesHubMeta(), recipesHubSnapshot(ctx)));
   }
   if (segs[0] === 'recipes' && segs.length === 2) {
     const recipe = recipeBySlug(segs[1]);
     if (recipe) {
       let ctx = emptyCtx();
-      try { ctx = await loadCatalog(); } catch (err) { console.error('[render] catalogue unavailable (recipe)', err); }
-      return withHost(page(200, recipeMeta(recipe), recipeSnapshot(ctx, recipe)));
+      try { const c = await loadCatalog(); ctx = c; claims = c.claimRows ?? null; } catch (err) { console.error('[render] catalogue unavailable (recipe)', err); }
+      return withHost(pg(200, recipeMeta(recipe), recipeSnapshot(ctx, recipe)));
     }
   }
 
@@ -163,12 +176,13 @@ export async function render(pathname: string, search: string, host: string): Pr
     console.error('[render] catalogue unavailable', err);
     // 503 tells crawlers "temporary, come back" instead of indexing a broken
     // page or dropping it. Visitors still get the SPA, which loads data itself.
-    return withHost(page(503, { ...homeMeta(), robots: NOINDEX, path: undefined, jsonLd: [] }, '', { 'Retry-After': '120' }));
+    return withHost(pg(503, { ...homeMeta(), robots: NOINDEX, path: undefined, jsonLd: [] }, '', { 'Retry-After': '120' }));
   }
   const ctx: SnapshotCtx = cat;
+  claims = cat.claimRows ?? null;
 
   // ── /
-  if (pathname === '/') return withHost(page(200, homeMeta(cat.policy), homeSnapshot(ctx)));
+  if (pathname === '/') return withHost(pg(200, homeMeta(cat.policy), homeSnapshot(ctx)));
 
   // ── /shop (+ legacy ?cat= / ?category= → clean category URL)
   if (pathname === '/shop') {
@@ -187,15 +201,20 @@ export async function render(pathname: string, search: string, host: string): Pr
       return redirect(`/shop${rest ? `?${rest}` : ''}`);
     }
     const meta = shopMeta();
-    return withHost(page(200, q && q.trim() ? { ...meta, robots: NOINDEX } : meta, shopSnapshot(ctx)));
+    return withHost(pg(200, q && q.trim() ? { ...meta, robots: NOINDEX } : meta, shopSnapshot(ctx)));
   }
 
   // ── /shop/category/:slug
   if (segs[0] === 'shop' && segs[1] === 'category' && segs.length === 3) {
     const c = cat.tree.bySlug.get(segs[2]);
-    if (!c) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    if (!c) {
+      // F21: /shop/category/vanilla(-beans) 301s while there is no such category.
+      const alias = categoryAliasTarget(segs[2], (slug) => cat.tree.bySlug.has(slug), cat.products);
+      if (alias) return redirect(alias);
+      return withHost(pg(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    }
     const items = productsInCategory(c, cat.tree, cat.products);
-    return withHost(page(200, categoryListingMeta(c, cat.tree, items), categorySnapshot(ctx, c, categoryCrumbs(c, cat.tree))));
+    return withHost(pg(200, categoryListingMeta(c, cat.tree, items), categorySnapshot(ctx, c, categoryCrumbs(c, cat.tree))));
   }
 
   // ── /shop/:product and legacy /catalog/:product
@@ -205,21 +224,21 @@ export async function render(pathname: string, search: string, host: string): Pr
     if (r.kind === 'found') {
       if (segs[0] === 'catalog') return redirect(productPath(r.product));
       const p = r.product;
-      return withHost(page(200, productMeta(p, cat.tree, cat.policy), productSnapshot(ctx, p, productCrumbs(p, cat.tree))));
+      return withHost(pg(200, productMeta(p, cat.tree, cat.policy), productSnapshot(ctx, p, productCrumbs(p, cat.tree))));
     }
-    if (r.kind === 'gone') return withHost(page(410, goneMeta(), errorSnapshot(ctx, 'gone')));
+    if (r.kind === 'gone') return withHost(pg(410, goneMeta(), errorSnapshot(ctx, 'gone')));
     // Production has SUPABASE_SERVICE_ROLE_KEY and 301s a slug whose product
     // is archived, draft, deleted, or otherwise not active. Preview leaves
     // that key unset, so the same slug stays 404. The names never enter the HTML.
     if (isConcealedProductSlug(segs[1], await loadConcealedProducts())) return redirect('/shop');
-    return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    return withHost(pg(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
   }
 
   // ── /lot/:lot (lot passport): never indexed; 404 while SHOW_LOT_PASSPORT is off
   if (segs[0] === 'lot' && segs.length === 2) {
     const passport = await loadLotPassport(decodeURIComponent(segs[1]));
-    if (!passport) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
-    return withHost(page(200, {
+    if (!passport) return withHost(pg(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    return withHost(pg(200, {
       title: `Lot ${passport.lot_code} · ${passport.product.name} | COCO36`,
       description: `Where lot ${passport.lot_code} of ${passport.product.name} came from, and its certificates.`,
       robots: NOINDEX, jsonLd: [],
@@ -227,13 +246,13 @@ export async function render(pathname: string, search: string, host: string): Pr
   }
 
   // ── /ingredients and /ingredients/:slug
-  if (pathname === '/ingredients') return withHost(page(200, guidesHubMeta(), guidesHubSnapshot(ctx)));
+  if (pathname === '/ingredients') return withHost(pg(200, guidesHubMeta(), guidesHubSnapshot(ctx)));
   if (segs[0] === 'ingredients' && segs.length === 2) {
     const g = guideBySlug(segs[1]);
-    if (g) return withHost(page(200, guideMeta(g, cat.policy), guideSnapshot(ctx, g, guideCrumbs(g))));
+    if (g) return withHost(pg(200, guideMeta(g, cat.policy), guideSnapshot(ctx, g, guideCrumbs(g))));
   }
 
-  return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+  return withHost(pg(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
 }
 
 /** Request path + query from a rewritten request (`/api/render?__path=…`). */

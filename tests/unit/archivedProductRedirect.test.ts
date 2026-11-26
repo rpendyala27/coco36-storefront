@@ -176,11 +176,32 @@ describe('product URL status', () => {
     expect(res.status).toBe(404);
   });
 
-  it('keeps the legacy static slug at 410 when that spelling is not the current product slug', async () => {
-    const res = await render('/shop/ceylon-cinnamon', '', 'coco36.com');
-    expect(res.status).toBe(410);
+  it('301s a legacy static slug to /shop when its successor is not live, never 410 (F20)', async () => {
+    for (const slug of ['ceylon-cinnamon', 'maldon-flake-salt', 'sourdough-starter-kit', 'muscovado-cane-sugar']) {
+      const res = await render(`/shop/${slug}`, '', 'coco36.com');
+      expect(res.status, slug).toBe(301);
+      expect(res.headers.Location, slug).toBe(SHOP);
+    }
     expect(productSlug({ id: '', name: 'Ceylon Cinnamon Quills' })).toBe('ceylon-cinnamon-quills');
     expect(visibilityCalls()).toEqual([]);
+  });
+
+  it('301s legacy vanilla slugs to the live Tahitian vanilla product (F20)', async () => {
+    for (const slug of ['madagascar-vanilla', 'tahitian-vanilla', 'bourbon-vanilla-extract']) {
+      const res = await render(`/shop/${slug}`, '', 'coco36.com');
+      expect(res.status, slug).toBe(301);
+      expect(res.headers.Location, slug).toBe(`${SHOP}/tahitian-vanilla-beans`);
+    }
+  });
+
+  it('301s /shop/category/vanilla and vanilla-beans to the vanilla product while no such category exists (F21)', async () => {
+    for (const slug of ['vanilla', 'vanilla-beans']) {
+      const res = await render(`/shop/category/${slug}`, '', 'coco36.com');
+      expect(res.status, slug).toBe(301);
+      expect(res.headers.Location, slug).toBe(`${SHOP}/tahitian-vanilla-beans`);
+    }
+    const unknown = await render('/shop/category/never-a-category', '', 'coco36.com');
+    expect(unknown.status).toBe(404);
   });
 
   it('stays a 404, and does not log the key, when the visibility read fails', async () => {

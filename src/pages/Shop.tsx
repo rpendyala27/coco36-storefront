@@ -15,7 +15,7 @@ import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { imageUrl, imageSrcSet } from '../lib/img';
-import { categoryPath } from '../lib/productPath';
+import { CATEGORY_ALIASES, categoryAliasTarget, categoryPath } from '../lib/productPath';
 import { categoryListingMeta, categoryPage } from '../content/categoryPages';
 import { SHOP_LEDE, shopSeoBelowGrid } from '../content/shopIntro';
 import { ShopPromises } from '../components/ShopPromises';
@@ -72,7 +72,15 @@ export const Shop = () => {
   // The route is the source of truth for the category.
   const activeCategory = categorySlug ? tree.bySlug.get(categorySlug) ?? null : null;
   const categoryId     = activeCategory?.id ?? null;
-  const unknownCategory = !!categorySlug && !treeLoading && !activeCategory;
+  // F21: a category alias (/shop/category/vanilla) with no real category of
+  // that slug redirects, same rule as the server. Wait for the tree AND the
+  // products, so neither a 404 nor a premature /shop shows first.
+  const isAlias = !!categorySlug && Object.prototype.hasOwnProperty.call(CATEGORY_ALIASES, categorySlug.toLowerCase());
+  const aliasPending = isAlias && !activeCategory && (treeLoading || loading);
+  const categoryAlias = isAlias && !treeLoading && !loading && !activeCategory
+    ? categoryAliasTarget(categorySlug!, (slug) => tree.bySlug.has(slug), PRODUCTS)
+    : null;
+  const unknownCategory = !!categorySlug && !treeLoading && !activeCategory && !aliasPending && !categoryAlias;
 
   const [search, setSearch]           = useState(searchParams.get('q') ?? '');
   const [origins, setOrigins]         = useState<Set<string>>(new Set());
@@ -361,6 +369,7 @@ export const Shop = () => {
     ? GUIDE_LINKS.filter((g) => g.shopCategorySlug === activeCategory.slug || g.match.categorySlugs.includes(activeCategory.slug))
     : [];
 
+  if (categoryAlias) return <Navigate to={categoryAlias} replace />;
   if (legacyTarget !== undefined) {
     return <Navigate to={legacyTarget ? categoryPath(legacyTarget) : '/shop'} replace />;
   }
