@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loadInvoiceSettings, sellerHeaderReady } from '../lib/invoiceHeader';
 import { InvoicePrintButton, InvoiceTemplate, SellerDetailsUnavailable } from '../components/InvoiceTemplate';
@@ -47,7 +47,7 @@ interface OrderRow {
  */
 export const AccountInvoice = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [order, setOrder]       = useState<OrderRow | null>(null);
@@ -56,6 +56,7 @@ export const AccountInvoice = () => {
   const [error, setError]       = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent('/account/orders/' + id + '/invoice')}`);
       return;
@@ -99,8 +100,9 @@ export const AccountInvoice = () => {
         setLoading(false);
       }
     })();
-  }, [id, user, navigate]);
+  }, [authLoading, id, user, navigate]);
 
+  if (authLoading) return <AuthPending />;
   if (!user) return null;
 
   // ── Loading ────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, MapPin, CreditCard, RotateCcw, FileText } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase, API_URL } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
 import { RETURN_REASON_LABELS } from '../lib/order-status';
@@ -31,7 +31,7 @@ interface OrderDetail {
  *  caller's own (enforced by RLS via auth.uid() = customer_id). */
 export const AccountOrderDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +73,7 @@ export const AccountOrderDetail = () => {
   }
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate(`/auth?redirect=${encodeURIComponent('/account/orders/' + id)}`);
       return;
@@ -110,8 +111,9 @@ export const AccountOrderDetail = () => {
       }
       setLoading(false);
     })();
-  }, [id, user, navigate]);
+  }, [authLoading, id, user, navigate]);
 
+  if (authLoading) return <AuthPending />;
   if (!user) return null;
 
   return (

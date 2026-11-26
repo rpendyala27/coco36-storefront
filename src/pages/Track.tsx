@@ -32,22 +32,26 @@ interface Shipment {
  */
 export const Track = () => {
   const { awb } = useParams<{ awb: string }>();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!awb) return;
+    let live = true;
     (async () => {
       const { data } = await supabase
         .from('shipments')
         .select('awb, courier, status, order_id, shiprocket_shipment_id, order:orders ( status )')
         .eq('awb', awb)
         .maybeSingle();
+      if (!live) return;
       setShipment(data as Shipment | null);
       setLoading(false);
     })();
-  }, [awb]);
+    return () => { live = false; };
+  }, [authLoading, awb, user]);
 
   const STATES: Array<{ id: string; label: string; icon: React.ReactNode }> = [
     { id: 'pickup_scheduled', label: 'Pickup Scheduled',  icon: <Package size={18} strokeWidth={1.5} /> },
@@ -70,9 +74,9 @@ export const Track = () => {
           <h1 className="text-4xl">AWB {awb}</h1>
         </header>
 
-        {loading && <p className="text-sm text-brand-muted">Looking up your shipment…</p>}
+        {(authLoading || loading) && <p className="text-sm text-brand-muted">Looking up your shipment…</p>}
 
-        {!loading && !shipment && (
+        {!authLoading && !loading && !shipment && (
           <div className="bg-white border border-brand-ink/10 p-8 text-center">
             <p className="text-sm text-brand-muted mb-4">{user ? TRACK_NOT_FOUND : TRACK_SIGN_IN}</p>
             {user ? (
@@ -90,7 +94,7 @@ export const Track = () => {
           </div>
         )}
 
-        {!loading && shipment && (
+        {!authLoading && !loading && shipment && (
           <>
             {/* Carrier card */}
             <div className="bg-white border border-brand-ink/10 p-6 flex items-center justify-between">

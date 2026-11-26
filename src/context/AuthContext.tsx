@@ -73,13 +73,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (active) setProfile((data as CustomerProfile | null) ?? null);
     }
 
-    // Safety net: never gate the whole app on auth for more than 3s. If
-    // getSession() stalls (e.g. a slow token refresh on a returning session),
-    // we still render the shell instead of showing a blank page.
+    // Safety net: never leave `loading` true for more than 3s. Account and
+    // checkout wait on this flag; if getSession() stalls they should still
+    // resolve instead of spinning forever.
     const safety = setTimeout(() => { if (active) setLoading(false); }, 3000);
 
-    // Initial session — render as soon as we know the auth state; the profile
-    // row loads in the background (every page tolerates a null profile).
+    // Initial session — `loading` flips false as soon as we know the auth
+    // state. The profile row loads in the background (every page tolerates a
+    // null profile). The rest of the tree is not gated on this.
     void (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!active) return;
@@ -134,9 +135,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signOut }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+/** Shown on account and checkout while the session is still being read, so a
+ *  signed-in shopper is not sent to /auth. */
+export function AuthPending() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center pt-20 bg-brand-paper">
+      <p className="text-sm text-brand-muted">Loading…</p>
+    </div>
+  );
+}
