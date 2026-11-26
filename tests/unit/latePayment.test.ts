@@ -27,6 +27,7 @@ const {
   razorpayDisplayConfig, readOwnOrderStatus,
   CONFIRMING_PAYMENT_MESSAGE, ORDER_CONFIRMED_EMAIL, ORDER_CONFIRMED_HEADING,
   PAYMENT_CONFIRM_INTERVAL_MS, PAYMENT_CONFIRM_TIMEOUT_MS, PAYMENT_STILL_CHECKING_MESSAGE,
+  CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE,
   PAYMENT_WINDOW_CLOSED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, PAYMENT_WINDOW_MIN_SECONDS,
   orderConfirmedThanks,
 } = await import('../../src/lib/checkout');
@@ -254,6 +255,7 @@ describe('payment method on a reused order', () => {
     const decided = sliceBetween(src, 'const placedMethod = placedOrderMethod({', 'Prepaid — open Razorpay');
     expect(decided).toContain('serverPaymentMethod: payload.payment_method');
     expect(decided).toContain('if (placedMethod.mismatch)');
+    expect(decided).toContain('setError(ORDER_CHANGED_MESSAGE);');
     expect(decided).toContain('freshAttempt()');
     expect(decided).toContain("if (placedMethod.method === 'cod')");
     expect(decided).not.toContain("if (paymentMethod === 'cod')");
@@ -261,21 +263,39 @@ describe('payment method on a reused order', () => {
 });
 
 describe('payment window ended', () => {
-  it('uses the ended copy, not the don\'t-pay-again copy', () => {
+  it('under a minute left keeps the ended copy, and does not say the checkout was cancelled', () => {
     expect(PAYMENT_WINDOW_ENDED_MESSAGE).toBe(
       "This payment window has ended. If you paid, we'll confirm your order automatically. Otherwise you can try again in a few minutes.",
     );
-    expect(PAYMENT_WINDOW_ENDED_MESSAGE).not.toMatch(/don't pay again/i);
+    expect(PAYMENT_WINDOW_ENDED_MESSAGE).not.toMatch(/don't pay again|refund it in full/i);
+    const src = read('src/pages/Checkout.tsx');
+    const tooShort = sliceBetween(src, 'if (windowSeconds === null)', 'let lastFailure');
+    expect(tooShort).toContain('setError(PAYMENT_WINDOW_ENDED_MESSAGE);');
+    expect(tooShort).not.toContain('CHECKOUT_EXPIRED_MESSAGE');
+    expect(tooShort).not.toContain('freshAttempt');
   });
 
-  it('409 checkout_expired is the signal to mint a new attempt', () => {
+  it('409 checkout_expired tells the shopper to place the order again and mints a new attempt', () => {
+    expect(CHECKOUT_EXPIRED_MESSAGE).toBe(
+      "Your previous checkout expired. If you paid, we'll refund it in full. Place your order again to continue.",
+    );
+    expect(CHECKOUT_EXPIRED_MESSAGE).not.toBe(PAYMENT_WINDOW_ENDED_MESSAGE);
     expect(isCheckoutExpired(409, 'checkout_expired')).toBe(true);
     expect(isCheckoutExpired(409, 'out_of_stock')).toBe(false);
     expect(isCheckoutExpired(400, 'checkout_expired')).toBe(false);
     const src = read('src/pages/Checkout.tsx');
     const expired = sliceBetween(src, 'if (isCheckoutExpired(orderRes.status, payload.code))', 'The server answered');
     expect(expired).toContain('freshAttempt()');
-    expect(expired).toContain('setError(PAYMENT_WINDOW_ENDED_MESSAGE);');
+    expect(expired).toContain('setError(CHECKOUT_EXPIRED_MESSAGE);');
+    expect(expired).not.toContain('PAYMENT_WINDOW_ENDED_MESSAGE');
+  });
+
+  it('a payment-method mismatch asks the shopper to tap Pay again', () => {
+    expect(ORDER_CHANGED_MESSAGE).toBe('Something changed in your order. Please tap Pay again.');
+    const src = read('src/pages/Checkout.tsx');
+    const mismatch = sliceBetween(src, 'if (placedMethod.mismatch)', 'if (!attempt.current.paymentMethod)');
+    expect(mismatch).toContain('freshAttempt()');
+    expect(mismatch).toContain('setError(ORDER_CHANGED_MESSAGE);');
   });
 });
 

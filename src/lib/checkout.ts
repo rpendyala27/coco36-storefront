@@ -243,11 +243,17 @@ export const PAYMENT_WINDOW_CLOSED_MESSAGE =
 
 /**
  * The reused order's Razorpay window has under a minute left, so it is not
- * opened. Unlike a window that was actually shown, this does not tell the
- * shopper that money may already have left their account.
+ * opened. The same attempt stays until the server says the checkout expired.
  */
 export const PAYMENT_WINDOW_ENDED_MESSAGE =
   "This payment window has ended. If you paid, we'll confirm your order automatically. Otherwise you can try again in a few minutes.";
+
+/** 409 checkout_expired: that order is already cancelled. The next tap is a new attempt. */
+export const CHECKOUT_EXPIRED_MESSAGE =
+  "Your previous checkout expired. If you paid, we'll refund it in full. Place your order again to continue.";
+
+/** The create response was an order placed with a different payment method. */
+export const ORDER_CHANGED_MESSAGE = 'Something changed in your order. Please tap Pay again.';
 
 export const PAYMENT_MESSAGES = {
   cancelled: PAYMENT_WINDOW_CLOSED_MESSAGE,

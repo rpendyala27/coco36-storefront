@@ -18,7 +18,7 @@ import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate'
 import { summarizeCart } from '../lib/cartSummary';
 import {
   attemptForCart, attemptSignature, classifyPaymentFailure, confirmingTimeoutMs, isCheckoutExpired,
-  outcomeOnDismiss, PAYMENT_WINDOW_ENDED_MESSAGE, paymentMessage,
+  outcomeOnDismiss, CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, paymentMessage,
   paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed, razorpayDisplayConfig,
   readOwnOrderStatus, type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
 } from '../lib/checkout';
@@ -393,10 +393,10 @@ export const Checkout = () => {
 
       const payload = await orderRes.json();
       if (!orderRes.ok) {
-        // The reused order can no longer be paid. The next click is a new attempt.
+        // That order is already cancelled. The next tap places a new one.
         if (isCheckoutExpired(orderRes.status, payload.code)) {
           freshAttempt();
-          setError(PAYMENT_WINDOW_ENDED_MESSAGE);
+          setError(CHECKOUT_EXPIRED_MESSAGE);
           setSubmitting(false);
           return;
         }
@@ -424,6 +424,7 @@ export const Checkout = () => {
       });
       if (placedMethod.mismatch) {
         freshAttempt();
+        setError(ORDER_CHANGED_MESSAGE);
         setSubmitting(false);
         return;
       }
