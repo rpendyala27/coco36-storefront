@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { initialAuthLink, supabase } from '../lib/supabase';
-import { customerProfileHints, hintsForSignInSync, syncCustomerProfile } from '../lib/apiAuth';
+import { createAuthCustomerSync } from '../lib/customerSync';
 import { browserStores, clearPerUserStorage } from '../lib/userStorage';
 
 interface CustomerProfile {
@@ -116,33 +116,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Create/refresh the customers row once per signed-in user per tab: on
     // sign-in, on signup without email confirmation, and when an email
-    // confirmation link lands with a fresh session. The admin API takes the
-    // user id + email from the access token. Name and phone prefer the saved
-    // customers row, then user_metadata (Google full_name, or email sign-up).
-    let syncedFor: string | null = null;
+    // confirmation link lands with a fresh session. Also on INITIAL_SESSION
+    // when the row is missing — a reload does not emit SIGNED_IN, so a
+    // navigation that aborted the sign-in read would otherwise never create
+    // the row. The admin API takes the user id + email from the access token.
+    // Name and phone prefer the saved customers row, then user_metadata
+    // (Google full_name, or email sign-up).
+    const customerSync = createAuthCustomerSync();
 
     // Future changes — profile loads in the background, never blocks render.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
-      if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
-        syncedFor = session.user.id;
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
         const u = session.user;
-        // Prefer the saved customers row so a later sign-in does not overwrite an
-        // /account edit. customerProfileHints still supplies Google full_name
-        // (or the email sign-up name/phone) for any field the row does not have.
-        void (async () => {
-          const { data: existing, error } = await supabase
-            .from('customers')
-            .select('name, phone')
-            .eq('id', u.id)
-            .maybeSingle();
-          // A failed read must not send metadata hints: the admin API would
-          // fall back to them and could overwrite a profile saved on /account.
-          if (!error) {
-            await syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(u), existing));
-          }
+        void customerSync.handle(event, session).then(() => {
           if (active && currentUid === u.id) void loadProfile(u);
-        })();
+        }, () => { /* next load, or addAddress, retries the customers row */ });
       }
       // Normally already set from the URL on the first render; kept as a
       // backstop for links the URL check doesn't recognise.
@@ -162,6 +151,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       active = false;
+      // Navigation (or unmount) kills an in-flight sign-in read. The next
+      // load's INITIAL_SESSION creates the customers row if it is still missing.
+      customerSync.abort();
       clearTimeout(safety);
       subscription.unsubscribe();
     };

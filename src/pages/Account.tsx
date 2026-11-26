@@ -11,9 +11,11 @@ import { PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { customerNameError, updateOwnProfile } from '../lib/profile';
 import {
   listAddresses, addAddress, replaceAddress, softDeleteAddress, setDefaultAddress,
+  ADDRESS_SAVE_FAILED_MESSAGE,
   type BookAddress, type AddressInput,
 } from '../lib/addresses';
 import { AddressForm } from '../components/AddressForm';
+import { AddressSaveAlert } from '../components/AddressSaveAlert';
 
 interface OrderRow {
   id:           string;
@@ -48,6 +50,7 @@ export const Account = () => {
   const [adding, setAdding]   = useState(false);
   const [editing, setEditing] = useState<BookAddress | null>(null);
   const [busy, setBusy]       = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
 
   // Profile edit state (name + phone; email stays read-only)
   const [editingProfile, setEditingProfile] = useState(false);
@@ -136,20 +139,40 @@ export const Account = () => {
   const handleAdd = async (input: AddressInput) => {
     if (!user) return;
     setBusy(true);
-    await addAddress(user.id, input);
-    await refreshAddresses();
-    setBusy(false);
-    setAdding(false);
+    setAddressError(null);
+    try {
+      const created = await addAddress(user.id, input);
+      if (!created) {
+        setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+        return;
+      }
+      await refreshAddresses();
+      setAdding(false);
+    } catch {
+      setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleEdit = async (input: AddressInput) => {
     if (!user || !editing) return;
     setBusy(true);
-    // Edit = replace (new row + soft-delete old) so issued orders keep their address.
-    await replaceAddress(user.id, editing.id, { ...input, is_default: input.is_default ?? editing.is_default });
-    await refreshAddresses();
-    setBusy(false);
-    setEditing(null);
+    setAddressError(null);
+    try {
+      // Edit = replace (new row + soft-delete old) so issued orders keep their address.
+      const created = await replaceAddress(user.id, editing.id, { ...input, is_default: input.is_default ?? editing.is_default });
+      if (!created) {
+        setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+        return;
+      }
+      await refreshAddresses();
+      setEditing(null);
+    } catch {
+      setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleDelete = async (a: BookAddress) => {
@@ -309,6 +332,7 @@ export const Account = () => {
             subtitle={addresses.length ? `${addresses.length} saved` : undefined}
           />
           <div className="bg-white border border-brand-line rounded-xl overflow-hidden p-6 space-y-5">
+            <AddressSaveAlert message={addressError} />
             {adding ? (
               <div className="border border-brand-line rounded-xl p-5 bg-brand-paper/40">
                 <h3 className="text-sm font-bold mb-4">New address</h3>
@@ -317,7 +341,7 @@ export const Account = () => {
                   busy={busy}
                   submitLabel="Save address"
                   onSubmit={handleAdd}
-                  onCancel={() => setAdding(false)}
+                  onCancel={() => { setAdding(false); setAddressError(null); }}
                 />
               </div>
             ) : editing ? (
@@ -329,7 +353,7 @@ export const Account = () => {
                   busy={busy}
                   submitLabel="Save changes"
                   onSubmit={handleEdit}
-                  onCancel={() => setEditing(null)}
+                  onCancel={() => { setEditing(null); setAddressError(null); }}
                 />
               </div>
             ) : (
@@ -374,7 +398,7 @@ export const Account = () => {
                   </ul>
                 )}
                 <button
-                  onClick={() => { setEditing(null); setAdding(true); }}
+                  onClick={() => { setEditing(null); setAdding(true); setAddressError(null); }}
                   className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-brand-leaf hover:underline"
                 >
                   <Plus size={14} /> Add address
