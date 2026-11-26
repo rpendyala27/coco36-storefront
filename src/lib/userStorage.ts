@@ -59,6 +59,16 @@ export function writeCheckoutDraft(storage: KeyStore | null | undefined, uid: st
   try { storage.setItem(checkoutDraftKey(uid), JSON.stringify({ name, phone, paymentMethod })); } catch { /* quota / private mode */ }
 }
 
+/** Update the name and phone on this user's checkout draft, keeping the payment method. */
+export function patchCheckoutDraftContact(
+  storage: KeyStore | null | undefined,
+  uid: string | null | undefined,
+  contact: { name: string; phone: string },
+): void {
+  const existing = readCheckoutDraft(storage, uid) ?? EMPTY_CHECKOUT_DRAFT;
+  writeCheckoutDraft(storage, uid, { ...existing, name: contact.name, phone: contact.phone });
+}
+
 export function clearCheckoutDraft(storage: KeyStore | null | undefined, uid: string | null | undefined): void {
   if (!storage || !uid) return;
   try { storage.removeItem(checkoutDraftKey(uid)); } catch { /* private mode */ }

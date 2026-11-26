@@ -8,7 +8,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session } }) } },
 }));
 
-const { authHeader, customerProfileHints, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
+const { authHeader, customerProfileHints, hintsForSignInSync, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
 
 beforeEach(() => { session = null; vi.restoreAllMocks(); });
 
@@ -69,3 +69,24 @@ describe('customerProfileHints', () => {
     expect(customerProfileHints(null)).toEqual({});
   });
 });
+
+describe('hintsForSignInSync', () => {
+  it('sends metadata hints when there is no customer row yet', () => {
+    expect(hintsForSignInSync({ name: 'Asha', phone: '9876543210' }, null)).toEqual({
+      name: 'Asha', phone: '9876543210',
+    });
+  });
+  it('prefers the saved profile so a later sign-in does not revert an edit', () => {
+    expect(hintsForSignInSync(
+      { name: 'Google Name', phone: '9111111111' },
+      { name: 'Asha Rao', phone: '9876543210' },
+    )).toEqual({ name: 'Asha Rao', phone: '9876543210' });
+  });
+  it('fills only the blank field from metadata', () => {
+    expect(hintsForSignInSync(
+      { name: 'Asha', phone: '9876543210' },
+      { name: 'Asha Rao', phone: null },
+    )).toEqual({ name: 'Asha Rao', phone: '9876543210' });
+  });
+});
+

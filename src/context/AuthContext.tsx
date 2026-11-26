@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { initialAuthLink, supabase } from '../lib/supabase';
-import { customerProfileHints, syncCustomerProfile } from '../lib/apiAuth';
+import { customerProfileHints, hintsForSignInSync, syncCustomerProfile } from '../lib/apiAuth';
 import { browserStores, clearPerUserStorage } from '../lib/userStorage';
 
 interface CustomerProfile {
@@ -29,6 +29,8 @@ interface AuthContextType {
   /** A signup-confirmation link just signed the shopper in; show a one-time notice. */
   signupConfirmed: boolean;
   clearSignupConfirmed: () => void;
+  /** Re-read the signed-in shopper's customers row (after a profile edit). */
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -43,6 +45,7 @@ const AuthContext = createContext<AuthContextType>({
   clearAuthLinkError: () => {},
   signupConfirmed: false,
   clearSignupConfirmed: () => {},
+  refreshProfile: async () => {},
   signOut: async () => {},
 });
 
@@ -114,7 +117,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Create/refresh the customers row once per signed-in user per tab: on
     // sign-in, on signup without email confirmation, and when an email
     // confirmation link lands with a fresh session. The admin API takes the
-    // user id + email from the access token; name/phone come from user_metadata.
+    // user id + email from the access token. Name and phone prefer the saved
+    // customers row, then user_metadata (Google full_name, or email sign-up).
     let syncedFor: string | null = null;
 
     // Future changes — profile loads in the background, never blocks render.
@@ -123,8 +127,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
         syncedFor = session.user.id;
         const u = session.user;
-        // Name from Google is user_metadata.full_name; email sign-up uses .name.
-        void syncCustomerProfile(session.access_token, customerProfileHints(u)).then(() => { if (active && currentUid === u.id) void loadProfile(u); });
+        // Prefer the saved customers row so a later sign-in does not overwrite an
+        // /account edit. customerProfileHints still supplies Google full_name
+        // (or the email sign-up name/phone) for any field the row does not have.
+        void (async () => {
+          const { data: existing, error } = await supabase
+            .from('customers')
+            .select('name, phone')
+            .eq('id', u.id)
+            .maybeSingle();
+          // A failed read must not send metadata hints: the admin API would
+          // fall back to them and could overwrite a profile saved on /account.
+          if (!error) {
+            await syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(u), existing));
+          }
+          if (active && currentUid === u.id) void loadProfile(u);
+        })();
       }
       // Normally already set from the URL on the first render; kept as a
       // backstop for links the URL check doesn't recognise.
@@ -149,6 +167,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const refreshProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const authUser = session?.user ?? null;
+    if (!authUser) {
+      setProfile(null);
+      return;
+    }
+    const { data } = await supabase
+      .from('customers')
+      .select('id, name, email, phone, type')
+      .eq('id', authUser.id)
+      .maybeSingle();
+    const { data: { session: after } } = await supabase.auth.getSession();
+    if ((after?.user?.id ?? null) !== authUser.id) return;
+    setProfile((data as CustomerProfile | null) ?? null);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -159,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = false;
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signupConfirmed, clearSignupConfirmed: () => setSignupConfirmed(false), signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signupConfirmed, clearSignupConfirmed: () => setSignupConfirmed(false), refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );

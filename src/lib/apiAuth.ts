@@ -41,10 +41,12 @@ export function safeRedirectPath(next: string | null | undefined, fallback = '/'
 }
 
 /**
- * Name and phone to send with POST /api/customers/signup.
+ * Name and phone from auth user_metadata for POST /api/customers/signup.
  * Google stores the display name as `full_name` (and usually `name`); email
  * sign-up stores `name` and optional `phone`. Empty values are omitted so a
  * Google session (which has no phone) cannot clear or invalidate the row.
+ * Sign-in applies these only where the customers row is still blank
+ * (see hintsForSignInSync).
  */
 export function customerProfileHints(
   user: { user_metadata?: Record<string, unknown> | null } | null | undefined,
@@ -55,3 +57,18 @@ export function customerProfileHints(
   const phone = text(meta.phone);
   return { ...(name ? { name } : {}), ...(phone ? { phone } : {}) };
 }
+
+/**
+ * Body for POST /api/customers/signup on sign-in. Prefer the customers row so
+ * a later sign-in cannot overwrite an /account edit with stale user_metadata
+ * (the admin API falls back to metadata when the body omits a field).
+ */
+export function hintsForSignInSync(
+  hints: { name?: string; phone?: string },
+  existing: { name?: string | null; phone?: string | null } | null | undefined,
+): { name?: string; phone?: string } {
+  const name = existing?.name?.trim() || hints.name;
+  const phone = existing?.phone?.trim() || hints.phone;
+  return { ...(name ? { name } : {}), ...(phone ? { phone } : {}) };
+}
+

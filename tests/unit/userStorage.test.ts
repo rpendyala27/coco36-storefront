@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   checkoutDraftKey, clearCheckoutDraft, clearPerUserStorage, CHECKOUT_DRAFT_PREFIX, PIN_STORAGE_KEY,
-  readCheckoutDraft, writeCheckoutDraft, type KeyStore,
+  patchCheckoutDraftContact, readCheckoutDraft, writeCheckoutDraft, type KeyStore,
 } from '../../src/lib/userStorage';
 
 /** src/lib/userStorage.ts: per-shopper browser storage (checkout draft, PIN). */
@@ -116,3 +116,18 @@ describe('wiring', () => {
     expect(authCtx).not.toMatch(/useCart|CartContext|coco36\.cart/);
   });
 });
+
+describe('patchCheckoutDraftContact', () => {
+  it('updates name and phone and keeps the payment method', () => {
+    const s = new FakeStore();
+    writeCheckoutDraft(s, 'u1', { name: 'Old', phone: '9999999999', paymentMethod: 'cod' });
+    patchCheckoutDraftContact(s, 'u1', { name: 'Asha', phone: '9876543210' });
+    expect(readCheckoutDraft(s, 'u1')).toEqual({ name: 'Asha', phone: '9876543210', paymentMethod: 'cod' });
+  });
+  it('creates a draft when none exists', () => {
+    const s = new FakeStore();
+    patchCheckoutDraftContact(s, 'u1', { name: 'Asha', phone: '9876543210' });
+    expect(readCheckoutDraft(s, 'u1')).toEqual({ name: 'Asha', phone: '9876543210', paymentMethod: 'prepaid' });
+  });
+});
+
