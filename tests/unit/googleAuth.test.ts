@@ -45,9 +45,12 @@ describe('Auth page Google sign-in wiring', () => {
 
 describe('AuthContext OAuth profile sync', () => {
   const ctx = read('src/context/AuthContext.tsx');
+  const sync = read('src/lib/customerSync.ts');
   it('sends user_metadata name (full_name) on SIGNED_IN, preferring a saved customers row', () => {
-    expect(ctx).toContain('customerProfileHints(u)');
-    expect(ctx).toContain('syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(u), existing))');
+    expect(sync).toContain('hintsForSignInSync(customerProfileHints(user), existing)');
+    expect(sync).toContain('syncCustomerProfile(session.access_token, signupHints(session.user, existing ?? null))');
+    expect(ctx).toContain('customerSync.handle(event, session)');
+    expect(ctx).toContain("event === 'SIGNED_IN' || event === 'INITIAL_SESSION'");
   });
 });
 

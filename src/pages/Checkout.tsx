@@ -11,8 +11,9 @@ import { abandonCheckout, cartSignature, newIdempotencyKey } from '../lib/checko
 import { useStoreConfig, ORDERING_CLOSED_MESSAGE } from '../lib/storeConfig';
 import { availableFor, sellableQty, soldOutItems, stockNote } from '../lib/stock';
 import { trackBeginCheckout, trackPurchase } from '../lib/analytics';
-import { listAddresses, addAddress, type BookAddress, type AddressInput } from '../lib/addresses';
+import { listAddresses, addAddress, ADDRESS_SAVE_FAILED_MESSAGE, type BookAddress, type AddressInput } from '../lib/addresses';
 import { AddressForm } from '../components/AddressForm';
+import { AddressSaveAlert } from '../components/AddressSaveAlert';
 import { DeliveryAnswer } from '../components/CheckDelivery';
 import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/delivery';
 import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
@@ -101,6 +102,7 @@ export const Checkout = () => {
   const [addingShip, setAddingShip]     = useState(false);
   const [addingBill, setAddingBill]     = useState(false);
   const [busyAddr, setBusyAddr]         = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
 
   // ── Contact + payment form ────────────────────────────────────────────────
   // Address lives in the book now; this form only holds name, phone and the
@@ -231,23 +233,37 @@ export const Checkout = () => {
   };
 
   // ── Address-book helpers ────────────────────────────────────────────────────
-  const addShipAddress = async (input: AddressInput) => {
-    if (!user) return;
+  const saveBookAddress = async (input: AddressInput): Promise<BookAddress | null> => {
+    if (!user) return null;
     setBusyAddr(true);
-    const created = await addAddress(user.id, input);
-    setAddresses(await listAddresses());
-    if (created) setShipId(created.id);
-    setBusyAddr(false);
+    setAddressError(null);
+    try {
+      const created = await addAddress(user.id, input);
+      if (!created) {
+        setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+        return null;
+      }
+      setAddresses(await listAddresses());
+      return created;
+    } catch {
+      setAddressError(ADDRESS_SAVE_FAILED_MESSAGE);
+      return null;
+    } finally {
+      setBusyAddr(false);
+    }
+  };
+
+  const addShipAddress = async (input: AddressInput) => {
+    const created = await saveBookAddress(input);
+    if (!created) return;
+    setShipId(created.id);
     setAddingShip(false);
   };
 
   const addBillAddress = async (input: AddressInput) => {
-    if (!user) return;
-    setBusyAddr(true);
-    const created = await addAddress(user.id, input);
-    setAddresses(await listAddresses());
-    if (created) setBillId(created.id);
-    setBusyAddr(false);
+    const created = await saveBookAddress(input);
+    if (!created) return;
+    setBillId(created.id);
     setAddingBill(false);
   };
 
@@ -609,8 +625,9 @@ export const Checkout = () => {
                     submitLabel="Save & use this address"
                     showDefaultToggle={addresses.length > 0}
                     onSubmit={addShipAddress}
-                    onCancel={addresses.length > 0 ? () => setAddingShip(false) : undefined}
+                    onCancel={addresses.length > 0 ? () => { setAddingShip(false); setAddressError(null); } : undefined}
                   />
+                  <AddressSaveAlert message={addressError} />
                 </div>
               )}
 
@@ -653,8 +670,9 @@ export const Checkout = () => {
                           submitLabel="Save & use this address"
                           showDefaultToggle={false}
                           onSubmit={addBillAddress}
-                          onCancel={addresses.length > 0 ? () => setAddingBill(false) : undefined}
+                          onCancel={addresses.length > 0 ? () => { setAddingBill(false); setAddressError(null); } : undefined}
                         />
+                        <AddressSaveAlert message={addressError} />
                       </div>
                     )}
                   </>

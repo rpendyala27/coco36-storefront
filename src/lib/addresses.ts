@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ensureCustomer } from './customerSync';
 
 /**
  * Customer address book.
@@ -41,6 +42,16 @@ export interface AddressInput {
 
 const SELECT = 'id, label, name, line1, line2, city, state, pincode, gstin, is_default, created_at';
 
+/** Shown on /account and checkout when an address insert does not stick. */
+export const ADDRESS_SAVE_FAILED_MESSAGE = "We couldn't save this address. Please try again.";
+
+/** addresses.customer_id → customers.id. Missing customers row after a killed sign-in sync. */
+function isCustomerFkViolation(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === '23503') return true;
+  return (error.message ?? '').includes('addresses_customer_id_fkey');
+}
+
 /** Live (non-deleted) addresses for the signed-in customer, default first. */
 export async function listAddresses(): Promise<BookAddress[]> {
   const { data, error } = await supabase
@@ -64,13 +75,20 @@ async function clearDefaults(userId: string): Promise<void> {
     .is('deleted_at', null);
 }
 
-/** Insert a new book row. The first address a customer saves becomes default. */
-export async function addAddress(userId: string, input: AddressInput): Promise<BookAddress | null> {
-  const existing = await listAddresses();
-  const makeDefault = input.is_default ?? existing.length === 0;
-  if (makeDefault) await clearDefaults(userId);
+/** Unset every other live default. The new row is excluded so a failed insert
+ *  never runs this, and a successful one is not wiped back to non-default. */
+async function clearOtherDefaults(userId: string, keepId: string): Promise<void> {
+  const { error } = await supabase
+    .from('addresses')
+    .update({ is_default: false })
+    .eq('customer_id', userId)
+    .neq('id', keepId)
+    .is('deleted_at', null);
+  if (error) console.error('[addresses] clearDefaults', error.message);
+}
 
-  const { data, error } = await supabase
+function insertAddress(userId: string, input: AddressInput, makeDefault: boolean) {
+  return supabase
     .from('addresses')
     .insert({
       customer_id: userId,
@@ -87,11 +105,34 @@ export async function addAddress(userId: string, input: AddressInput): Promise<B
     })
     .select(SELECT)
     .single();
+}
+
+/**
+ * Insert a new book row. The first address a customer saves becomes default.
+ * The customers row is ensured first (signup upsert, not a client insert).
+ * A 23503 from addresses_customer_id_fkey retries that ensure once — the
+ * sign-in sync can still be in flight when the shopper saves.
+ */
+export async function addAddress(userId: string, input: AddressInput): Promise<BookAddress | null> {
+  const existing = await listAddresses();
+  const makeDefault = input.is_default ?? existing.length === 0;
+  const hadDefault = existing.some((row) => row.is_default);
+
+  await ensureCustomer();
+  let { data, error } = await insertAddress(userId, input, makeDefault);
+  if (isCustomerFkViolation(error)) {
+    await ensureCustomer();
+    ({ data, error } = await insertAddress(userId, input, makeDefault));
+  }
 
   if (error || !data) {
     console.error('[addresses] add', error?.message);
     return null;
   }
+
+  // Only after the new row exists. Clearing first left the book with no
+  // default whenever the insert failed.
+  if (makeDefault && hadDefault) await clearOtherDefaults(userId, data.id);
   return data as BookAddress;
 }
 
