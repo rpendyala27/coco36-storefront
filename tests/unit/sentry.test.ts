@@ -83,6 +83,63 @@ describe('sentry scrub', () => {
   });
 });
 
+describe('sentry scrub: address and PIN keys', () => {
+  const ADDRESS_KEYS = [
+    'address', 'address_line', 'address1', 'address2', 'line1', 'line2', 'street', 'city',
+    'pincode', 'pin_code', 'pin', 'postal', 'postal_code', 'zip', 'zipcode', 'postcode',
+    'shipping_address', 'billing_address', 'addressLine1', 'pinCode', 'zipCode', 'PIN',
+  ];
+
+  it('redacts address and PIN fields in request.data, extra and breadcrumbs', () => {
+    const fields = () => Object.fromEntries(ADDRESS_KEYS.map((key) => [key, `value-${key}`]));
+    const event = {
+      request: { data: { ...fields(), shipping: { ...fields() } } },
+      extra: { checkout: { ...fields() } },
+      breadcrumbs: [{ message: 'address saved', data: { ...fields() } }],
+    };
+    scrubSentryEvent(event);
+    for (const bag of [event.request.data, event.request.data.shipping, event.extra.checkout, event.breadcrumbs[0].data]) {
+      for (const key of ADDRESS_KEYS) expect((bag as Record<string, unknown>)[key]).toBe('[Redacted]');
+    }
+  });
+
+  it('keeps look-alike keys and order-shaped numbers', () => {
+    const event = {
+      extra: {
+        product_key: 'tahitian-vanilla-beans',
+        productName: 'Tahitian Vanilla Beans',
+        hotel: 'Grand',
+        spin: 'yes',
+        pointer: 'top',
+        mapping: 'sku',
+        capacity: '100',
+        unzip: 'no',
+        order: '10023001',
+        order_number: 'SO-001',
+        email: 'baker@example.com',
+        phone: '+91 98765 43210',
+        client_secret: 'placeholder',
+      },
+    };
+    scrubSentryEvent(event);
+    expect(event.extra).toEqual({
+      product_key: 'tahitian-vanilla-beans',
+      productName: 'Tahitian Vanilla Beans',
+      hotel: 'Grand',
+      spin: 'yes',
+      pointer: 'top',
+      mapping: 'sku',
+      capacity: '100',
+      unzip: 'no',
+      order: '10023001',
+      order_number: 'SO-001',
+      email: '[Redacted]',
+      phone: '[Redacted]',
+      client_secret: '[Redacted]',
+    });
+  });
+});
+
 describe('chunk load errors', () => {
   it('recognises Vite, Safari, and webpack chunk failures', () => {
     expect(isChunkLoadError(new TypeError('Failed to fetch dynamically imported module: /assets/Shop.js'))).toBe(true);

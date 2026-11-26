@@ -1,25 +1,13 @@
-import { useEffect, useState } from 'react';
-import { marksFromClaims, type ClaimMark } from '../lib/claimMarks';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import type { ClaimMark } from '../lib/claimMarks';
 
-/** Claim types from product_claims(). Starts empty and stays empty on failure. */
-export function useClaimMarks(enabled = true): ClaimMark[] {
-  const [marks, setMarks] = useState<ClaimMark[]>([]);
+const NONE: readonly ClaimMark[] = Object.freeze([]);
 
-  useEffect(() => {
-    if (!enabled || !isSupabaseConfigured) return;
-    let active = true;
-    void (async () => {
-      try {
-        const { data, error } = await supabase.rpc('product_claims');
-        if (!active) return;
-        setMarks(error ? [] : marksFromClaims(data as { claim: string }[] | null));
-      } catch {
-        if (active) setMarks([]);
-      }
-    })();
-    return () => { active = false; };
-  }, [enabled]);
-
-  return marks;
+/**
+ * Claim marks for the browser trust band. F14: public.product_claims() is no
+ * longer called as anon (EXECUTE is being revoked from anon/public), so the
+ * browser has no claims and shows no marks. Pass `marks` to TrustBand to
+ * render a known list. `enabled` is kept for the existing call site.
+ */
+export function useClaimMarks(_enabled = true): ClaimMark[] {
+  return NONE as ClaimMark[];
 }

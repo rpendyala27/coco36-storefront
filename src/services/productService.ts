@@ -1,17 +1,17 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Product } from '../types';
 import { PRODUCT_SELECT, mapSupabaseProduct } from './productMapper';
-import { applyClaims, claimsFromRows, type Claims } from '../lib/claims';
+import { applyClaims, type Claims } from '../lib/claims';
 
-/** Which certification badges are backed by a valid certificate today; null if unknown (badges are then hidden). */
+/**
+ * Which certification badges are backed by a valid certificate today; null if
+ * unknown (badges are then hidden). F14: the browser no longer calls
+ * public.product_claims() as anon (EXECUTE is being revoked from anon/public),
+ * so claims are always unknown here and claim badges stay hidden client-side.
+ * No request is made, so nothing is logged.
+ */
 async function loadClaims(): Promise<Claims | null> {
-  const { data, error } = await supabase.rpc('product_claims');
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('[productService.claims]', error);
-    return null;
-  }
-  return claimsFromRows(data as { product_id: string; claim: string }[]);
+  return null;
 }
 
 /**

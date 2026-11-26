@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveProductParam } from '../../src/lib/productPath';
+import { categoryAliasTarget, resolveProductParam } from '../../src/lib/productPath';
 import { buildTree, type Category } from '../../src/lib/categoryTree';
 import { browseCategories, stockedRootCategories } from '../../src/lib/catalog';
 import { sitemapEntries } from '../../server/sitemap';
@@ -65,8 +65,36 @@ describe('P38 retired slugs (F20)', () => {
     expect(r).toMatchObject({ kind: 'redirect', to: '/shop/dark-muscovado-cane-sugar' });
   });
 
-  it('muscovado-cane-sugar is 410 when no real equivalent is live', () => {
-    expect(resolveProductParam('muscovado-cane-sugar', [live('Tahitian Vanilla Beans')]).kind).toBe('gone');
+  it('a mapped slug whose successor is not live 301s to /shop, never 410', () => {
+    const catalogue = [live('Tahitian Vanilla Beans')];
+    for (const slug of ['muscovado-cane-sugar', 'maldon-flake-salt', 'sourdough-starter-kit', 'ceylon-cinnamon', 'criollo-cacao-nibs']) {
+      expect(resolveProductParam(slug, catalogue), slug).toEqual({ kind: 'redirect', to: '/shop' });
+    }
+  });
+
+  it('legacy vanilla slugs fall back to Tahitian vanilla beans, then /shop', () => {
+    const tahitian = live('Tahitian Vanilla Beans');
+    for (const slug of ['madagascar-vanilla', 'tahitian-vanilla', 'bourbon-vanilla-extract']) {
+      expect(resolveProductParam(slug, [tahitian]), slug).toEqual({ kind: 'redirect', to: '/shop/tahitian-vanilla-beans', product: tahitian });
+      expect(resolveProductParam(slug, []), slug).toEqual({ kind: 'redirect', to: '/shop' });
+    }
+    const madagascar = live('Madagascar Bourbon Vanilla Beans');
+    expect(resolveProductParam('madagascar-vanilla', [tahitian, madagascar]))
+      .toMatchObject({ kind: 'redirect', to: '/shop/madagascar-bourbon-vanilla-beans' });
+  });
+
+  it('an unknown slug stays not-found', () => {
+    expect(resolveProductParam('never-a-product', [live('Tahitian Vanilla Beans')])).toEqual({ kind: 'not-found' });
+  });
+
+  it('aliases the vanilla category only while no real category has that slug (F21)', () => {
+    const none = () => false;
+    const tahitian = [live('Tahitian Vanilla Beans')];
+    expect(categoryAliasTarget('vanilla', none, tahitian)).toBe('/shop/tahitian-vanilla-beans');
+    expect(categoryAliasTarget('vanilla-beans', none, tahitian)).toBe('/shop/tahitian-vanilla-beans');
+    expect(categoryAliasTarget('vanilla', none, [])).toBe('/shop');
+    expect(categoryAliasTarget('vanilla', (s) => s === 'vanilla', tahitian)).toBeNull();
+    expect(categoryAliasTarget('extracts-flavors', none, tahitian)).toBeNull();
   });
 
   it('the old static slug goes straight to the live equivalent, no chain', () => {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { categoryPath, isConcealedProductSlug, productPath, resolveProductParam } from '../src/lib/productPath.js';
+import { categoryAliasTarget, categoryPath, isConcealedProductSlug, productPath, resolveProductParam } from '../src/lib/productPath.js';
 import { productsInCategory } from '../src/lib/catalog.js';
 import { bakingNoteByPath } from '../src/content/bakingNotes.js';
 import { WHOLESALE_GUIDE_PATH, wholesaleGuide } from '../src/content/wholesaleGuide.js';
@@ -193,7 +193,12 @@ export async function render(pathname: string, search: string, host: string): Pr
   // ── /shop/category/:slug
   if (segs[0] === 'shop' && segs[1] === 'category' && segs.length === 3) {
     const c = cat.tree.bySlug.get(segs[2]);
-    if (!c) return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    if (!c) {
+      // F21: /shop/category/vanilla(-beans) 301s while there is no such category.
+      const alias = categoryAliasTarget(segs[2], (slug) => cat.tree.bySlug.has(slug), cat.products);
+      if (alias) return redirect(alias);
+      return withHost(page(404, notFoundMeta(), errorSnapshot(ctx, 'not-found')));
+    }
     const items = productsInCategory(c, cat.tree, cat.products);
     return withHost(page(200, categoryListingMeta(c, cat.tree, items), categorySnapshot(ctx, c, categoryCrumbs(c, cat.tree))));
   }

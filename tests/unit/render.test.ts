@@ -81,10 +81,30 @@ describe('server-rendered pages', () => {
     expect(r.headers.Location).toBe('https://coco36.com/shop/madagascar-bourbon-vanilla-beans');
   });
 
-  it('removed product (legacy slug whose successor is not live): 410 noindex', async () => {
+  it('legacy slug whose successor is not live: 301 to /shop, not 410 (F20)', async () => {
     const r = await render('/shop/ceylon-cinnamon', '', 'coco36.com');
-    expect(r.status).toBe(410);
-    expect(robots(r.body)).toBe('noindex');
+    expect(r.status).toBe(301);
+    expect(r.headers.Location).toBe('https://coco36.com/shop');
+  });
+
+  it('legacy vanilla slug: 301 to its live successor first (F20)', async () => {
+    const r = await render('/shop/madagascar-vanilla', '', 'coco36.com');
+    expect(r.status).toBe(301);
+    expect(r.headers.Location).toBe('https://coco36.com/shop/madagascar-bourbon-vanilla-beans');
+  });
+
+  it('a real vanilla category is served, not aliased (F21)', async () => {
+    const r = await render('/shop/category/vanilla', '', 'coco36.com');
+    expect(r.status).toBe(200);
+    expect(r.headers.Location).toBeUndefined();
+    const beans = await render('/shop/category/vanilla-beans', '', 'coco36.com');
+    expect(beans.status).toBe(301);
+    expect(beans.headers.Location).toBe('https://coco36.com/shop');
+  });
+
+  it('never-existed product slug: 404', async () => {
+    const r = await render('/shop/never-a-product', '', 'coco36.com');
+    expect(r.status).toBe(404);
   });
 
   it('retired bean-to-bar kit: 301 to /shop, including slash and www', async () => {
@@ -300,7 +320,24 @@ describe('traceability on the server', () => {
       return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
     });
 
+  it('never calls product_claims with the anon key; without a service key no badge is served (F14)', async () => {
+    const { loadCatalog } = await import('../../server/catalog');
+    const spy = mockDb({ 'rpc/product_claims': [{ product_id: PRODUCT_ID, claim: 'usda-organic' }] });
+    expect((await loadCatalog()).products[0].tags!.map((t) => t.slug)).toEqual(['vegan']);
+    expect(spy.mock.calls.some(([input]) => String(input).includes('rpc/product_claims'))).toBe(false);
+    resetCatalogCache();
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-test-key');
+    const withKey = mockDb({ 'rpc/product_claims': [] });
+    await loadCatalog();
+    const claimCalls = withKey.mock.calls.filter(([input]) => String(input).includes('rpc/product_claims'));
+    expect(claimCalls).toHaveLength(1);
+    const headers = (claimCalls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(headers.apikey).toBe('service-role-test-key');
+    expect(headers.Authorization).not.toContain('anon');
+  });
+
   it('a certification badge is served only with a valid certificate (product_claims)', async () => {
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-test-key');
     const { loadCatalog } = await import('../../server/catalog');
     mockDb({ 'rpc/product_claims': [] });
     expect((await loadCatalog()).products[0].tags!.map((t) => t.slug)).toEqual(['vegan']);

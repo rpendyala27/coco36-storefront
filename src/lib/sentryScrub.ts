@@ -1,5 +1,5 @@
 /**
- * Scrub shopper emails, phone numbers, and secrets out of Sentry events
+ * Scrub shopper emails, phone numbers, postal addresses, PIN codes, and secrets out of Sentry events
  * and breadcrumbs before they leave the process. Used by the browser SDK
  * and the Node server function. No I/O.
  */
@@ -7,14 +7,20 @@
 const REDACTED = '[Redacted]';
 
 /**
- * Substring match for the long, specific names. `tel` and `token` are
- * bounded so `hotel` and `product_key` stay intact.
+ * Substring match for the long, specific names. Short names (`tel`, `token`,
+ * `pin`, `zip`, `city`, `line1`) are bounded so `hotel`, `product_key`,
+ * `spin`, `mapping`, `unzip` and `capacity` stay intact. camelCase is split
+ * first, so `zipCode` and `pinCode` are bounded like `zip_code`.
  */
 function isSensitiveKey(key: string): boolean {
   if (/email|e-mail|phone|mobile|whatsapp|telephone|authorization|api[-_]?key|cookie|password|secret|credential|service[-_]?role|sentry[-_]test/i.test(key)) {
     return true;
   }
-  return /(^|[^a-z])(tel|token)([^a-z]|$)/i.test(key);
+  if (/address|street|pincode|pin[-_]code|postal|postcode|post[-_]code|zipcode/i.test(key)) {
+    return true;
+  }
+  const split = key.replace(/([a-z0-9])([A-Z])/g, '$1_$2');
+  return /(^|[^a-z])(tel|token|pin|zip|city|line[-_]?[12])([^a-z0-9]|$)/i.test(split);
 }
 
 function redactString(value: string): string {

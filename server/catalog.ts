@@ -172,11 +172,8 @@ async function fetchCatalog(): Promise<Catalog> {
     // Policy numbers fall back to defaults. The COD gate fails closed (off).
     readPublicSettings(Object.values(SETTINGS_KEYS)),
     // Certification badges only where a certificate is valid today; if this
-    // fails, no claim is shown (null).
-    rest<{ product_id: string; claim: string }[]>('rpc/product_claims').catch((e) => {
-      console.error(e);
-      return null;
-    }),
+    // fails or is not configured, no claim is shown (null).
+    readClaimRows(),
   ]);
   const policy = policyFrom(settings);
   const liveDays = await readHandlingDaysLive(process.env, fetch);
@@ -207,6 +204,33 @@ export function resetCatalogCache(): void {
   concealedCache = null;
   concealedInflight = null;
   concealedGeneration += 1;
+}
+
+/**
+ * product_claims() rows (product id + claim slug), or null. F14: never called
+ * with the anon key (EXECUTE is being revoked from anon/public). Uses
+ * SUPABASE_SERVICE_ROLE_KEY when set (Production); with no key (Preview) no
+ * request is made and claim badges stay hidden. Does not log the key.
+ */
+async function readClaimRows(): Promise<{ product_id: string; claim: string }[] | null> {
+  const creds = serviceCredentials(process.env);
+  if (!creds) return null;
+  try {
+    const res = await fetch(`${creds.url}/rest/v1/rpc/product_claims`, {
+      headers: { apikey: creds.key, Authorization: `Bearer ${creds.key}`, Accept: 'application/json' },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      await res.arrayBuffer().catch(() => undefined);
+      console.error('[catalog] product claims HTTP', res.status);
+      return null;
+    }
+    const body = await res.json();
+    return Array.isArray(body) ? body : null;
+  } catch {
+    console.error('[catalog] product claims unavailable');
+    return null;
+  }
 }
 
 /**

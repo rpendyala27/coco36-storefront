@@ -386,6 +386,7 @@ describe('server snapshot', () => {
   });
 
   it('shows a claim mark only when product_claims returns it, and nothing when the read fails', async () => {
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-test-key');
     mockCatalog([{ product_id: PRODUCT_ID, claim: 'usda-organic' }]);
     resetCatalogCache();
     const shop = await render('/shop', '', 'coco36.com');
