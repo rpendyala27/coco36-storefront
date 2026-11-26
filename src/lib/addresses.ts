@@ -75,6 +75,18 @@ async function clearDefaults(userId: string): Promise<void> {
     .is('deleted_at', null);
 }
 
+/** Unset every other live default. The new row is excluded so a failed insert
+ *  never runs this, and a successful one is not wiped back to non-default. */
+async function clearOtherDefaults(userId: string, keepId: string): Promise<void> {
+  const { error } = await supabase
+    .from('addresses')
+    .update({ is_default: false })
+    .eq('customer_id', userId)
+    .neq('id', keepId)
+    .is('deleted_at', null);
+  if (error) console.error('[addresses] clearDefaults', error.message);
+}
+
 function insertAddress(userId: string, input: AddressInput, makeDefault: boolean) {
   return supabase
     .from('addresses')
@@ -104,7 +116,7 @@ function insertAddress(userId: string, input: AddressInput, makeDefault: boolean
 export async function addAddress(userId: string, input: AddressInput): Promise<BookAddress | null> {
   const existing = await listAddresses();
   const makeDefault = input.is_default ?? existing.length === 0;
-  if (makeDefault) await clearDefaults(userId);
+  const hadDefault = existing.some((row) => row.is_default);
 
   await ensureCustomer();
   let { data, error } = await insertAddress(userId, input, makeDefault);
@@ -117,6 +129,10 @@ export async function addAddress(userId: string, input: AddressInput): Promise<B
     console.error('[addresses] add', error?.message);
     return null;
   }
+
+  // Only after the new row exists. Clearing first left the book with no
+  // default whenever the insert failed.
+  if (makeDefault && hadDefault) await clearOtherDefaults(userId, data.id);
   return data as BookAddress;
 }
 

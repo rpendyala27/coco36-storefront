@@ -10,11 +10,15 @@ import path from 'node:path';
 
 type CustomerRow = { name: string | null; phone: string | null } | null;
 let customerRead: () => Promise<{ data: CustomerRow; error: { message: string } | null }>;
+let authSession: {
+  access_token: string;
+  user: { id: string; user_metadata?: Record<string, unknown> | null };
+} | null = null;
 
 vi.mock('../../src/lib/supabase', () => ({
   API_URL: 'https://admin.example.test',
   supabase: {
-    auth: { getSession: async () => ({ data: { session: null } }) },
+    auth: { getSession: async () => ({ data: { session: authSession } }) },
     from: (table: string) => {
       if (table !== 'customers') throw new Error(`unexpected table ${table}`);
       return {
@@ -28,7 +32,7 @@ vi.mock('../../src/lib/supabase', () => ({
   },
 }));
 
-const { createAuthCustomerSync } = await import('../../src/lib/customerSync');
+const { createAuthCustomerSync, ensureCustomer } = await import('../../src/lib/customerSync');
 
 const read = (rel: string) => readFileSync(path.resolve(__dirname, '../..', rel), 'utf8');
 
@@ -40,7 +44,13 @@ const session = {
 beforeEach(() => {
   vi.restoreAllMocks();
   customerRead = async () => ({ data: null, error: null });
+  authSession = null;
 });
+
+function signupBody(fetchMock: { mock: { calls: unknown[][] } }): Record<string, unknown> {
+  const init = fetchMock.mock.calls[0][1] as RequestInit;
+  return JSON.parse(init.body as string) as Record<string, unknown>;
+}
 
 describe('navigation during sign-in', () => {
   it('does not call signup if navigation aborts SIGNED_IN during the customers read, and the next INITIAL_SESSION creates the row', async () => {
@@ -106,6 +116,46 @@ describe('INITIAL_SESSION-only load', () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
     await createAuthCustomerSync().handle('SIGNED_IN', session);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('invalid phone hint', () => {
+  it('leaves an invalid phone out of signup so the customers row can still be created', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+    await createAuthCustomerSync().handle('INITIAL_SESSION', {
+      ...session,
+      user: { ...session.user, user_metadata: { full_name: 'Asha Rao', phone: '12345' } },
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(signupBody(fetchMock)).toEqual({ name: 'Asha Rao' });
+    expect(signupBody(fetchMock)).not.toHaveProperty('phone');
+  });
+
+  it('leaves out a placeholder mobile and still sends a real one', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+    await createAuthCustomerSync().handle('INITIAL_SESSION', {
+      ...session,
+      user: { ...session.user, user_metadata: { full_name: 'Asha Rao', phone: '9999999999' } },
+    });
+    expect(signupBody(fetchMock)).toEqual({ name: 'Asha Rao' });
+
+    fetchMock.mockClear();
+    await createAuthCustomerSync().handle('INITIAL_SESSION', {
+      ...session,
+      user: { ...session.user, user_metadata: { full_name: 'Asha Rao', phone: '+91 98765 43210' } },
+    });
+    expect(signupBody(fetchMock)).toEqual({ name: 'Asha Rao', phone: '+91 98765 43210' });
+  });
+
+  it('drops an invalid saved phone on ensureCustomer instead of sending a body the admin API rejects', async () => {
+    authSession = {
+      access_token: 'a.b.c',
+      user: { id: 'user-1', user_metadata: { full_name: 'Asha Rao', phone: '9876543210' } },
+    };
+    customerRead = async () => ({ data: { name: 'Asha Rao', phone: '555' }, error: null });
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+    await ensureCustomer();
+    expect(signupBody(fetchMock)).toEqual({ name: 'Asha Rao' });
   });
 });
 

@@ -1,4 +1,5 @@
 import { customerProfileHints, hintsForSignInSync, syncCustomerProfile } from './apiAuth';
+import { normaliseIndianMobile } from './phone';
 import { supabase } from './supabase';
 
 /**
@@ -14,6 +15,24 @@ export interface AuthSyncSession {
 }
 
 type CustomerNamePhone = { name?: string | null; phone?: string | null } | null;
+
+/**
+ * Body for POST /api/customers/signup. The admin route returns 400 when
+ * body.phone is present and is not an Indian mobile, and then the customers
+ * row is never created. Leave that phone out; a missing phone does not fail
+ * the request (metadata phones are dropped server-side instead).
+ */
+function signupHints(
+  user: AuthSyncSession['user'],
+  existing: CustomerNamePhone | undefined,
+): { name?: string; phone?: string } {
+  const hints = hintsForSignInSync(customerProfileHints(user), existing);
+  if (hints.phone && normaliseIndianMobile(hints.phone) == null) {
+    const { phone: _invalid, ...rest } = hints;
+    return rest;
+  }
+  return hints;
+}
 
 /**
  * SIGNED_IN always refreshes the customers row. A saved name/phone wins over
@@ -63,7 +82,7 @@ export function createAuthCustomerSync() {
     // SIGNED_IN in the same tab still has to refresh blank name/phone.
     if (!shouldSyncCustomerProfile(event, existing ?? null, Boolean(error))) return;
 
-    await syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(session.user), existing ?? null));
+    await syncCustomerProfile(session.access_token, signupHints(session.user, existing ?? null));
     if (!abort.signal.aborted) syncedFor = session.user.id;
   }
 
@@ -99,5 +118,5 @@ export async function ensureCustomer(): Promise<void> {
   // Failed read: do not send metadata hints. They would overwrite an edit.
   if (error) return;
 
-  await syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(session.user), existing));
+  await syncCustomerProfile(session.access_token, signupHints(session.user, existing));
 }

@@ -15,8 +15,10 @@ type InsertResult = { data: Record<string, unknown> | null; error: { message: st
 let customerRow: { name: string | null; phone: string | null } | null = null;
 let customerError: { message: string } | null = null;
 let insertResults: InsertResult[] = [];
+let addressRows: Array<{ id: string; is_default: boolean }> = [];
 const inserted: unknown[] = [];
 const customerOps: string[] = [];
+const addressOps: string[] = [];
 
 vi.mock('../../src/lib/supabase', () => ({
   API_URL: 'https://admin.example.test',
@@ -49,16 +51,24 @@ vi.mock('../../src/lib/supabase', () => ({
         select: () => ({
           is: () => ({
             order: () => ({
-              order: async () => ({ data: [], error: null }),
+              order: async () => ({ data: addressRows, error: null }),
             }),
           }),
         }),
-        update: () => ({
-          eq: () => ({
-            is: async () => ({ error: null }),
-          }),
-        }),
+        update: () => {
+          const filters: Record<string, unknown> = {};
+          const api = {
+            eq(col: string, val: unknown) { filters[col] = val; return api; },
+            neq(col: string, val: unknown) { filters[`neq:${col}`] = val; return api; },
+            is() {
+              addressOps.push(`update:${JSON.stringify(filters)}`);
+              return Promise.resolve({ error: null });
+            },
+          };
+          return api;
+        },
         insert: (row: unknown) => {
+          addressOps.push('insert');
           inserted.push(row);
           return {
             select: () => ({
@@ -112,8 +122,10 @@ beforeEach(() => {
   customerRow = null;
   customerError = null;
   insertResults = [];
+  addressRows = [];
   inserted.length = 0;
   customerOps.length = 0;
+  addressOps.length = 0;
 });
 
 describe('23503 retry', () => {
@@ -157,6 +169,31 @@ describe('23503 retry', () => {
     });
     expect(customerOps).not.toContain('insert');
     expect(customerOps).not.toContain('upsert');
+  });
+});
+
+describe('default address is cleared only after a successful save', () => {
+  it('leaves the current default in place when the new address insert fails', async () => {
+    addressRows = [{ id: 'old-addr', is_default: true }];
+    insertResults = [fk, fk];
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }));
+
+    expect(await addAddress('user-1', { ...input, is_default: true })).toBeNull();
+    expect(addressOps.filter((op) => op.startsWith('update'))).toEqual([]);
+    expect(addressOps.filter((op) => op === 'insert')).toHaveLength(2);
+  });
+
+  it('clears other defaults only after the new default row exists, and keeps that row', async () => {
+    addressRows = [{ id: 'old-addr', is_default: true }];
+    insertResults = [{ data: { ...saved, id: 'addr-new' }, error: null }];
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }));
+
+    const row = await addAddress('user-1', { ...input, is_default: true });
+    expect(row?.id).toBe('addr-new');
+    expect(addressOps).toEqual([
+      'insert',
+      'update:{"customer_id":"user-1","neq:id":"addr-new"}',
+    ]);
   });
 });
 

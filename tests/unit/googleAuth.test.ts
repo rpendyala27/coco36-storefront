@@ -47,8 +47,8 @@ describe('AuthContext OAuth profile sync', () => {
   const ctx = read('src/context/AuthContext.tsx');
   const sync = read('src/lib/customerSync.ts');
   it('sends user_metadata name (full_name) on SIGNED_IN, preferring a saved customers row', () => {
-    expect(sync).toContain('customerProfileHints(session.user)');
-    expect(sync).toContain('syncCustomerProfile(session.access_token, hintsForSignInSync(customerProfileHints(session.user), existing ?? null))');
+    expect(sync).toContain('hintsForSignInSync(customerProfileHints(user), existing)');
+    expect(sync).toContain('syncCustomerProfile(session.access_token, signupHints(session.user, existing ?? null))');
     expect(ctx).toContain('customerSync.handle(event, session)');
     expect(ctx).toContain("event === 'SIGNED_IN' || event === 'INITIAL_SESSION'");
   });
