@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { classifySignUp } from '../../src/lib/signup';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { AlreadyRegisteredNotice } from '../../src/components/AlreadyRegisteredNotice';
+import { classifySignUp, existingAccountParts, SIGNUP_EXISTS_MESSAGE } from '../../src/lib/signup';
+
+const ALREADY_REGISTERED_COPY =
+  'You already have an account with this email. Sign in, continue with Google, or reset your password.';
 
 /** src/lib/signup.ts: what a supabase.auth.signUp() answer means. */
 
@@ -32,12 +38,69 @@ describe('classifySignUp', () => {
   });
 });
 
+describe('already-registered copy', () => {
+  it('is the owner-approved sentence, including the three action labels', () => {
+    expect(SIGNUP_EXISTS_MESSAGE).toBe(ALREADY_REGISTERED_COPY);
+    expect(existingAccountParts().map((part) => part.text).join('')).toBe(ALREADY_REGISTERED_COPY);
+    expect(existingAccountParts().filter((part) => part.action).map((part) => [part.action, part.text])).toEqual([
+      ['sign_in', 'Sign in'],
+      ['google', 'continue with Google'],
+      ['reset_password', 'reset your password'],
+    ]);
+  });
+});
+
+describe('AlreadyRegisteredNotice', () => {
+  const html = renderToStaticMarkup(createElement(AlreadyRegisteredNotice, {
+    onSignIn() {},
+    onGoogle() {},
+    onResetPassword() {},
+  }));
+  const buttons = html.match(/<button\b[^>]*>[\s\S]*?<\/button>/g) ?? [];
+
+  it('renders the approved sentence and nothing else', () => {
+    expect(html.replace(/<[^>]+>/g, '')).toBe(ALREADY_REGISTERED_COPY);
+  });
+
+  it('makes the three phrases buttons styled as links, in tab order', () => {
+    expect(buttons).toHaveLength(3);
+    expect(buttons.map((button) => button.replace(/<[^>]+>/g, ''))).toEqual([
+      'Sign in',
+      'continue with Google',
+      'reset your password',
+    ]);
+    for (const button of buttons) {
+      expect(button).toContain('type="button"');
+      expect(button).toContain('underline');
+      expect(button).not.toContain('tabindex="-1"');
+    }
+    expect(html).toContain('role="alert"');
+    expect(html).not.toContain('<a ');
+    expect(html).toContain('data-action="sign_in"');
+    expect(html).toContain('data-action="google"');
+    expect(html).toContain('data-action="reset_password"');
+  });
+});
+
 describe('Auth page sign-up wiring', () => {
   const auth = read('src/pages/Auth.tsx');
   it('uses classifySignUp and no longer reads a null user as "already exists"', () => {
     expect(auth).toContain('classifySignUp(data)');
     expect(auth).not.toContain('!data.user && !data.session');
     expect(auth).toContain('SIGNUP_NEUTRAL_MESSAGE');
+  });
+
+  it('shows the approved notice and wires Sign in, Google, and password reset', () => {
+    expect(auth).toContain('setError(SIGNUP_EXISTS_MESSAGE)');
+    expect(auth).toContain('showSignIn()');
+    expect(auth).toMatch(/const showSignIn = \(\) => \{\s*setIsLogin\(true\);\s*setEmail\(email\);/);
+    expect(auth).toContain('<AlreadyRegisteredNotice');
+    expect(auth).toContain('onSignIn={showSignIn}');
+    expect(auth).toContain('onGoogle={handleGoogle}');
+    expect(auth).toContain('onResetPassword={handleReset}');
+    expect(auth).toContain('resetPasswordForEmail(email');
+    expect(auth).toContain("signInWithOAuth({");
+    expect(read('src/lib/signup.ts')).not.toContain('please sign in below');
   });
 });
 
