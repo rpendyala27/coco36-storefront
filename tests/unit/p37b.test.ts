@@ -11,7 +11,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { rpc: vi.fn(), from: vi.fn() },
   isSupabaseConfigured: true,
   API_URL: '',
-  initialAuthLink: { recovery: false, error: null },
+  initialAuthLink: { recovery: false, error: null, signupConfirmed: false },
 }));
 
 const { NotifyForm } = await import('../../src/components/NotifyMe');

@@ -18,6 +18,8 @@ export interface AuthLinkState {
   recovery: boolean;
   /** Shopper-facing message when the link failed; null otherwise. */
   error: string | null;
+  /** A signup-confirmation link just signed the shopper in (#…&type=signup). */
+  signupConfirmed: boolean;
 }
 
 export const EXPIRED_LINK_MESSAGE =
@@ -25,7 +27,7 @@ export const EXPIRED_LINK_MESSAGE =
 export const FAILED_LINK_MESSAGE =
   'That email link didn’t work. Enter your email and choose "Forgot password?" to get a new one.';
 
-const NONE: AuthLinkState = { recovery: false, error: null };
+const NONE: AuthLinkState = { recovery: false, error: null, signupConfirmed: false };
 
 export function readAuthLink(href: string): AuthLinkState {
   let url: URL;
@@ -41,8 +43,13 @@ export function readAuthLink(href: string): AuthLinkState {
   if (errorCode || param('error')) {
     // error_description is NOT shown: it comes from the URL, so anyone could
     // put their own text on our page with a crafted link.
-    return { recovery: false, error: errorCode === 'otp_expired' ? EXPIRED_LINK_MESSAGE : FAILED_LINK_MESSAGE };
+    return { recovery: false, error: errorCode === 'otp_expired' ? EXPIRED_LINK_MESSAGE : FAILED_LINK_MESSAGE, signupConfirmed: false };
   }
 
-  return { recovery: hash.get('type') === 'recovery' && hash.has('access_token'), error: null };
+  const withToken = hash.has('access_token');
+  return {
+    recovery: hash.get('type') === 'recovery' && withToken,
+    error: null,
+    signupConfirmed: hash.get('type') === 'signup' && withToken,
+  };
 }

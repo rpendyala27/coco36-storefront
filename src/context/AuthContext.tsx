@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { initialAuthLink, supabase } from '../lib/supabase';
 import { syncCustomerProfile } from '../lib/apiAuth';
+import { browserStores, clearPerUserStorage } from '../lib/userStorage';
 
 interface CustomerProfile {
   id: string;
@@ -25,6 +26,9 @@ interface AuthContextType {
   /** Why an email link that landed here didn't work (expired, already used). */
   authLinkError: string | null;
   clearAuthLinkError: () => void;
+  /** A signup-confirmation link just signed the shopper in; show a one-time notice. */
+  signupConfirmed: boolean;
+  clearSignupConfirmed: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -37,6 +41,8 @@ const AuthContext = createContext<AuthContextType>({
   clearPasswordRecovery: () => {},
   authLinkError: null,
   clearAuthLinkError: () => {},
+  signupConfirmed: false,
+  clearSignupConfirmed: () => {},
   signOut: async () => {},
 });
 
@@ -55,11 +61,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // /auth see a signed-in user first and send them to the home page.
   const [passwordRecovery, setPasswordRecovery] = useState(initialAuthLink.recovery);
   const [authLinkError, setAuthLinkError] = useState<string | null>(initialAuthLink.error);
+  const [signupConfirmed, setSignupConfirmed] = useState(initialAuthLink.signupConfirmed);
 
   useEffect(() => {
     let active = true;
+    // Who is signed in right now. A profile reply for anyone else (it was in
+    // flight across a sign-out or an account switch) is dropped.
+    let currentUid: string | null = null;
 
     async function loadProfile(authUser: User | null) {
+      currentUid = authUser?.id ?? null;
       if (!authUser) {
         if (active) setProfile(null);
         return;
@@ -70,8 +81,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', authUser.id)
         .maybeSingle();
 
-      if (active) setProfile((data as CustomerProfile | null) ?? null);
+      if (active && currentUid === authUser.id) setProfile((data as CustomerProfile | null) ?? null);
     }
+
+    // Sign-out, or a different account signing in on this browser: drop the
+    // previous shopper's checkout drafts and remembered PIN (the cart stays).
+    const forgetPreviousShopper = () => {
+      const { local, session } = browserStores();
+      clearPerUserStorage(local, session);
+    };
 
     // Safety net: never leave `loading` true for more than 3s. Account and
     // checkout wait on this flag; if getSession() stalls they should still
@@ -105,14 +123,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (event === 'SIGNED_IN' && session && syncedFor !== session.user.id) {
         syncedFor = session.user.id;
         const u = session.user;
-        void syncCustomerProfile(session.access_token).then(() => { if (active) void loadProfile(u); });
+        void syncCustomerProfile(session.access_token).then(() => { if (active && currentUid === u.id) void loadProfile(u); });
       }
       // Normally already set from the URL on the first render; kept as a
       // backstop for links the URL check doesn't recognise.
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       // Signing out ends the recovery session; a stale flag here showed a
       // set-password form with no session behind it ("Auth session missing!").
-      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
+      if (event === 'SIGNED_OUT') {
+        setPasswordRecovery(false);
+        setSignupConfirmed(false);
+        forgetPreviousShopper();
+      } else if (session && currentUid && currentUid !== session.user.id) {
+        forgetPreviousShopper();
+      }
       setUser(session?.user ?? null);
       void loadProfile(session?.user ?? null);
     });
@@ -134,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = false;
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signupConfirmed, clearSignupConfirmed: () => setSignupConfirmed(false), signOut }}>
       {children}
     </AuthContext.Provider>
   );

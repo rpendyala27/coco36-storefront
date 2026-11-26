@@ -6,6 +6,7 @@ import { CookieBanner, CookieSettingsButton } from './components/CookieBanner';
 import { StorefrontAnalytics } from './components/StorefrontAnalytics';
 import { QuickOrderDock } from './components/QuickOrderDock';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
+import { SignupConfirmedNotice } from './components/SignupConfirmedNotice';
 import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
 import { useStoreConfig } from './lib/storeConfig';
@@ -138,6 +139,7 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <AuthLinkRedirect />
+      <SignupConfirmedNotice />
       <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper pb-[var(--cookie-banner-offset,0px)]">
         <Navigation />
         <CartDrawer />
