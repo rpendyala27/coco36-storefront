@@ -8,7 +8,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session } }) } },
 }));
 
-const { authHeader, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
+const { authHeader, customerProfileHints, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
 
 beforeEach(() => { session = null; vi.restoreAllMocks(); });
 
@@ -49,5 +49,23 @@ describe('safeRedirectPath', () => {
     [null, '/'],
   ])('%j → %s', (input, out) => {
     expect(safeRedirectPath(input as string | null)).toBe(out);
+  });
+});
+
+describe('customerProfileHints', () => {
+  it('prefers Google full_name over name', () => {
+    expect(customerProfileHints({
+      user_metadata: { full_name: 'Asha Rao', name: 'Asha' },
+    })).toEqual({ name: 'Asha Rao' });
+  });
+  it('falls back to name (email sign-up metadata)', () => {
+    expect(customerProfileHints({
+      user_metadata: { name: 'Asha', phone: '9876543210' },
+    })).toEqual({ name: 'Asha', phone: '9876543210' });
+  });
+  it('omits empty or missing fields so a Google user does not clear phone', () => {
+    expect(customerProfileHints({ user_metadata: { full_name: '  ', name: '' } })).toEqual({});
+    expect(customerProfileHints({ user_metadata: {} })).toEqual({});
+    expect(customerProfileHints(null)).toEqual({});
   });
 });
