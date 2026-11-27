@@ -10,10 +10,14 @@ import { isGoogleOAuthReturn } from './googleAuth';
  * anything that waits for that event can see a signed-in user first and treat
  * the visit as an ordinary sign-in. Knowing up front avoids that race.
  *
- * Implicit flow (supabase-js default): success is
+ * Implicit flow (this app's supabase client): success is
  *   #access_token=…&refresh_token=…&type=recovery
- * and a failed, expired or reused link is
+ * A code link (type=recovery plus ?code= or ?token_hash=) is the same
+ * recovery visit. A failed, expired or reused link is
  *   #error=access_denied&error_code=otp_expired&error_description=…
+ *
+ * `type` may sit in the hash or the query. Search params are read as well
+ * as the hash, because supabase-js prefers the query when both are set.
  */
 export interface AuthLinkState {
   /** A password-recovery session is arriving in this URL. */
@@ -41,7 +45,8 @@ export function readAuthLink(href: string): AuthLinkState {
     return NONE;
   }
   const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
-  const param = (key: string) => hash.get(key) ?? url.searchParams.get(key);
+  // Query wins over the hash, matching supabase-js parseParametersFromURL.
+  const param = (key: string) => url.searchParams.get(key) ?? hash.get(key);
 
   const errorCode = param('error_code');
   if (errorCode || param('error')) {
@@ -53,10 +58,27 @@ export function readAuthLink(href: string): AuthLinkState {
     return { recovery: false, error, signupConfirmed: false };
   }
 
-  const withToken = hash.has('access_token');
+  const has = (key: string) => hash.has(key) || url.searchParams.has(key);
+  const withAccessToken = hash.has('access_token');
+  // Credential the client can turn into a session: implicit access token
+  // (hash or query), or a recovery code / token hash.
+  const recoveryCredential = has('access_token') || has('code') || has('token_hash');
+  const recovery = param('type') === 'recovery' && recoveryCredential;
   return {
-    recovery: hash.get('type') === 'recovery' && withToken,
+    recovery,
     error: null,
-    signupConfirmed: hash.get('type') === 'signup' && withToken,
+    signupConfirmed: !recovery && hash.get('type') === 'signup' && withAccessToken,
   };
+}
+
+/**
+ * supabase-js saves a URL session, then emits PASSWORD_RECOVERY on a
+ * setTimeout(0). Callers that have just awaited getSession() must wait
+ * this one tick before treating the shopper as an ordinary sign-in.
+ * Queued after that timer, so the recovery callback runs first.
+ */
+export function afterPasswordRecoverySignal(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }

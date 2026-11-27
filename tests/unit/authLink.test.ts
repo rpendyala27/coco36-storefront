@@ -21,6 +21,25 @@ describe('readAuthLink', () => {
 
   it('needs the token itself, not just type=recovery', () => {
     expect(readAuthLink(`${base}/auth#type=recovery`)).toEqual({ recovery: false, error: null, signupConfirmed: false });
+    expect(readAuthLink(`${base}/account/reset-password?type=recovery`)).toEqual({ recovery: false, error: null, signupConfirmed: false });
+  });
+
+  it('treats a code or token_hash recovery link as recovery, on the reset route or the Site URL', () => {
+    expect(readAuthLink(`${base}/account/reset-password?code=abc&type=recovery`))
+      .toEqual({ recovery: true, error: null, signupConfirmed: false });
+    expect(readAuthLink(`${base}/?token_hash=abc&type=recovery`))
+      .toEqual({ recovery: true, error: null, signupConfirmed: false });
+    // type in the query, access token in the hash (supabase-js prefers the query).
+    expect(readAuthLink(`${base}/#access_token=a.b.c&refresh_token=r&type=signup`))
+      .toEqual({ recovery: false, error: null, signupConfirmed: true });
+    expect(readAuthLink(`${base}/account/reset-password?type=recovery#access_token=a.b.c&refresh_token=r`))
+      .toEqual({ recovery: true, error: null, signupConfirmed: false });
+  });
+
+  it('does not treat a bare code, or an error on a recovery URL, as a recovery session', () => {
+    expect(readAuthLink(`${base}/account/reset-password?code=abc`).recovery).toBe(false);
+    expect(readAuthLink(`${base}/account/reset-password?type=recovery&error=access_denied&error_code=otp_expired`))
+      .toEqual({ recovery: false, error: EXPIRED_LINK_MESSAGE, signupConfirmed: false });
   });
 
   it('turns an expired or reused link into a clear message', () => {

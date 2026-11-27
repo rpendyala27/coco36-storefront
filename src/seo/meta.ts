@@ -100,6 +100,7 @@ const STATIC_PAGES: Record<string, StaticEntry> = {
   '/auth':     { title: 'Sign In or Create an Account | COCO36', description: () => 'Sign in to your COCO36 account to check out faster, track orders and download invoices.', noindex: true },
   '/checkout': { title: 'Checkout | COCO36', description: () => 'Review your bag and place your COCO36 order.', noindex: true },
   '/account':  { title: 'Your Account | COCO36', description: () => 'Your COCO36 orders, invoices and saved addresses.', noindex: true },
+  '/account/reset-password': { title: 'Set a New Password | COCO36', description: () => 'Choose a new password for your COCO36 account.', noindex: true },
   // Real page for the drawer cart. noindex: a utility URL, not a landing page.
   '/cart': { title: 'Your Shopping Cart | COCO36', description: () => 'Review the ingredients in your COCO36 cart, then continue to checkout or return to the shop.', noindex: true },
 };

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { afterPasswordRecoverySignal } from '../lib/authLink';
 import { initialAuthLink, supabase } from '../lib/supabase';
 import { createAuthCustomerSync } from '../lib/customerSync';
 import { browserStores, clearPerUserStorage } from '../lib/userStorage';
@@ -19,8 +20,9 @@ interface AuthContextType {
   isAdmin: boolean;
   /** True while a password-recovery link's session is in use: from the first
    *  render after the reset link lands (read from the URL, see
-   *  src/lib/authLink.ts) until the new password is set or the shopper signs
-   *  out. The /auth page uses this to show the "set a new password" form. */
+   *  src/lib/authLink.ts) and again when PASSWORD_RECOVERY fires, until the
+   *  new password is set or the shopper signs out. /account/reset-password
+   *  is the only screen that sets a password from this flag. */
   passwordRecovery: boolean;
   clearPasswordRecovery: () => void;
   /** Why an email link that landed here didn't work (expired, already used). */
@@ -109,6 +111,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // No session after all (link already consumed in another tab, storage
       // blocked): there is nothing to set a password on.
       if (!session) setPasswordRecovery(false);
+      // PASSWORD_RECOVERY is a setTimeout(0) inside supabase-js, queued
+      // during getSession(). Yield so that event lands before any page
+      // sees loading=false and sends a recovery session to /.
+      await afterPasswordRecoverySignal();
+      if (!active) return;
       setLoading(false);
       clearTimeout(safety);
       void loadProfile(session?.user ?? null);
