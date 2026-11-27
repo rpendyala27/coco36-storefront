@@ -2,11 +2,15 @@ import type { InvoiceSeller } from '../lib/invoice-types';
 import { creditNoteIsIntraState, type CreditNoteDoc } from '../lib/credit-note-types';
 import { formatIndiaDate } from '../lib/indiaDate';
 
+/** Customer copy: computer-generated, no signature (Rohan, 27 Nov; same as the invoice). */
+export const CREDIT_NOTE_FOOTER = 'This is a computer-generated credit note and does not need a signature.';
+
 /**
  * P25 · customer copy of a GST credit note (CGST s.34, Rule 53(1A)): title,
  * number and date; seller name, address, GSTIN; recipient; original invoice
  * number and date and the order; reason; lines with HSN, taxable value, GST
- * split and total; signature line. Also the return, refund and Razorpay
+ * split and total. Computer-generated, no signature line (as the customer
+ * invoice). Also the return, refund and Razorpay
  * refund id.
  *
  * ⚠️ MIRROR: coco36-next/components/credit-notes/CreditNoteTemplate.tsx is the
@@ -156,12 +160,11 @@ export function CreditNoteTemplate({ doc, seller, customer }: { doc: CreditNoteD
       </section>
 
       <section className="border-t border-gray-200 pt-4 text-right">
-        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">For {seller.legalName}</p>
-        <p className="text-xs mt-8 border-t border-gray-300 inline-block pt-1 px-4">Authorised Signatory</p>
+        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">For {seller.legalName}</p>
       </section>
 
       <footer className="text-center text-[10px] text-gray-400 mt-8 pt-4 border-t border-gray-100">
-        Credit note under section 34 of the CGST Act, 2017, issued against invoice {doc.invoiceNumber}.
+        {CREDIT_NOTE_FOOTER} Issued under section 34 of the CGST Act, 2017, against invoice {doc.invoiceNumber}.
       </footer>
     </div>
   );

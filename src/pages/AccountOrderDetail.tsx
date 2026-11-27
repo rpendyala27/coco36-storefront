@@ -11,7 +11,7 @@ import { customerOrderHeadline } from '../lib/orderHeadline';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
 import type { SettlementCopy } from '../lib/refundCopy';
 import { OrderStatusNotes } from '../components/OrderStatusNotes';
-import { loadOwnCreditNotes, type OwnCreditNote } from '../lib/creditNotes';
+import { loadOwnCreditNotes, orderBillGstin, showCreditNotes, type OwnCreditNote } from '../lib/creditNotes';
 
 interface OrderDetail {
   id:             string;
@@ -109,7 +109,8 @@ export const AccountOrderDetail = () => {
           ),
           shipping:addresses!ship_address_id ( name, line1, line2, city, state, pincode ),
           shipment:shipments ( awb, courier, status ),
-          invoice:invoices ( id )
+          invoice:invoices ( id ),
+          bill:addresses!bill_address_id ( gstin )
         `)
         .eq('id', id)
         .eq('customer_id', user.id)
@@ -127,8 +128,9 @@ export const AccountOrderDetail = () => {
           has_invoice: Array.isArray(row.invoice) ? row.invoice.length > 0 : !!row.invoice,
         };
         setOrder(next);
-        // P25: GST credit notes on this order (own session, RLS). A failed read shows none.
-        setCreditNotes(await loadOwnCreditNotes(supabase, next.id));
+        // P25: GST credit notes (own session, RLS), only for a business order:
+        // its billing address carried a GSTIN. A failed read shows none.
+        if (showCreditNotes(orderBillGstin(row))) setCreditNotes(await loadOwnCreditNotes(supabase, next.id));
         if (next.status === 'cancelled') {
           try {
             const lines = await loadOwnSettlementLines(supabase, [{

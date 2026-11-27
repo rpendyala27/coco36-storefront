@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { loadOwnCreditNote, loadOwnCreditNotes } from '../../src/lib/creditNotes';
+import { loadOwnCreditNote, loadOwnCreditNotes, orderBillGstin, showCreditNotes } from '../../src/lib/creditNotes';
 import { CreditNoteTemplate } from '../../src/components/CreditNoteTemplate';
 import { creditNoteFromRows } from '../../src/lib/credit-note-types';
 
@@ -84,9 +84,34 @@ describe('print', () => {
       customer: { name: 'Alice', email: 'a@example.test', phone: '', gstin: null, line1: '1 Road', line2: '', city: 'City', state: 'Andhra Pradesh', pincode: '500002' },
     }));
     for (const s of ['Credit Note', 'TEST-CNW2627-00001', 'COCO36 Foods Pvt Ltd', '37AAAAA0000A1Z5', 'Alice', 'TEST-W2627-00003', 'SO-0001',
-      'Goods returned', '18050000', 'CGST', 'SGST', 'Authorised Signatory', 'RET-00007', 'RFD-00009', 'rfnd_abc123', 'TEST CREDIT NOTE', '₹11.00']) {
+      'Goods returned', '18050000', 'CGST', 'SGST', 'computer-generated credit note and does not need a signature', 'RET-00007', 'RFD-00009', 'rfnd_abc123', 'TEST CREDIT NOTE', '₹11.00']) {
       expect(html).toContain(s);
     }
     expect(html).not.toContain('IGST');
+    expect(html).not.toContain('Authorised Signatory');
+  });
+});
+
+describe('business buyers only', () => {
+  it('shows credit notes only when the order billing address carried a valid GSTIN', () => {
+    expect(showCreditNotes('37AAAAA0000A1Z5')).toBe(true);
+    expect(showCreditNotes(' 37aaaaa0000a1z5 ')).toBe(true);
+    for (const v of [null, undefined, '', '   ', 'NOTAGSTIN', 42]) expect(showCreditNotes(v)).toBe(false);
+  });
+
+  it('reads the GSTIN from the order billing address (object or array embed)', () => {
+    expect(orderBillGstin({ bill: { gstin: '37AAAAA0000A1Z5' } })).toBe('37AAAAA0000A1Z5');
+    expect(orderBillGstin({ bill: [{ gstin: '37AAAAA0000A1Z5' }] })).toBe('37AAAAA0000A1Z5');
+    expect(orderBillGstin({ bill: { gstin: null } })).toBeNull();
+    expect(orderBillGstin({ bill: null })).toBeNull();
+    expect(orderBillGstin(null)).toBeNull();
+  });
+
+  it('the order page and the credit note page both apply the gate', () => {
+    for (const f of ['../../src/pages/AccountOrderDetail.tsx', '../../src/pages/AccountCreditNote.tsx']) {
+      const src = readFileSync(path.resolve(__dirname, f), 'utf8');
+      expect(src).toMatch(/showCreditNotes\(/);
+      expect(src).toMatch(/bill:addresses!bill_address_id\s*\([^)]*gstin/);
+    }
   });
 });

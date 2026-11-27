@@ -22,6 +22,24 @@ export type CreditNoteClient = { from: (table: string) => unknown };
 
 const q = (client: CreditNoteClient, table: string) => client.from(table) as Query;
 
+/**
+ * Credit notes are shown only to business buyers: the order's billing address
+ * carried a GSTIN (Rohan, 27 Nov). Retail buyers see their refund status and
+ * can ask support for a copy. Known gap: the GSTIN is read from the saved
+ * billing address, not frozen on the invoice; post-launch the invoice
+ * snapshots the buyer GSTIN and this check moves to that value.
+ */
+export function showCreditNotes(billGstin: unknown): boolean {
+  return typeof billGstin === 'string' && /^[0-9]{2}[A-Z0-9]{13}$/.test(billGstin.trim().toUpperCase());
+}
+
+/** The order's billing-address GSTIN from an orders row with `bill:addresses!bill_address_id(gstin)`. */
+export function orderBillGstin(row: { bill?: unknown } | null | undefined): string | null {
+  const bill = Array.isArray(row?.bill) ? row?.bill[0] : row?.bill;
+  const g = (bill as { gstin?: unknown } | null | undefined)?.gstin;
+  return typeof g === 'string' && g.trim() ? g.trim() : null;
+}
+
 export type OwnCreditNote = { id: string; number: string; issuedAt: string; totalPaise: number; cancelled: boolean };
 
 export async function loadOwnCreditNotes(client: CreditNoteClient, orderId: string): Promise<OwnCreditNote[]> {

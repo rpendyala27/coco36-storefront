@@ -4,14 +4,14 @@ import { ArrowLeft } from 'lucide-react';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { loadInvoiceSettings, sellerHeaderReady } from '../lib/invoiceHeader';
-import { loadOwnCreditNote } from '../lib/creditNotes';
+import { loadOwnCreditNote, orderBillGstin, showCreditNotes } from '../lib/creditNotes';
 import { creditNoteReconciles, type CreditNoteDoc } from '../lib/credit-note-types';
 import { InvoicePrintButton, SellerDetailsUnavailable } from '../components/InvoiceTemplate';
 import { CreditNoteTemplate } from '../components/CreditNoteTemplate';
 import type { InvoiceSettings } from '../lib/invoice-types';
 
 type Party = { name?: string | null; email?: string | null; phone?: string | null; gstin?: string | null };
-type Addr = { name?: string | null; line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; pincode?: string | null };
+type Addr = { gstin?: string | null; name?: string | null; line1?: string | null; line2?: string | null; city?: string | null; state?: string | null; pincode?: string | null };
 
 /**
  * /account/orders/:id/credit-notes/:cnId — the shopper's printable GST credit
@@ -42,7 +42,7 @@ export const AccountCreditNote = () => {
           .from('orders')
           .select(`id,
             customer:customers(name, email, phone, gstin),
-            bill:addresses!bill_address_id(name, line1, line2, city, state, pincode),
+            bill:addresses!bill_address_id(name, line1, line2, city, state, pincode, gstin),
             ship:addresses!ship_address_id(name, line1, line2, city, state, pincode)`)
           .eq('id', id)
           .eq('customer_id', user.id)
@@ -50,10 +50,19 @@ export const AccountCreditNote = () => {
         loadInvoiceSettings().catch(() => ({ seller: null, storeName: 'COCO36' })),
       ]);
       const row = (orderRes.data ?? null) as { customer?: Party | Party[]; bill?: Addr | Addr[]; ship?: Addr | Addr[] } | null;
+      // Business orders only (billing address carried a GSTIN); others ask support.
+      const gstin = orderBillGstin(row);
+      if (!showCreditNotes(gstin)) {
+        setDoc(null);
+        setParty(null);
+        setSettings(chrome);
+        setLoading(false);
+        return;
+      }
       const one = <T,>(v: T | T[] | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null);
       const bill = one(row?.bill);
       setDoc(note);
-      setParty(row ? { customer: one(row.customer) ?? {}, addr: (bill && bill.line1 ? bill : one(row.ship)) ?? {} } : null);
+      setParty(row ? { customer: { ...(one(row.customer) ?? {}), gstin }, addr: (bill && bill.line1 ? bill : one(row.ship)) ?? {} } : null);
       setSettings(chrome);
       setLoading(false);
     })().catch(() => setLoading(false));
@@ -71,7 +80,9 @@ export const AccountCreditNote = () => {
   if (!doc || !party || !settings || !creditNoteReconciles(doc)) {
     return (
       <div className="min-h-screen pt-24 px-6 max-w-2xl mx-auto text-center">
-        <p className="text-sm text-red-700 bg-red-50 border border-red-200 px-4 py-3 mb-6">Credit note not found.</p>
+        <p className="text-sm text-brand-ink bg-brand-surface border border-brand-ink/10 px-4 py-3 mb-6">
+          Credit note not available here. For a copy, contact support with your order number.
+        </p>
         <Link to={id ? `/account/orders/${id}` : '/account'} className="text-sm font-bold text-brand-leaf hover:underline">
           ← Back to order
         </Link>
