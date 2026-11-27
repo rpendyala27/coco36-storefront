@@ -6,6 +6,8 @@ import { supabase, API_URL } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
 import { RETURN_REASON_LABELS } from '../lib/order-status';
 import { formatMoney } from '../lib/currency';
+import { formatIndiaDate } from '../lib/indiaDate';
+import { customerOrderHeadline } from '../lib/orderHeadline';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
 import type { SettlementCopy } from '../lib/refundCopy';
 import { OrderStatusNotes } from '../components/OrderStatusNotes';
@@ -83,7 +85,11 @@ export const AccountOrderDetail = () => {
       navigate(`/auth?redirect=${encodeURIComponent('/account/orders/' + id)}`);
       return;
     }
-    if (!id) return;
+    if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      setError('Order not found.');
+      setLoading(false);
+      return;
+    }
     setSettlement({ reason: null, refunds: [] });
 
     (async () => {
@@ -107,8 +113,9 @@ export const AccountOrderDetail = () => {
         .maybeSingle();
 
       if (err || !data) {
-        setError(err?.message ?? 'Order not found.');
+        setError('Order not found.');
       } else {
+        setError(null);
         const row = data as any;
         const next = {
           ...row,
@@ -166,15 +173,11 @@ export const AccountOrderDetail = () => {
                   Order {order.order_number}
                 </p>
                 <h1 className="text-3xl md:text-4xl">
-                  {order.status === 'delivered' ? 'Delivered.' :
-                   order.status === 'shipped'   ? 'On its way.' :
-                   order.status === 'cancelled' ? 'Cancelled.' :
-                   order.status === 'returned'  ? 'Returned.' :
-                   'We’re preparing your order.'}
+                  {customerOrderHeadline(order.status, order.payment_method)}
                 </h1>
                 <OrderStatusNotes reason={settlement.reason} refunds={settlement.refunds} />
                 <p className="text-sm text-brand-muted mt-2">
-                  Placed {new Date(order.placed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  Placed {formatIndiaDate(order.placed_at, 'long')}
                 </p>
               </div>
             </header>

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CartItem } from '../../src/types';
 import {
-  availableFor, clampQty, fetchStock, parseStock, sellableQty, sellableSubtotal, soldOutItems, stockIds, stockNote,
+  availableFor, clampQty, fetchStock, parseStock, sellableQty, sellableSubtotal, soldOutItems, stepQuantity, stockIds, stockNote,
   type Stock,
 } from '../../src/lib/stock';
 import { shippingFor, freeShippingRemaining } from '../../src/lib/shipping';
@@ -17,6 +17,15 @@ const line = (sizeId: string, quantity: number, price = 50000): CartItem =>
 const stock: Stock = { available: { [V2]: 2, [V9]: 20, [V0]: 0 }, maxShown: 20 };
 
 describe('cart stock cap', () => {
+  it('the product stepper stops at a known cap and stays at 1', () => {
+    expect(stepQuantity(12, 1, 2)).toBe(2);
+    expect(stepQuantity(2, 1, 2)).toBe(2);
+    expect(stepQuantity(2, -1, 2)).toBe(1);
+    expect(stepQuantity(1, -1, 2)).toBe(1);
+    expect(stepQuantity(13, 1, undefined)).toBe(14);
+    expect(stepQuantity(4, 0, 2)).toBe(2);
+  });
+
   it('caps a line at sellable units; unknown stock is left alone', () => {
     expect(clampQty(4, 2)).toBe(2);
     expect(clampQty(1, 2)).toBe(1);

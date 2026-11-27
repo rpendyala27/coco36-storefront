@@ -50,6 +50,9 @@ export const AuthPage = () => {
   const redirectParam = params.get('redirect');
   const redirectTo = safeRedirectPath(redirectParam, '/');
   const forgot = params.get('mode') === 'forgot';
+  // A used reset link that lands here while this browser is already signed in
+  // must keep its message. Leaving for `redirect` used to wipe it.
+  const arrivedWithLinkError = useRef(Boolean(authLinkError));
   // Set just before signInWithPassword resolves, so the effect below does not
   // send that sign-in to / when the session arrives.
   const passwordSignInTo = useRef<string | null>(null);
@@ -72,8 +75,9 @@ export const AuthPage = () => {
     if (authLoading) return;
     if (passwordRecovery) return;
     if (forgot) return;
+    if (arrivedWithLinkError.current || authLinkError) return;
     if (user) navigate(passwordSignInTo.current ?? redirectTo, { replace: true });
-  }, [authLoading, user, passwordRecovery, forgot, navigate, redirectTo]);
+  }, [authLoading, user, passwordRecovery, forgot, authLinkError, navigate, redirectTo]);
 
   // The link's message is now on screen; don't show it again on a later visit.
   useEffect(() => {
@@ -132,7 +136,7 @@ export const AuthPage = () => {
   };
 
   const handleReset = async () => {
-    if (resetting || resetSent) return;
+    if (resetting) return;
     if (!email) return setError('Enter your email address first.');
     setError(''); setMessage('');
     setResetting(true);
@@ -307,7 +311,17 @@ export function ForgotPasswordForm({
         <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
         <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Reset your password</h1>
         {sent ? (
-          <p role="status" className="text-center text-brand-forest text-sm mt-6">{RESET_LINK_SENT_MESSAGE}</p>
+          <div className="mt-6 space-y-4">
+            <p role="status" className="text-center text-brand-forest text-sm">{RESET_LINK_SENT_MESSAGE}</p>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => onSubmit({ preventDefault() {} } as FormEvent)}
+              className="btn-primary w-full !py-3.5 disabled:opacity-50"
+            >
+              {submitting ? 'Working…' : 'Send reset link'} <ArrowRight size={15} />
+            </button>
+          </div>
         ) : (
           <>
             <p className="text-center text-brand-muted text-sm mb-8">Enter your email.</p>

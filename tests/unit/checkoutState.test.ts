@@ -63,8 +63,8 @@ describe('payment outcomes (F28)', () => {
   it('checkout wires both handlers through these helpers', () => {
     const src = read('src/pages/Checkout.tsx');
     expect(src).toContain('lastFailure = resp?.error ?? {};');
-    expect(src).toContain('setError(paymentMessage(classifyPaymentFailure(lastFailure), lastFailure));');
-    expect(src).toContain('setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));');
+    expect(src).toContain('setError(checkoutPaymentError(classifyPaymentFailure(lastFailure), lastFailure, orderNumber));');
+    expect(src).toContain('setError(checkoutPaymentError(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure, orderNumber));');
     expect(src).not.toContain("setError('Payment cancelled.");
   });
 });

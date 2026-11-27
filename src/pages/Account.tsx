@@ -6,6 +6,8 @@ import { FileText } from 'lucide-react';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
+import { formatIndiaDate } from '../lib/indiaDate';
+import { customerStatusLabel } from '../lib/orderHeadline';
 import { getOrderStatusMeta } from '../lib/order-status';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
 import type { SettlementCopy } from '../lib/refundCopy';
@@ -44,7 +46,7 @@ interface OrderRow {
  * Gated on auth — if not signed in, redirect to /auth.
  */
 export const Account = () => {
-  const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
+  const { user, profile, signOut, signingOut, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [settlement, setSettlement] = useState<Record<string, SettlementCopy>>({});
@@ -150,6 +152,7 @@ export const Account = () => {
   }, [authLoading, user, navigate]);
 
   async function handleSignOut() {
+    if (signingOut) return;
     await signOut();
     navigate('/');
   }
@@ -223,7 +226,7 @@ export const Account = () => {
               Hi, {(profile?.name ?? user.email?.split('@')[0] ?? 'there').split(' ')[0]}.
             </h1>
           </div>
-          <button onClick={handleSignOut} className="btn-ghost !px-5 !py-2.5 text-sm w-fit">
+          <button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-ghost !px-5 !py-2.5 text-sm w-fit disabled:opacity-50">
             <LogOut size={14} /> Sign out
           </button>
         </header>
@@ -311,9 +314,7 @@ export const Account = () => {
                       <div className="flex-1 min-w-0">
                         <p className="font-mono text-sm font-bold text-brand-ink">{o.order_number}</p>
                         <p className="text-xs text-brand-muted">
-                          {new Date(o.placed_at).toLocaleDateString('en-IN', {
-                            day: 'numeric', month: 'short', year: 'numeric',
-                          })} · {o.item_count} item{o.item_count === 1 ? '' : 's'}
+                          {formatIndiaDate(o.placed_at, 'short')} · {o.item_count} item{o.item_count === 1 ? '' : 's'}
                         </p>
                         <OrderStatusNotes
                           reason={settlement[o.id]?.reason ?? null}
@@ -321,7 +322,7 @@ export const Account = () => {
                         />
                       </div>
                       <div className="flex items-center gap-6">
-                        <StatusBadge status={o.status} />
+                        <StatusBadge status={o.status} label={customerStatusLabel(o.status, o.payment_method)} />
                         <span className="font-bold text-brand-ink">{formatMoney(o.total_paise)}</span>
                         {/* Invoice icon: only when an invoice was issued (at ship), including returned or cancelled orders */}
                         {o.has_invoice ? (
@@ -481,11 +482,11 @@ function ProfileField({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, label }: { status: string; label?: string | null }) {
   const s = getOrderStatusMeta(status);
   return (
     <span className={`text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 ${s.bg} ${s.fg}`}>
-      {s.label}
+      {label ?? s.label}
     </span>
   );
 }

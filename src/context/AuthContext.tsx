@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { afterPasswordRecoverySignal } from '../lib/authLink';
 import { initialAuthLink, supabase } from '../lib/supabase';
@@ -33,6 +33,8 @@ interface AuthContextType {
   clearSignupConfirmed: () => void;
   /** Re-read the signed-in shopper's customers row (after a profile edit). */
   refreshProfile: () => Promise<void>;
+  /** True from the click until sign-out has finished and a late refresh cannot restore the session. */
+  signingOut: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -48,6 +50,7 @@ const AuthContext = createContext<AuthContextType>({
   signupConfirmed: false,
   clearSignupConfirmed: () => {},
   refreshProfile: async () => {},
+  signingOut: false,
   signOut: async () => {},
 });
 
@@ -67,6 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [passwordRecovery, setPasswordRecovery] = useState(initialAuthLink.recovery);
   const [authLinkError, setAuthLinkError] = useState<string | null>(initialAuthLink.error);
   const [signupConfirmed, setSignupConfirmed] = useState(initialAuthLink.signupConfirmed);
+  const [signingOut, setSigningOut] = useState(false);
+  // A token refresh that finishes during sign-out used to write the session
+  // back, so the first click looked like it did nothing.
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -106,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // null profile). The rest of the tree is not gated on this.
     void (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!active) return;
+      if (!active || signingOutRef.current) return;
       setUser(session?.user ?? null);
       // No session after all (link already consumed in another tab, storage
       // blocked): there is nothing to set a password on.
@@ -134,6 +141,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Future changes — profile loads in the background, never blocks render.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
+      if (signingOutRef.current) {
+        setUser(null);
+        setProfile(null);
+        if (event === 'SIGNED_OUT') {
+          setPasswordRecovery(false);
+          setSignupConfirmed(false);
+          forgetPreviousShopper();
+        }
+        return;
+      }
       if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
         const u = session.user;
         void customerSync.handle(event, session).then(() => {
@@ -184,7 +201,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
+    setSigningOut(true);
+    setUser(null);
+    setProfile(null);
+    try {
+      await supabase.auth.signOut();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setProfile(null);
+      // Stay closed across the turn a refresh would write the session back.
+      setTimeout(() => {
+        signingOutRef.current = false;
+        setSigningOut(false);
+      }, 400);
+    }
   };
 
   // Admin role: for now we treat all signed-in customers as non-admin on the
@@ -193,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = false;
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signupConfirmed, clearSignupConfirmed: () => setSignupConfirmed(false), refreshProfile, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, passwordRecovery, clearPasswordRecovery: () => setPasswordRecovery(false), authLinkError, clearAuthLinkError: () => setAuthLinkError(null), signupConfirmed, clearSignupConfirmed: () => setSignupConfirmed(false), refreshProfile, signingOut, signOut }}>
       {children}
     </AuthContext.Provider>
   );

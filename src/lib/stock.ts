@@ -36,6 +36,19 @@ export function clampQty(qty: number, available: number | undefined): number {
   return available === undefined ? qty : Math.min(qty, available);
 }
 
+/**
+ * Product-page stepper. `cap` undefined means stock is not known yet (or is
+ * "maxShown or more") and the number is only kept at 1 or above. A known cap
+ * stops the stepper at that many packs.
+ */
+export function stepQuantity(current: number, delta: number, cap: number | undefined): number {
+  const base = Number.isFinite(current) ? current : 1;
+  const next = Math.max(1, base + delta);
+  if (cap === undefined) return next;
+  if (cap < 1) return 1;
+  return Math.min(next, Math.floor(cap));
+}
+
 /** Units of a line that can actually be bought. */
 export function sellableQty(item: CartItem, stock: Stock | null): number {
   return Math.max(0, clampQty(item.quantity, availableFor(stock, item.sizeId)));

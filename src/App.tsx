@@ -6,7 +6,10 @@ import { CookieBanner, CookieSettingsButton } from './components/CookieBanner';
 import { StorefrontAnalytics } from './components/StorefrontAnalytics';
 import { QuickOrderDock } from './components/QuickOrderDock';
 import { AuthLinkRedirect } from './components/AuthLinkRedirect';
+import { AuthLinkErrorNotice } from './components/AuthLinkErrorNotice';
 import { SignupConfirmedNotice } from './components/SignupConfirmedNotice';
+import { AuthPending, useAuth } from './context/AuthContext';
+import { safeRedirectPath } from './lib/apiAuth';
 import { applyMeta, useSeo } from './lib/seo';
 import { notFoundMeta, staticPageMeta } from './seo/meta';
 import { useStoreConfig } from './lib/storeConfig';
@@ -125,6 +128,16 @@ const NotFound = () => {
   );
 };
 
+/** /account/orders has no list of its own. Signed-out visitors go to sign-in
+ *  and come back to /account. The return path is a same-site path only. */
+function AccountOrdersRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <AuthPending />;
+  const dest = safeRedirectPath('/account', '/');
+  if (!user) return <Navigate to={`/auth?redirect=${encodeURIComponent(dest)}`} replace />;
+  return <Navigate to={dest} replace />;
+}
+
 // Footer category links — clean /shop/category/<slug> URLs (were ?category=
 // query strings). Slugs match the `categories` table.
 const FOOTER_CATEGORIES = [
@@ -141,7 +154,8 @@ export default function App() {
       <ScrollToTop />
       <AuthLinkRedirect />
       <SignupConfirmedNotice />
-      <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper pb-[var(--cookie-banner-offset,0px)]">
+      <AuthLinkErrorNotice />
+      <div className="min-h-screen selection:bg-brand-leaf selection:text-brand-paper">
         <Navigation />
         <CartDrawer />
         <CookieBanner />
@@ -183,6 +197,7 @@ export default function App() {
               {/* Customer account + order history */}
               <Route path="/account/reset-password"        element={<ResetPassword />} />
               <Route path="/account"                       element={<Account />} />
+              <Route path="/account/orders"                element={<AccountOrdersRedirect />} />
               <Route path="/account/orders/:id"            element={<AccountOrderDetail />} />
               <Route path="/account/orders/:id/invoice"    element={<AccountInvoice />} />
 

@@ -8,6 +8,7 @@
  */
 export const INDIAN_MOBILE_RE = /^[6-9]\d{9}$/;
 
+export const PHONE_REQUIRED_MESSAGE = 'Enter your phone number.';
 export const PHONE_INVALID_MESSAGE = 'Enter a 10-digit Indian mobile number starting with 6, 7, 8 or 9.';
 
 export function normaliseIndianMobile(input: string): string | null {

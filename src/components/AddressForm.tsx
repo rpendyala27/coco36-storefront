@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import type { AddressInput } from '../lib/addresses';
+import { pinProblem } from '../lib/delivery';
+
+export const PIN_LOOKUP_SLOW = 'Looking up that PIN…';
+export const PIN_LOOKUP_FAILED = "We couldn't fill the city and state from that PIN. You can type them.";
+const PIN_LOOKUP_SLOW_MS = 600;
 
 /**
  * Shared add/edit form for a book address. Used by /account (manage book) and
@@ -26,6 +31,9 @@ export function AddressForm({
   initial, defaultName, submitLabel = 'Save address', busy,
   showDefaultToggle = true, showNickname = true, onSubmit, onCancel,
 }: Props) {
+  const [pinHint, setPinHint] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const pinReq = useRef(0);
   const [f, setF] = useState({
     label:   initial?.label   ?? '',
     name:    initial?.name    ?? defaultName ?? '',
@@ -41,16 +49,34 @@ export function AddressForm({
 
   // Pincode → city/state (only fills empties, preserves edits).
   const lookupPincode = async (pin: string) => {
-    if (!/^\d{6}$/.test(pin)) return;
+    if (!/^\d{6}$/.test(pin)) { pinReq.current += 1; setPinHint(null); return; }
+    const req = ++pinReq.current;
+    const slow = window.setTimeout(() => {
+      if (pinReq.current === req) setPinHint(PIN_LOOKUP_SLOW);
+    }, PIN_LOOKUP_SLOW_MS);
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      if (!res.ok) throw new Error('lookup failed');
       const po = (await res.json())?.[0]?.PostOffice?.[0];
-      if (po) setF((p) => ({ ...p, city: p.city || po.District, state: p.state || po.State }));
-    } catch { /* offline — manual entry */ }
+      if (pinReq.current !== req) return;
+      if (po) {
+        setF((p) => ({ ...p, city: p.city || po.District, state: p.state || po.State }));
+        setPinHint(null);
+      } else {
+        setPinHint(PIN_LOOKUP_FAILED);
+      }
+    } catch {
+      if (pinReq.current === req) setPinHint(PIN_LOOKUP_FAILED);
+    } finally {
+      window.clearTimeout(slow);
+    }
   };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    const pinErr = pinProblem(f.pincode.trim());
+    if (pinErr) { setFormError(pinErr); return; }
+    setFormError(null);
     onSubmit({
       label:   f.label.trim() || null,
       name:    f.name.trim(),
@@ -70,7 +96,9 @@ export function AddressForm({
         <Field label="Nickname (optional)" value={f.label} onChange={(v) => set('label', v)} placeholder="Home, Office, Warehouse…" autoComplete="off" />
       )}
       <Field label="Full Name" value={f.name} onChange={(v) => set('name', v)} required autoComplete="name" />
-      <Field label="Pincode" value={f.pincode} onChange={(v) => { set('pincode', v); lookupPincode(v); }} required autoComplete="postal-code" placeholder="6-digit PIN — city & state auto-fill" />
+      <Field label="Pincode" value={f.pincode} onChange={(v) => { set('pincode', v); setFormError(null); lookupPincode(v); }} required autoComplete="postal-code" placeholder="6-digit PIN — city & state auto-fill" />
+      {pinHint && <p role="status" className="text-xs text-brand-muted -mt-2">{pinHint}</p>}
+      {formError && <p role="alert" className="text-sm text-red-700">{formError}</p>}
       <Field label="Address Line 1" value={f.line1} onChange={(v) => set('line1', v)} required autoComplete="address-line1" />
       <Field label="Address Line 2 (optional)" value={f.line2} onChange={(v) => set('line2', v)} autoComplete="address-line2" />
       <div className="grid grid-cols-2 gap-4">

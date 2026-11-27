@@ -201,6 +201,14 @@ select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
   border-radius: 3px;
 }
 
+/* The phone cookie bar is position:fixed. Reserve its measured height so it
+   does not cover the bottom of the page at a narrow width. */
+@media (max-width: 767px) {
+  #root {
+    padding-bottom: var(--cookie-banner-offset, 0px);
+  }
+}
+
 /* Respect prefers-reduced-motion: stop the sourcing ticker, shimmer,
    card reveals, and long transitions for motion-sensitive users. */
 @media (prefers-reduced-motion: reduce) {

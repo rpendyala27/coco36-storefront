@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cookie } from 'lucide-react';
 import { clearConsent, CONSENT_REOPEN_EVENT, readConsent, writeConsent, type Consent } from '../lib/consent';
@@ -28,7 +28,7 @@ export function CookieSettingsButton({ className }: { className?: string }) {
 export function CookieBannerView({ onDecide }: { onDecide: (choice: 'accepted' | 'rejected') => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = panelRef.current;
     if (!el) return undefined;
     const apply = () => {
