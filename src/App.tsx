@@ -39,6 +39,7 @@ const Account            = lazy(() => import('./pages/Account').then(m => ({ def
 const ResetPassword      = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPasswordPage })));
 const AccountOrderDetail = lazy(() => import('./pages/AccountOrderDetail').then(m => ({ default: m.AccountOrderDetail })));
 const AccountInvoice     = lazy(() => import('./pages/AccountInvoice').then(m => ({ default: m.AccountInvoice })));
+const AccountCreditNote  = lazy(() => import('./pages/AccountCreditNote').then(m => ({ default: m.AccountCreditNote })));
 const Track              = lazy(() => import('./pages/Track').then(m => ({ default: m.Track })));
 const Privacy            = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const Terms              = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
@@ -200,6 +201,7 @@ export default function App() {
               <Route path="/account/orders"                element={<AccountOrdersRedirect />} />
               <Route path="/account/orders/:id"            element={<AccountOrderDetail />} />
               <Route path="/account/orders/:id/invoice"    element={<AccountInvoice />} />
+              <Route path="/account/orders/:id/credit-notes/:cnId" element={<AccountCreditNote />} />
 
               {/* Shipment tracking */}
               <Route path="/track/:awb" element={<Track />} />

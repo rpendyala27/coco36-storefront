@@ -11,6 +11,7 @@ import { customerOrderHeadline } from '../lib/orderHeadline';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
 import type { SettlementCopy } from '../lib/refundCopy';
 import { OrderStatusNotes } from '../components/OrderStatusNotes';
+import { loadOwnCreditNotes, orderBillGstin, showCreditNotes, type OwnCreditNote } from '../lib/creditNotes';
 
 interface OrderDetail {
   id:             string;
@@ -41,6 +42,7 @@ export const AccountOrderDetail = () => {
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [settlement, setSettlement] = useState<SettlementCopy>({ reason: null, refunds: [] });
+  const [creditNotes, setCreditNotes] = useState<OwnCreditNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +93,7 @@ export const AccountOrderDetail = () => {
       return;
     }
     setSettlement({ reason: null, refunds: [] });
+    setCreditNotes([]);
 
     (async () => {
       const { data, error: err } = await supabase
@@ -106,7 +109,8 @@ export const AccountOrderDetail = () => {
           ),
           shipping:addresses!ship_address_id ( name, line1, line2, city, state, pincode ),
           shipment:shipments ( awb, courier, status ),
-          invoice:invoices ( id )
+          invoice:invoices ( id ),
+          bill:addresses!bill_address_id ( gstin )
         `)
         .eq('id', id)
         .eq('customer_id', user.id)
@@ -124,6 +128,9 @@ export const AccountOrderDetail = () => {
           has_invoice: Array.isArray(row.invoice) ? row.invoice.length > 0 : !!row.invoice,
         };
         setOrder(next);
+        // P25: GST credit notes (own session, RLS), only for a business order:
+        // its billing address carried a GSTIN. A failed read shows none.
+        if (showCreditNotes(orderBillGstin(row))) setCreditNotes(await loadOwnCreditNotes(supabase, next.id));
         if (next.status === 'cancelled') {
           try {
             const lines = await loadOwnSettlementLines(supabase, [{
@@ -223,6 +230,31 @@ export const AccountOrderDetail = () => {
                 </div>
               </Link>
             )}
+
+            {/* ── Credit notes (P25: issued when a return refund is processed) ─ */}
+            {creditNotes.map((cn) => (
+              <Link
+                key={cn.id}
+                to={`/account/orders/${order.id}/credit-notes/${cn.id}`}
+                className="block bg-white border border-brand-ink/10 p-6 hover:bg-brand-surface transition-colors group"
+                data-testid="credit-note-link"
+              >
+                <div className="flex items-start gap-4">
+                  <FileText size={20} strokeWidth={1.5} className="text-brand-leaf mt-1" />
+                  <div className="flex-1">
+                    <p className="text-xs uppercase tracking-widest font-bold text-brand-muted mb-1">
+                      Credit note{cn.cancelled ? ' (cancelled)' : ''}
+                    </p>
+                    <p className="text-sm font-bold text-brand-ink flex items-center justify-between">
+                      <span>
+                        <span className="font-mono">{cn.number}</span> · {formatMoney(cn.totalPaise)} · View &amp; download
+                      </span>
+                      <span className="text-brand-leaf group-hover:translate-x-1 transition-transform">→</span>
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
 
             {/* ── Items ───────────────────────────────────────────────────── */}
             <section>
