@@ -24,7 +24,7 @@ export const AccountCreditNote = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<CreditNoteDoc | null>(null);
-  const [party, setParty] = useState<{ customer: Party; addr: Addr } | null>(null);
+  const [party, setParty] = useState<{ customer: Party; addr: Addr; ship: Addr; codes: { seller: string | null; buyer: string | null } } | null>(null);
   const [settings, setSettings] = useState<InvoiceSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,13 +43,15 @@ export const AccountCreditNote = () => {
           .select(`id,
             customer:customers(name, email, phone, gstin),
             bill:addresses!bill_address_id(name, line1, line2, city, state, pincode, gstin),
-            ship:addresses!ship_address_id(name, line1, line2, city, state, pincode)`)
+            ship:addresses!ship_address_id(name, line1, line2, city, state, pincode),
+            invoice:invoices(gst_breakup)`)
           .eq('id', id)
           .eq('customer_id', user.id)
           .maybeSingle(),
         loadInvoiceSettings().catch(() => ({ seller: null, storeName: 'COCO36' })),
       ]);
-      const row = (orderRes.data ?? null) as { customer?: Party | Party[]; bill?: Addr | Addr[]; ship?: Addr | Addr[] } | null;
+      type Breakup = { sellerStateCode?: string; buyerStateCode?: string };
+      const row = (orderRes.data ?? null) as { customer?: Party | Party[]; bill?: Addr | Addr[]; ship?: Addr | Addr[]; invoice?: { gst_breakup?: Breakup } | { gst_breakup?: Breakup }[] } | null;
       // Business orders only (billing address carried a GSTIN); others ask support.
       const gstin = orderBillGstin(row);
       if (!showCreditNotes(gstin)) {
@@ -62,7 +64,15 @@ export const AccountCreditNote = () => {
       const one = <T,>(v: T | T[] | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null);
       const bill = one(row?.bill);
       setDoc(note);
-      setParty(row ? { customer: { ...(one(row.customer) ?? {}), gstin }, addr: (bill && bill.line1 ? bill : one(row.ship)) ?? {} } : null);
+      const ship = one(row?.ship) ?? {};
+      const breakup = one(row?.invoice)?.gst_breakup;
+      // State codes as on the original invoice (place of supply = buyer); seller falls back to the GSTIN prefix.
+      const sellerGstin = chrome.seller?.gstin ?? '';
+      const codes = {
+        seller: breakup?.sellerStateCode ?? (/^[0-9]{2}/.test(sellerGstin) ? sellerGstin.slice(0, 2) : null),
+        buyer:  breakup?.buyerStateCode ?? null,
+      };
+      setParty(row ? { customer: { ...(one(row.customer) ?? {}), gstin }, addr: (bill && bill.line1 ? bill : ship), ship, codes } : null);
       setSettings(chrome);
       setLoading(false);
     })().catch(() => setLoading(false));
@@ -116,6 +126,11 @@ export const AccountCreditNote = () => {
             name: c.name ?? a.name ?? '', email: c.email ?? '', phone: c.phone ?? '', gstin: c.gstin ?? null,
             line1: a.line1 ?? '', line2: a.line2 ?? '', city: a.city ?? '', state: a.state ?? '', pincode: a.pincode ?? '',
           }}
+          ship={{
+            name: party.ship.name ?? '', line1: party.ship.line1 ?? '', line2: party.ship.line2 ?? '',
+            city: party.ship.city ?? '', state: party.ship.state ?? '', pincode: party.ship.pincode ?? '',
+          }}
+          codes={party.codes}
         />
       ) : (
         <SellerDetailsUnavailable onRetry={() => window.location.reload()} />

@@ -21,12 +21,19 @@ export type CreditNoteRecipient = {
   name: string; email: string; phone: string; gstin: string | null;
   line1: string; line2: string; city: string; state: string; pincode: string;
 };
+export type CreditNoteAddress = { name: string; line1: string; line2: string; city: string; state: string; pincode: string };
+/** GST state codes from the original invoice (place of supply = buyer). */
+export type CreditNoteStateCodes = { seller: string | null; buyer: string | null };
 
 const inr = (paise: number) =>
   `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export function CreditNoteTemplate({ doc, seller, customer }: { doc: CreditNoteDoc; seller: InvoiceSeller; customer: CreditNoteRecipient }) {
+export function CreditNoteTemplate({ doc, seller, customer, ship, codes }: {
+  doc: CreditNoteDoc; seller: InvoiceSeller; customer: CreditNoteRecipient; ship: CreditNoteAddress; codes: CreditNoteStateCodes;
+}) {
   const intra = creditNoteIsIntraState(doc);
+  // Bill-to state code: the buyer code when billing and delivery are in the same state.
+  const customerCode = customer.state && customer.state === ship.state ? codes.buyer : null;
   const place = [seller.city, seller.state].filter(Boolean).join(', ') + (seller.pincode ? ` — ${seller.pincode}` : '');
   return (
     <div className="bg-white p-10 print:p-0 print:m-0 max-w-4xl mx-auto text-gray-900 text-[13px] leading-relaxed" data-testid="credit-note">
@@ -54,7 +61,8 @@ export function CreditNoteTemplate({ doc, seller, customer }: { doc: CreditNoteD
             {place}
           </p>
           <p className="text-xs text-gray-600 mt-2">
-            GSTIN: <span className="font-mono">{seller.gstin}</span>
+            GSTIN: <span className="font-mono">{seller.gstin}</span><br />
+            State: {seller.state}{codes.seller ? ` (${codes.seller})` : ''}
             {seller.fssaiLicNo && <><br />FSSAI: <span className="font-mono">{seller.fssaiLicNo}</span></>}
           </p>
         </div>
@@ -72,28 +80,38 @@ export function CreditNoteTemplate({ doc, seller, customer }: { doc: CreditNoteD
 
       <section className="grid grid-cols-2 gap-6 py-6 border-b border-gray-200">
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Recipient</p>
+          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Bill To (recipient)</p>
           <p className="font-bold">{customer.name}</p>
           <p className="text-xs text-gray-600 leading-tight">
             {customer.line1}{customer.line2 ? <>, {customer.line2}</> : null}<br />
-            {customer.city}, {customer.state} — {customer.pincode}
+            {customer.city}, {customer.state}{customerCode ? ` (${customerCode})` : ''} — {customer.pincode}
           </p>
           {customer.email && <p className="text-xs text-gray-600 mt-1">{customer.email}</p>}
           {customer.phone && <p className="text-xs text-gray-600">{customer.phone}</p>}
-          {customer.gstin && <p className="text-xs text-gray-600 mt-1">GSTIN: <span className="font-mono">{customer.gstin}</span></p>}
-          <p className="text-xs text-gray-500 mt-2">
-            Place of supply: <span className="font-bold">{customer.state}</span> · {intra ? 'Intra-state (CGST+SGST)' : 'Inter-state (IGST)'}
-          </p>
+          {customer.gstin
+            ? <p className="text-xs text-gray-600 mt-1">GSTIN: <span className="font-mono">{customer.gstin}</span></p>
+            : <p className="text-xs text-gray-600 mt-1">Unregistered recipient</p>}
         </div>
         <div>
-          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Reason</p>
-          <p className="font-bold">{doc.reason}</p>
-          <p className="text-xs text-gray-600 mt-2 leading-snug">
-            {doc.returnNumber && <>Return: <span className="font-mono">{doc.returnNumber}</span><br /></>}
-            {doc.refundNumber && <>Refund: <span className="font-mono">{doc.refundNumber}</span><br /></>}
-            {doc.gatewayRefundId && <>Razorpay refund id: <span className="font-mono">{doc.gatewayRefundId}</span></>}
+          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-2">Ship To (delivery address)</p>
+          <p className="font-bold">{ship.name}</p>
+          <p className="text-xs text-gray-600 leading-tight">
+            {ship.line1}{ship.line2 ? <>, {ship.line2}</> : null}<br />
+            {ship.city}, {ship.state}{codes.buyer ? ` (${codes.buyer})` : ''} — {ship.pincode}
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            Place of supply: <span className="font-bold">{ship.state}{codes.buyer ? ` (${codes.buyer})` : ''}</span> · {intra ? 'Intra-state (CGST+SGST)' : 'Inter-state (IGST)'}
           </p>
         </div>
+      </section>
+
+      <section className="py-4 border-b border-gray-200">
+        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Reason</p>
+        <p className="font-bold">{doc.reason}</p>
+        <p className="text-xs text-gray-600 mt-1">
+          {[doc.returnNumber && `Return: ${doc.returnNumber}`, doc.refundNumber && `Refund: ${doc.refundNumber}`,
+            doc.gatewayRefundId && `Razorpay refund id: ${doc.gatewayRefundId}`].filter(Boolean).join(' · ')}
+        </p>
       </section>
 
       <section className="py-6">

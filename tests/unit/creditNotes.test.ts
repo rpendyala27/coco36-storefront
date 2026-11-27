@@ -82,6 +82,8 @@ describe('print', () => {
       doc: creditNoteFromRows(HEAD, LINES),
       seller: { legalName: 'COCO36 Foods Pvt Ltd', gstin: '37AAAAA0000A1Z5', addressLine1: '12 Harbour Road', addressLine2: '', city: 'Test City', state: 'Test State', pincode: '500001', fssaiLicNo: null },
       customer: { name: 'Alice', email: 'a@example.test', phone: '', gstin: null, line1: '1 Road', line2: '', city: 'City', state: 'Andhra Pradesh', pincode: '500002' },
+      ship: { name: 'Alice', line1: '9 Delivery Lane', line2: '', city: 'Vizag', state: 'Andhra Pradesh', pincode: '530001' },
+      codes: { seller: '37', buyer: '37' },
     }));
     for (const s of ['Credit Note', 'TEST-CNW2627-00001', 'COCO36 Foods Pvt Ltd', '37AAAAA0000A1Z5', 'Alice', 'TEST-W2627-00003', 'SO-0001',
       'Goods returned', '18050000', 'CGST', 'SGST', 'computer-generated credit note and does not need a signature', 'RET-00007', 'RFD-00009', 'rfnd_abc123', 'TEST CREDIT NOTE', '₹11.00']) {
@@ -89,6 +91,10 @@ describe('print', () => {
     }
     expect(html).not.toContain('IGST');
     expect(html).not.toContain('Authorised Signatory');
+    // State codes for seller and place of supply; separate delivery address; unregistered marked.
+    for (const s of ['State: Test State (37)', 'Ship To (delivery address)', '9 Delivery Lane', 'Andhra Pradesh (37)', 'Unregistered recipient']) {
+      expect(html).toContain(s);
+    }
   });
 });
 
