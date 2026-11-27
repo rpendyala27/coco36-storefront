@@ -10,6 +10,11 @@ import {
   orderConfirmedThanks,
   type PaymentConfirmPhase,
 } from '../lib/checkout';
+import {
+  cancelReasonPlain,
+  formatRefundRupees,
+  refundProcessingMessage,
+} from '../lib/refundCopy';
 
 /**
  * Prepaid success screen. "Order confirmed" is shown only after orders.status
@@ -20,11 +25,18 @@ export function PaymentResult({
   phase,
   orderNumber,
   totalPaise,
+  cancelReason = null,
 }: {
   phase: PaymentConfirmPhase;
   orderNumber: string;
   totalPaise: number;
+  /** orders.cancel_reason for a late payment on an already cancelled order. */
+  cancelReason?: string | null;
 }) {
+  const reason = phase === 'cancelled' ? cancelReasonPlain({ cancelReason }) : null;
+  const refund = phase === 'cancelled' && totalPaise > 0
+    ? refundProcessingMessage(formatRefundRupees(totalPaise))
+    : null;
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
       {phase === 'confirmed' && (
@@ -55,6 +67,13 @@ export function PaymentResult({
         )}
         {phase === 'checking' && (
           <h1 className="text-3xl md:text-4xl mb-6 leading-snug">{PAYMENT_STILL_CHECKING_MESSAGE}</h1>
+        )}
+        {phase === 'cancelled' && (
+          <>
+            <h1 className="text-4xl md:text-5xl mb-4">Cancelled.</h1>
+            {reason && <p className="text-sm text-brand-muted mb-3">{reason}</p>}
+            {refund && <p className="text-base text-brand-muted mb-12 leading-relaxed">{refund}</p>}
+          </>
         )}
       </div>
       {phase !== 'confirming' && (

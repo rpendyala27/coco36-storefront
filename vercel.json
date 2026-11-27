@@ -13,7 +13,8 @@
     "api/notify-export.ts": { "maxDuration": 10 },
     "api/restock-alerts.ts": { "maxDuration": 10 },
     "api/public/config.ts": { "maxDuration": 10 },
-    "api/sentry-test.ts": { "maxDuration": 10 }
+    "api/sentry-test.ts": { "maxDuration": 10 },
+    "api/account/refunds.ts": { "maxDuration": 10 }
   },
   "redirects": [
     {

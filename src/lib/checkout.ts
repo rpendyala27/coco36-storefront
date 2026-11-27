@@ -321,8 +321,8 @@ export function orderConfirmedThanks(totalLabel: string): string {
   return `Thank you for your order — total ${totalLabel}.`;
 }
 
-export type PaymentConfirmPhase = 'confirming' | 'confirmed' | 'checking';
-export type PaymentPollResult = 'confirmed' | 'pending' | 'stopped';
+export type PaymentConfirmPhase = 'confirming' | 'confirmed' | 'checking' | 'cancelled';
+export type PaymentPollResult = 'confirmed' | 'pending' | 'cancelled' | 'stopped';
 
 const CONFIRMED_INDEX = ORDER_STATUS_FLOW.indexOf('confirmed');
 
@@ -360,11 +360,42 @@ export async function readOwnOrderStatus(
   return data.status;
 }
 
+export interface OwnOrderCheckout {
+  status: string;
+  /** orders.cancel_reason. Null when the column is empty. */
+  cancelReason: string | null;
+}
+
 /**
- * Read status immediately, then every `intervalMs`, until it is confirmed
- * or `timeoutMs` has passed. A read error counts as not confirmed and the
- * loop continues. `shouldStop` ends the loop without a verdict (the screen
- * unmounted).
+ * Status plus the cancel reason for the confirming screen. Same RLS path as
+ * readOwnOrderStatus. A cancelled order (a payment that landed after the
+ * hold expired) has to leave "we're checking" instead of waiting out the poll.
+ */
+export async function readOwnOrderCheckout(
+  client: { from(table: string): any },
+  orderId: string,
+  customerId: string,
+): Promise<OwnOrderCheckout | null> {
+  const { data, error } = await client
+    .from('orders')
+    .select('status, cancel_reason')
+    .eq('id', orderId)
+    .eq('customer_id', customerId)
+    .maybeSingle();
+  if (error || !data || typeof data.status !== 'string') return null;
+  const reason = data.cancel_reason;
+  return {
+    status: data.status,
+    cancelReason: typeof reason === 'string' && reason.trim() ? reason : null,
+  };
+}
+
+/**
+ * Read status immediately, then every `intervalMs`, until it is confirmed,
+ * the order is cancelled, or `timeoutMs` has passed. A cancelled order
+ * resolves on that read: a late capture must not sit on "we're checking".
+ * A read error counts as not confirmed and the loop continues. `shouldStop`
+ * ends the loop without a verdict (the screen unmounted).
  */
 export async function pollUntilPaymentConfirmed(
   readStatus: () => Promise<string | null>,
@@ -390,6 +421,7 @@ export async function pollUntilPaymentConfirmed(
       status = null;
     }
     if (isOrderConfirmedStatus(status)) return 'confirmed';
+    if (status === 'cancelled') return 'cancelled';
     const elapsed = now() - started;
     if (elapsed >= timeoutMs) return 'pending';
     const wait = Math.min(intervalMs, timeoutMs - elapsed);

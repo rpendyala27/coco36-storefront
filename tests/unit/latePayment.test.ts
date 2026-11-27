@@ -24,7 +24,7 @@ vi.mock('react-router-dom', () => ({
 const {
   attemptForCart, attemptSignature, confirmingTimeoutMs, isCheckoutExpired, isOrderConfirmedStatus,
   paymentWindowMarginSeconds, paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed,
-  razorpayDisplayConfig, readOwnOrderStatus,
+  razorpayDisplayConfig, readOwnOrderCheckout, readOwnOrderStatus,
   CONFIRMING_PAYMENT_MESSAGE, ORDER_CONFIRMED_EMAIL, ORDER_CONFIRMED_HEADING,
   PAYMENT_CONFIRM_INTERVAL_MS, PAYMENT_CONFIRM_TIMEOUT_MS, PAYMENT_STILL_CHECKING_MESSAGE,
   CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE,
@@ -97,6 +97,56 @@ describe('payment confirmation poll', () => {
       }),
     };
     await expect(readOwnOrderStatus(denied, 'order-1', 'user-1')).resolves.toBeNull();
+  });
+
+  it('reads status and cancel reason for the confirming screen, and nothing else', async () => {
+    const calls: string[] = [];
+    const client = {
+      from(table: string) {
+        calls.push(`from:${table}`);
+        return {
+          select(columns: string) {
+            calls.push(`select:${columns}`);
+            const chain = {
+              eq(column: string, value: string) {
+                calls.push(`eq:${column}=${value}`);
+                return chain;
+              },
+              maybeSingle: async () => ({
+                data: { status: 'cancelled', cancel_reason: 'Payment not completed in time; stock released' },
+                error: null,
+              }),
+            };
+            return chain;
+          },
+        };
+      },
+    };
+    await expect(readOwnOrderCheckout(client, 'order-1', 'user-1')).resolves.toEqual({
+      status: 'cancelled',
+      cancelReason: 'Payment not completed in time; stock released',
+    });
+    expect(calls).toEqual([
+      'from:orders',
+      'select:status, cancel_reason',
+      'eq:id=order-1',
+      'eq:customer_id=user-1',
+    ]);
+  });
+
+  it('a cancelled order resolves on the first read, and does not wait out the checking timeout', async () => {
+    let now = 0;
+    let reads = 0;
+    const result = await pollUntilPaymentConfirmed(async () => {
+      reads += 1;
+      return 'cancelled';
+    }, {
+      now: () => now,
+      sleep: async (ms) => { now += ms; },
+    });
+    expect(result).toBe('cancelled');
+    expect(reads).toBe(1);
+    expect(now).toBe(0);
   });
 
   it('polls immediately and then every 3 seconds, and confirms as soon as the status moves', async () => {
@@ -347,8 +397,9 @@ describe('window-close copy and UPI Collect', () => {
   it('checkout polls the order and shows each phase\'s copy', () => {
     const src = read('src/pages/Checkout.tsx');
     expect(src).toContain('pollUntilPaymentConfirmed(');
-    expect(src).toContain('() => readOwnOrderStatus(supabase, watchId, customerId)');
-    expect(src).toContain("phase: result === 'confirmed' ? 'confirmed' : 'checking'");
+    expect(src).toContain('readOwnOrderCheckout(supabase, watchId, customerId)');
+    expect(src).toContain("result === 'cancelled' ? 'cancelled' : 'checking'");
+    expect(src).toContain('cancelReason={confirmedOrder.cancelReason}');
     expect(src).toContain('<PaymentResult');
   });
 });
@@ -385,5 +436,23 @@ describe('confirmation screen copy', () => {
     expect(PAYMENT_WINDOW_CLOSED_MESSAGE).toBe(
       "Payment not completed. If money left your account, don't pay again — we'll confirm your order automatically or refund you.",
     );
+  });
+
+  it('a late capture on a cancelled order says the refund is queued, and stops checking', () => {
+    const page = renderToStaticMarkup(createElement(PaymentResult, {
+      phase: 'cancelled',
+      orderNumber: 'C36-1001',
+      totalPaise: 315400,
+      cancelReason: 'Payment not completed in time; stock released',
+    })).replace(/&#x27;/g, "'");
+    expect(page).toContain('Cancelled.');
+    expect(page).toContain('text-sm');
+    expect(page).toContain('Payment not completed in time');
+    expect(page).toContain('Order cancelled. Your refund of ₹3,154 is being processed.');
+    expect(page).not.toContain('We received your payment after this order was cancelled');
+    expect(page).not.toContain(PAYMENT_STILL_CHECKING_MESSAGE);
+    expect(page).not.toContain(ORDER_CONFIRMED_HEADING);
+    expect(page).not.toContain('stock released');
+    expect(page).toContain('Continue shopping');
   });
 });
