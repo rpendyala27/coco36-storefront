@@ -6,6 +6,8 @@ import { supabase, API_URL } from '../lib/supabase';
 import { authHeader } from '../lib/apiAuth';
 import { RETURN_REASON_LABELS } from '../lib/order-status';
 import { formatMoney } from '../lib/currency';
+import { loadOwnSettlementLines } from '../lib/accountSettlement';
+import { OrderStatusNotes } from '../components/OrderStatusNotes';
 
 interface OrderDetail {
   id:             string;
@@ -16,6 +18,7 @@ interface OrderDetail {
   shipping_paise: number;
   total_paise:    number;
   placed_at:      string;
+  cancel_reason:  string | null;
   items: {
     qty:                number;
     unit_price_paise:   number;
@@ -34,6 +37,7 @@ export const AccountOrderDetail = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [settlement, setSettlement] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,12 +83,13 @@ export const AccountOrderDetail = () => {
       return;
     }
     if (!id) return;
+    setSettlement([]);
 
     (async () => {
       const { data, error: err } = await supabase
         .from('orders')
         .select(`
-          id, order_number, status, payment_method,
+          id, order_number, status, payment_method, cancel_reason,
           subtotal_paise, shipping_paise, total_paise, placed_at,
           items:order_items (
             qty, unit_price_paise,
@@ -103,11 +108,28 @@ export const AccountOrderDetail = () => {
       if (err || !data) {
         setError(err?.message ?? 'Order not found.');
       } else {
-        setOrder({
-          ...(data as any),
-          shipment: Array.isArray((data as any).shipment) ? (data as any).shipment[0] ?? null : (data as any).shipment ?? null,
-          has_invoice: Array.isArray((data as any).invoice) ? (data as any).invoice.length > 0 : !!(data as any).invoice,
-        });
+        const row = data as any;
+        const next = {
+          ...row,
+          cancel_reason: typeof row.cancel_reason === 'string' ? row.cancel_reason : null,
+          shipment: Array.isArray(row.shipment) ? row.shipment[0] ?? null : row.shipment ?? null,
+          has_invoice: Array.isArray(row.invoice) ? row.invoice.length > 0 : !!row.invoice,
+        };
+        setOrder(next);
+        if (next.status === 'cancelled') {
+          try {
+            const lines = await loadOwnSettlementLines(supabase, [{
+              id: next.id,
+              cancelReason: next.cancel_reason,
+              totalPaise: next.total_paise,
+            }]);
+            setSettlement(lines[next.id] ?? []);
+          } catch {
+            setSettlement([]);
+          }
+        } else {
+          setSettlement([]);
+        }
       }
       setLoading(false);
     })();
@@ -149,6 +171,7 @@ export const AccountOrderDetail = () => {
                    order.status === 'returned'  ? 'Returned.' :
                    'We’re preparing your order.'}
                 </h1>
+                <OrderStatusNotes lines={settlement} />
                 <p className="text-sm text-brand-muted mt-2">
                   Placed {new Date(order.placed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>

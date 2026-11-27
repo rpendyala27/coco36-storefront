@@ -21,7 +21,7 @@ import {
   attemptForCart, attemptSignature, classifyPaymentFailure, confirmingTimeoutMs, isCheckoutExpired,
   outcomeOnDismiss, CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, paymentMessage,
   paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed, razorpayDisplayConfig,
-  readOwnOrderStatus, type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
+  readOwnOrderCheckout, type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
 } from '../lib/checkout';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { RemovedLinesNotice } from '../components/CartSummary';
@@ -91,6 +91,7 @@ export const Checkout = () => {
     total_paise: number;
     phase: PaymentConfirmPhase;
     confirmStartedAt?: number;
+    cancelReason?: string | null;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,19 +107,22 @@ export const Checkout = () => {
 
   // After Razorpay authorises a payment, wait until this customer's order
   // is confirmed (webhook) before saying so. RLS orders_read is own rows.
-  // If the signed-in user isn't available yet, still leave "Confirming…"
-  // after 60 seconds.
+  // A cancelled order — payment captured after the hold expired — resolves
+  // on that read to the refund message. If the signed-in user isn't
+  // available yet, still leave "Confirming…" after 60 seconds.
   const watchId = confirmedOrder?.phase === 'confirming' ? confirmedOrder.orderId ?? null : null;
   const confirmStartedAt = confirmedOrder?.phase === 'confirming' ? confirmedOrder.confirmStartedAt ?? null : null;
   const customerId = user?.id ?? null;
   useEffect(() => {
     if (!watchId || confirmStartedAt == null) return undefined;
     let cancelled = false;
-    const apply = (result: 'confirmed' | 'pending' | 'stopped') => {
+    const seenReason = { current: null as string | null };
+    const apply = (result: 'confirmed' | 'pending' | 'cancelled' | 'stopped') => {
       if (cancelled || result === 'stopped') return;
+      const phase = result === 'confirmed' ? 'confirmed' : result === 'cancelled' ? 'cancelled' : 'checking';
       setConfirmedOrder((prev) => (
         prev && prev.orderId === watchId && prev.phase === 'confirming'
-          ? { ...prev, phase: result === 'confirmed' ? 'confirmed' : 'checking' }
+          ? { ...prev, phase, ...(result === 'cancelled' ? { cancelReason: seenReason.current } : {}) }
           : prev
       ));
     };
@@ -128,7 +132,10 @@ export const Checkout = () => {
       return () => { cancelled = true; clearTimeout(timer); };
     }
     void pollUntilPaymentConfirmed(
-      () => readOwnOrderStatus(supabase, watchId, customerId),
+      () => readOwnOrderCheckout(supabase, watchId, customerId).then((row) => {
+        seenReason.current = row?.cancelReason ?? null;
+        return row?.status ?? null;
+      }),
       { shouldStop: () => cancelled, timeoutMs: remaining },
     ).then(apply);
     return () => { cancelled = true; };
@@ -563,6 +570,7 @@ export const Checkout = () => {
         phase={confirmedOrder.phase}
         orderNumber={confirmedOrder.orderNumber}
         totalPaise={confirmedOrder.total_paise}
+        cancelReason={confirmedOrder.cancelReason}
       />
     );
   }

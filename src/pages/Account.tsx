@@ -7,6 +7,8 @@ import { AuthPending, useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
 import { getOrderStatusMeta } from '../lib/order-status';
+import { loadOwnSettlementLines } from '../lib/accountSettlement';
+import { OrderStatusNotes } from '../components/OrderStatusNotes';
 import { PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { customerNameError, updateOwnProfile } from '../lib/profile';
 import {
@@ -24,6 +26,7 @@ interface OrderRow {
   total_paise:  number;
   placed_at:    string;
   payment_method: string;
+  cancel_reason: string | null;
   item_count?:  number;
   /** An issued invoice row (RLS: own orders only). The icon shows only then. */
   has_invoice:  boolean;
@@ -43,6 +46,7 @@ export const Account = () => {
   const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [settlement, setSettlement] = useState<Record<string, string[]>>({});
   const [addresses, setAddresses] = useState<BookAddress[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,24 +107,38 @@ export const Account = () => {
     (async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, status, total_paise, placed_at, payment_method, order_items(id), invoice:invoices(id)')
+        .select('id, order_number, status, total_paise, placed_at, payment_method, cancel_reason, order_items(id), invoice:invoices(id)')
         .eq('customer_id', user.id)
         .order('placed_at', { ascending: false })
         .limit(50);
 
       if (!error && data) {
-        setOrders(
-          data.map((o: any) => ({
-            id:             o.id,
-            order_number:   o.order_number,
-            status:         o.status,
-            total_paise:    o.total_paise,
-            placed_at:      o.placed_at,
-            payment_method: o.payment_method,
-            item_count:     o.order_items?.length ?? 0,
-            has_invoice:    Array.isArray(o.invoice) ? o.invoice.length > 0 : !!o.invoice,
-          })),
-        );
+        const rows = data.map((o: any) => ({
+          id:             o.id,
+          order_number:   o.order_number,
+          status:         o.status,
+          total_paise:    o.total_paise,
+          placed_at:      o.placed_at,
+          payment_method: o.payment_method,
+          cancel_reason:  typeof o.cancel_reason === 'string' ? o.cancel_reason : null,
+          item_count:     o.order_items?.length ?? 0,
+          has_invoice:    Array.isArray(o.invoice) ? o.invoice.length > 0 : !!o.invoice,
+        }));
+        setOrders(rows);
+        const cancelled = rows.filter((o) => o.status === 'cancelled');
+        if (cancelled.length) {
+          try {
+            setSettlement(await loadOwnSettlementLines(supabase, cancelled.map((o) => ({
+              id: o.id,
+              cancelReason: o.cancel_reason,
+              totalPaise: o.total_paise,
+            }))));
+          } catch {
+            setSettlement({});
+          }
+        } else {
+          setSettlement({});
+        }
       }
 
       // Saved address book — RLS returns only this customer's live rows.
@@ -296,6 +314,7 @@ export const Account = () => {
                             day: 'numeric', month: 'short', year: 'numeric',
                           })} · {o.item_count} item{o.item_count === 1 ? '' : 's'}
                         </p>
+                        <OrderStatusNotes lines={settlement[o.id] ?? []} className="text-xs" />
                       </div>
                       <div className="flex items-center gap-6">
                         <StatusBadge status={o.status} />
