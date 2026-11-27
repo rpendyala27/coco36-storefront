@@ -4,8 +4,8 @@
  * at `placed` has been accepted and is being prepared.
  */
 
-export const PAYMENT_NOT_COMPLETED_HEADING = 'Payment not completed.';
-export const PAYMENT_NOT_COMPLETED_BADGE = 'Payment not completed';
+export const PAYMENT_NOT_COMPLETED_HEADING = 'Payment not completed yet.';
+export const PAYMENT_NOT_COMPLETED_BADGE = 'Awaiting payment';
 
 const PREPARING = 'We’re preparing your order.';
 

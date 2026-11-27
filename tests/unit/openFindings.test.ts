@@ -38,10 +38,12 @@ describe('F115 India dates', () => {
 
 describe('F122 prepaid placed orders', () => {
   it('says payment was not completed, and leaves cash on delivery alone', () => {
-    expect(customerOrderHeadline('placed', 'prepaid')).toBe(PAYMENT_NOT_COMPLETED_HEADING);
+    expect(PAYMENT_NOT_COMPLETED_HEADING).toBe('Payment not completed yet.');
+    expect(PAYMENT_NOT_COMPLETED_BADGE).toBe('Awaiting payment');
+    expect(customerOrderHeadline('placed', 'prepaid')).toBe('Payment not completed yet.');
     expect(customerOrderHeadline('placed', 'cod')).toBe('We’re preparing your order.');
     expect(customerOrderHeadline('confirmed', 'prepaid')).toBe('We’re preparing your order.');
-    expect(customerStatusLabel('placed', 'prepaid')).toBe(PAYMENT_NOT_COMPLETED_BADGE);
+    expect(customerStatusLabel('placed', 'prepaid')).toBe('Awaiting payment');
     expect(customerStatusLabel('placed', 'cod')).toBeNull();
   });
 });
