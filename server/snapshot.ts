@@ -333,6 +333,7 @@ const STATIC_COPY: Record<string, { h1: string; lede: string }> = {
   '/auth':         { h1: 'Sign in', lede: 'Sign in or create a COCO36 account.' },
   '/checkout':     { h1: 'Checkout', lede: 'Review your bag and place your order.' },
   '/account':      { h1: 'Your account', lede: 'Orders, invoices and saved addresses.' },
+  '/account/reset-password': { h1: 'Set a new password', lede: 'Choose a new password for your COCO36 account.' },
   '/cart':         { h1: 'Your cart', lede: 'Your cart is empty. Browse the shop to add ingredients.' },
 };
 

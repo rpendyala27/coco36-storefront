@@ -8,34 +8,34 @@ import { safeRedirectPath } from '../lib/apiAuth';
 import { googleOAuthRedirectTo } from '../lib/googleAuth';
 import { AlreadyRegisteredNotice } from '../components/AlreadyRegisteredNotice';
 import { AuthPending, useAuth } from '../context/AuthContext';
-import { EXPIRED_LINK_MESSAGE } from '../lib/authLink';
+import {
+  PASSWORD_HINT, PASSWORD_WEAK_MESSAGE, passwordIsWeak, passwordResetRedirectTo,
+} from '../lib/password';
 import {
   classifySignUp, SIGNUP_CONFIRM_MESSAGE, SIGNUP_EXISTS_MESSAGE, SIGNUP_NEUTRAL_MESSAGE,
 } from '../lib/signup';
 
 /**
- * Customer auth page — login + signup + password reset + Google, all on
- * Supabase Auth. Whenever a session starts (signup, sign-in, Google, or an
- * email-confirmation link) AuthContext creates/refreshes the matching
+ * Customer auth page — login + signup + the "forgot password" email + Google,
+ * all on Supabase Auth. The recovery link itself is handled on
+ * /account/reset-password. Whenever a session starts (signup, sign-in, Google,
+ * or an email-confirmation link) AuthContext creates/refreshes the matching
  * `public.customers` row via the admin API, authenticated with the session's
  * access token. Name and phone typed at signup ride in user_metadata so they
  * survive email confirmation; Google supplies full_name and no phone.
  */
-const PASSWORD_HINT = 'At least 8 characters, using letters and numbers.';
 
 export const AuthPage = () => {
-  const { user, passwordRecovery, clearPasswordRecovery, authLinkError, clearAuthLinkError, loading: authLoading } = useAuth();
+  const { user, passwordRecovery, authLinkError, clearAuthLinkError, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
   const [phone, setPhone]     = useState('');
   const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   // A failed email link (expired, already used) lands here with its reason.
   const [error, setError]     = useState(() => authLinkError ?? '');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [passwordUpdated, setPasswordUpdated] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Internal-only redirect target (prevents open-redirect via the query string).
@@ -43,22 +43,19 @@ export const AuthPage = () => {
   const redirectTo = safeRedirectPath(redirectParam, '/');
 
   // After email confirmation (or if an already-signed-in user opens /auth) we
-  // have a session — move them along. EXCEPT mid password-recovery, where we
-  // want to keep them here to set a new password.
+  // have a session — move them along. A recovery session is not a sign-in:
+  // AuthLinkRedirect sends it to /account/reset-password. Leaving before that
+  // redirect used to drop the shopper on /.
   useEffect(() => {
     if (authLoading) return;
-    if (user && !passwordRecovery) navigate(redirectTo, { replace: true });
+    if (passwordRecovery) return;
+    if (user) navigate(redirectTo, { replace: true });
   }, [authLoading, user, passwordRecovery, navigate, redirectTo]);
 
   // The link's message is now on screen; don't show it again on a later visit.
   useEffect(() => {
     if (authLinkError) clearAuthLinkError();
   }, [authLinkError, clearAuthLinkError]);
-
-  // The set-password form needs the recovery session itself. Without one (it
-  // ended, or the link never produced one) updateUser can only fail with
-  // "Auth session missing!", so show the sign-in form instead.
-  const settingPassword = passwordRecovery && !!user;
 
   // Sign-in mode, with the email they just typed left in the field.
   const showSignIn = () => {
@@ -78,6 +75,7 @@ export const AuthPage = () => {
         // Optional, but when given it must be a real Indian mobile (F49).
         const phoneDigits = phone.trim() ? normaliseIndianMobile(phone) : null;
         if (phone.trim() && !phoneDigits) throw new Error(PHONE_INVALID_MESSAGE);
+        if (passwordIsWeak(password)) throw new Error(PASSWORD_WEAK_MESSAGE);
         const { data, error: signUpErr } = await supabase.auth.signUp({
           email, password,
           options: {
@@ -110,7 +108,9 @@ export const AuthPage = () => {
     if (!email) return setError('Enter your email address first.');
     setError(''); setMessage('');
     try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth` });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: passwordResetRedirectTo(window.location.origin),
+      });
       if (resetErr) throw resetErr;
       setMessage('Reset link sent to your email.');
     } catch (err: any) {
@@ -133,35 +133,12 @@ export const AuthPage = () => {
     }
   };
 
-  // Set a new password after a recovery link landed (the link gives us a
-  // short-lived authenticated session; updateUser sets the new password).
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(''); setMessage(''); setLoading(true);
-    try {
-      const { error: updErr } = await supabase.auth.updateUser({ password: newPassword });
-      if (updErr) throw updErr;
-      setPasswordUpdated(true);
-    } catch (err: any) {
-      if (err?.name === 'AuthSessionMissingError') {
-        clearPasswordRecovery();
-        setError(EXPIRED_LINK_MESSAGE);
-      } else {
-        setError(err?.message ?? 'Could not update your password.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const finishRecovery = () => {
-    clearPasswordRecovery();
-    navigate(redirectTo, { replace: true });
-  };
-
   const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
 
+  // Hold the sign-in form while a recovery session is on its way to the
+  // reset page. Showing it, or sending the shopper home, was the old bug.
   if (authLoading) return <AuthPending />;
+  if (passwordRecovery) return <AuthPending />;
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-brand-surface px-6 py-12">
@@ -173,40 +150,6 @@ export const AuthPage = () => {
       >
         <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={49} height={48} alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
 
-        {settingPassword && passwordUpdated ? (
-          /* ── Done ─────────────────────────────────────────────────────────── */
-          <>
-            <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
-            <h1 className="font-display text-4xl text-center text-brand-forest mb-1">All set</h1>
-            <p className="text-center text-brand-muted text-sm mb-8">Your password has been updated. You’re signed in.</p>
-            <button type="button" onClick={finishRecovery} className="btn-primary w-full !py-3.5">
-              Continue <ArrowRight size={15} />
-            </button>
-          </>
-        ) : settingPassword ? (
-          /* ── Set a new password (lands here from the reset email link) ───── */
-          <>
-            <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
-            <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Set a new password</h1>
-            <p className="text-center text-brand-muted text-sm mb-8">Choose a new password for {user?.email ?? 'your account'}.</p>
-            <form onSubmit={handleUpdatePassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-brand-muted block">New password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" size={16} />
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} autoComplete="new-password" aria-describedby="new-password-hint" className={`${inputClass} pl-10`} required />
-                </div>
-                <p id="new-password-hint" className="text-xs text-brand-muted">{PASSWORD_HINT}</p>
-              </div>
-              {error && <p className="text-red-600 text-sm">{error}</p>}
-              {message && <p className="text-brand-leaf text-sm">{message}</p>}
-              <button type="submit" disabled={loading} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">
-                {loading ? 'Working…' : 'Update password'} <ArrowRight size={15} />
-              </button>
-            </form>
-          </>
-        ) : (
-        <>
         <p className="eyebrow text-brand-leaf text-center mb-2">{isLogin ? 'Welcome back' : 'Join COCO36'}</p>
         <h1 className="font-display text-4xl text-center text-brand-forest mb-1">
           {isLogin ? 'Sign in' : 'Create account'}
@@ -287,8 +230,6 @@ export const AuthPage = () => {
             </button>
           )}
         </div>
-        </>
-        )}
       </motion.div>
     </div>
   );
