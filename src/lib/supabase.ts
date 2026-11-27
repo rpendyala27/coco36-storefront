@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { readAuthLink, type AuthLinkState } from './authLink';
+import { readAuthLink, stripAuthErrorParams, type AuthLinkState } from './authLink';
 
 /**
  * Browser Supabase client for the COCO36 storefront (Vite/Netlify).
@@ -56,6 +56,17 @@ const PLACEHOLDER_URL = 'https://unconfigured.invalid';
  */
 export const initialAuthLink: AuthLinkState =
   typeof window === 'undefined' ? { recovery: false, error: null, signupConfirmed: false } : readAuthLink(window.location.href);
+
+// A used or expired link lands as #error=…&error_code=…&error_description=….
+// Strip that before the client is created. detectSessionInUrl treats those
+// params as an implicit callback and then skips loading the real session, and
+// the hash would keep the address bar on the failed link. The shopper-facing
+// message is already in initialAuthLink; the description itself is not kept.
+if (typeof window !== 'undefined' && initialAuthLink.error) {
+  const next = stripAuthErrorParams(window.location.href);
+  const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next !== current) window.history.replaceState(window.history.state, '', next);
+}
 
 export const supabase = createClient(
   supabaseUrl || PLACEHOLDER_URL,

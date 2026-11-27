@@ -19,7 +19,10 @@ export const PASSWORD_UPDATED_MESSAGE = 'Your password has been updated.';
 export const PASSWORD_UPDATE_FAILED_MESSAGE = 'Could not update your password. Please try again.';
 export const PASSWORD_REUSED_MESSAGE = 'Choose a password you have not used before.';
 export const RESET_LINK_EXPIRED_MESSAGE = 'That link has expired or has already been used.';
+export const RESET_LINK_SENT_MESSAGE = 'If an account exists for that email, we’ve sent a reset link. Check your inbox.';
 export const SEND_NEW_LINK_LABEL = 'Send a new link';
+/** Forgot-password step. Query on /auth so a signed-in shopper is not sent home. */
+export const FORGOT_PASSWORD_PATH = '/auth?mode=forgot';
 
 /** How long the success line stays up before the shopper is sent to /account. */
 export const PASSWORD_UPDATED_REDIRECT_MS = 1600;

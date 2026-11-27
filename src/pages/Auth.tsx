@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { motion } from 'motion/react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
-import { safeRedirectPath } from '../lib/apiAuth';
+import { emailPasswordSignInPath, safeRedirectPath } from '../lib/apiAuth';
 import { googleOAuthRedirectTo } from '../lib/googleAuth';
 import { AlreadyRegisteredNotice } from '../components/AlreadyRegisteredNotice';
 import { AuthPending, useAuth } from '../context/AuthContext';
 import {
-  PASSWORD_HINT, PASSWORD_WEAK_MESSAGE, passwordIsWeak, passwordResetRedirectTo,
+  PASSWORD_HINT, PASSWORD_WEAK_MESSAGE, RESET_LINK_SENT_MESSAGE, passwordIsWeak, passwordResetRedirectTo,
 } from '../lib/password';
 import {
   classifySignUp, SIGNUP_CONFIRM_MESSAGE, SIGNUP_EXISTS_MESSAGE, SIGNUP_NEUTRAL_MESSAGE,
 } from '../lib/signup';
+
+const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
 
 /**
  * Customer auth page — login + signup + the "forgot password" email + Google,
@@ -35,22 +38,42 @@ export const AuthPage = () => {
   // A failed email link (expired, already used) lands here with its reason.
   const [error, setError]     = useState(() => authLinkError ?? '');
   const [message, setMessage] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   // Internal-only redirect target (prevents open-redirect via the query string).
+  // Email/password sign-in uses emailPasswordSignInPath (next or redirect, else
+  // /account). This fallback stays / so Google and a sign-up confirmation link
+  // still land where they did before.
   const redirectParam = params.get('redirect');
   const redirectTo = safeRedirectPath(redirectParam, '/');
+  const forgot = params.get('mode') === 'forgot';
+  // Set just before signInWithPassword resolves, so the effect below does not
+  // send that sign-in to / when the session arrives.
+  const passwordSignInTo = useRef<string | null>(null);
+  // Forgot-password and sign-in share this page. Drop a validation error when
+  // switching steps so "Enter your email address first." does not follow the
+  // shopper back to sign-in. The first render keeps an email-link error.
+  const sawForgot = useRef(forgot);
+  useEffect(() => {
+    if (sawForgot.current === forgot) return;
+    sawForgot.current = forgot;
+    setError(authLinkError ?? '');
+  }, [forgot, authLinkError]);
 
   // After email confirmation (or if an already-signed-in user opens /auth) we
   // have a session — move them along. A recovery session is not a sign-in:
   // AuthLinkRedirect sends it to /account/reset-password. Leaving before that
-  // redirect used to drop the shopper on /.
+  // redirect used to drop the shopper on /. Forgot-password stays put so a
+  // signed-in shopper can request a new link.
   useEffect(() => {
     if (authLoading) return;
     if (passwordRecovery) return;
-    if (user) navigate(redirectTo, { replace: true });
-  }, [authLoading, user, passwordRecovery, navigate, redirectTo]);
+    if (forgot) return;
+    if (user) navigate(passwordSignInTo.current ?? redirectTo, { replace: true });
+  }, [authLoading, user, passwordRecovery, forgot, navigate, redirectTo]);
 
   // The link's message is now on screen; don't show it again on a later visit.
   useEffect(() => {
@@ -68,9 +91,13 @@ export const AuthPage = () => {
     setError(''); setMessage(''); setLoading(true);
     try {
       if (isLogin) {
+        passwordSignInTo.current = emailPasswordSignInPath(params.toString());
         const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInErr) throw signInErr;
-        navigate(redirectTo);
+        if (signInErr) {
+          passwordSignInTo.current = null;
+          throw signInErr;
+        }
+        navigate(passwordSignInTo.current ?? emailPasswordSignInPath(params.toString()));
       } else {
         // Optional, but when given it must be a real Indian mobile (F49).
         const phoneDigits = phone.trim() ? normaliseIndianMobile(phone) : null;
@@ -105,16 +132,20 @@ export const AuthPage = () => {
   };
 
   const handleReset = async () => {
+    if (resetting || resetSent) return;
     if (!email) return setError('Enter your email address first.');
     setError(''); setMessage('');
+    setResetting(true);
     try {
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: passwordResetRedirectTo(window.location.origin),
       });
       if (resetErr) throw resetErr;
-      setMessage('Reset link sent to your email.');
+      setResetSent(true);
     } catch (err: any) {
       setError(err?.message ?? 'Could not send reset email.');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -133,12 +164,24 @@ export const AuthPage = () => {
     }
   };
 
-  const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
-
   // Hold the sign-in form while a recovery session is on its way to the
   // reset page. Showing it, or sending the shopper home, was the old bug.
   if (authLoading) return <AuthPending />;
   if (passwordRecovery) return <AuthPending />;
+  if (forgot) {
+    return (
+      <ForgotPasswordForm
+        email={email}
+        error={error}
+        sent={resetSent}
+        submitting={resetting}
+        onEmail={setEmail}
+        onSubmit={(event) => { event.preventDefault(); void handleReset(); }}
+        backHref={user ? '/account' : '/auth'}
+        backLabel={user ? 'Your account' : 'Back to sign in'}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center bg-brand-surface px-6 py-12">
@@ -221,19 +264,73 @@ export const AuthPage = () => {
         </form>
 
         <div className="mt-7 flex flex-col items-center gap-3 text-sm">
-          <button onClick={() => { setIsLogin(!isLogin); setError(''); setMessage(''); }} className="text-brand-forest hover:text-brand-leaf transition-colors">
+          <button type="button" onClick={() => { setIsLogin(!isLogin); setError(''); setMessage(''); }} className="text-brand-forest hover:text-brand-leaf transition-colors">
             {isLogin ? "Don't have an account? Sign up" : 'Already registered? Sign in'}
           </button>
           {isLogin && (
-            <button onClick={handleReset} className="text-brand-muted hover:text-brand-leaf transition-colors text-[13px]">
+            <button type="button" onClick={handleReset} disabled={resetting} className="text-brand-muted hover:text-brand-leaf transition-colors text-[13px] disabled:opacity-50">
               Forgot password?
             </button>
           )}
+          {resetSent ? (
+            <p role="status" className="text-brand-forest text-sm text-center">{RESET_LINK_SENT_MESSAGE}</p>
+          ) : null}
         </div>
       </motion.div>
     </div>
   );
 };
+
+export function ForgotPasswordForm({
+  email,
+  error,
+  sent,
+  submitting,
+  onEmail,
+  onSubmit,
+  backHref,
+  backLabel,
+}: {
+  email: string;
+  error: string;
+  sent: boolean;
+  submitting: boolean;
+  onEmail: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
+  backHref: string;
+  backLabel: string;
+}) {
+  return (
+    <div className="min-h-screen pt-20 flex items-center justify-center bg-brand-surface px-6 py-12">
+      <div className="max-w-md w-full bg-white p-8 sm:p-10 border border-brand-line rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <img src="/coco36-floral-48.png" srcSet="/coco36-floral-48.png 1x, /coco36-floral-96.png 2x" width={49} height={48} alt="COCO36" className="h-12 w-auto mx-auto mb-5" />
+        <p className="eyebrow text-brand-leaf text-center mb-2">Reset password</p>
+        <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Reset your password</h1>
+        {sent ? (
+          <p role="status" className="text-center text-brand-forest text-sm mt-6">{RESET_LINK_SENT_MESSAGE}</p>
+        ) : (
+          <>
+            <p className="text-center text-brand-muted text-sm mb-8">Enter your email.</p>
+            <form onSubmit={onSubmit} noValidate className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="reset-email" className="text-[10px] uppercase tracking-widest font-bold text-brand-muted block">Email address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted" size={16} />
+                  <input id="reset-email" type="email" value={email} onChange={(e) => onEmail(e.target.value)} autoComplete="email" className={`${inputClass} pl-10`} />
+                </div>
+              </div>
+              {error ? <p role="alert" className="text-red-600 text-sm">{error}</p> : null}
+              <button type="submit" disabled={submitting} className="btn-primary w-full !py-3.5 mt-2 disabled:opacity-50">
+                {submitting ? 'Working…' : 'Send reset link'} <ArrowRight size={15} />
+              </button>
+            </form>
+          </>
+        )}
+        <Link to={backHref} className="mt-7 block text-center text-sm text-brand-forest hover:text-brand-leaf transition-colors">{backLabel}</Link>
+      </div>
+    </div>
+  );
+}
 
 function GoogleMark() {
   return (

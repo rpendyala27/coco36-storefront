@@ -3,8 +3,9 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Lock } from 'lucide-react';
 import { AuthPending, useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
+import { initialAuthLink, supabase } from '../lib/supabase';
 import {
+  FORGOT_PASSWORD_PATH,
   PASSWORD_HINT,
   PASSWORD_UPDATED_MESSAGE,
   PASSWORD_UPDATED_REDIRECT_MS,
@@ -17,6 +18,25 @@ import {
 const inputClass = 'w-full bg-white border border-brand-line rounded-lg px-4 py-3 focus:outline-none focus:border-brand-leaf text-[15px] text-brand-forest placeholder:text-brand-muted/60 transition-colors';
 
 export type ResetPasswordMode = 'form' | 'success' | 'expired';
+
+/**
+ * A failed link (error / error_code / error_description in the URL) is expired
+ * even when this browser is already signed in. A successful update is shown
+ * before the "no recovery session" check, because saving the password clears
+ * that flag and would otherwise flip the card back to expired.
+ */
+export function resetPageMode(input: {
+  updated: boolean;
+  linkError: boolean;
+  sessionExpired: boolean;
+  passwordRecovery: boolean;
+  signedIn: boolean;
+}): ResetPasswordMode {
+  if (input.linkError) return 'expired';
+  if (input.updated) return 'success';
+  if (input.sessionExpired || !(input.passwordRecovery && input.signedIn)) return 'expired';
+  return 'form';
+}
 
 export function ResetPasswordView({
   mode,
@@ -62,7 +82,7 @@ export function ResetPasswordView({
           <>
             <h1 className="font-display text-4xl text-center text-brand-forest mb-1">Link expired</h1>
             <p role="alert" className="text-center text-brand-muted text-sm mb-8">{RESET_LINK_EXPIRED_MESSAGE}</p>
-            <Link to="/auth" className="btn-primary w-full !py-3.5">{SEND_NEW_LINK_LABEL} <ArrowRight size={15} /></Link>
+            <Link to={FORGOT_PASSWORD_PATH} className="btn-primary w-full !py-3.5">{SEND_NEW_LINK_LABEL} <ArrowRight size={15} /></Link>
           </>
         ) : (
           <>
@@ -159,7 +179,7 @@ function PasswordField({
  * reporting the session is gone) the page shows the expired-link state.
  */
 export function ResetPasswordPage() {
-  const { user, passwordRecovery, clearPasswordRecovery, loading } = useAuth();
+  const { user, passwordRecovery, clearPasswordRecovery, authLinkError, clearAuthLinkError, loading } = useAuth();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -169,6 +189,16 @@ export function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [expired, setExpired] = useState(false);
+  // Captured at module load, before the client strips the hash. Stays true
+  // for this page load even after the context copy is cleared.
+  const linkError = Boolean(initialAuthLink.error);
+
+  useEffect(() => {
+    if (!linkError) return undefined;
+    clearPasswordRecovery();
+    if (authLinkError) clearAuthLinkError();
+    return undefined;
+  }, [linkError, authLinkError, clearPasswordRecovery, clearAuthLinkError]);
 
   useEffect(() => {
     if (!updated) return undefined;
@@ -176,13 +206,16 @@ export function ResetPasswordPage() {
     return () => clearTimeout(t);
   }, [updated, navigate]);
 
-  if (loading) return <AuthPending />;
-
-  const mode: ResetPasswordMode = updated
-    ? 'success'
-    : expired || !(passwordRecovery && user)
-      ? 'expired'
-      : 'form';
+  const mode = resetPageMode({
+    updated,
+    linkError,
+    sessionExpired: expired,
+    passwordRecovery,
+    signedIn: Boolean(user),
+  });
+  // A failed link is decided from the URL, so don't wait on the session
+  // (a signed-in shopper would otherwise sit on the set-password heading).
+  if (!linkError && loading) return <AuthPending />;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
