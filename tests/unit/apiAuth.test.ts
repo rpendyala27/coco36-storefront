@@ -8,7 +8,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: { auth: { getSession: async () => ({ data: { session } }) } },
 }));
 
-const { authHeader, customerProfileHints, hintsForSignInSync, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
+const { authHeader, customerProfileHints, emailPasswordSignInPath, hintsForSignInSync, safeRedirectPath, syncCustomerProfile } = await import('../../src/lib/apiAuth');
 
 beforeEach(() => { session = null; vi.restoreAllMocks(); });
 
@@ -49,6 +49,22 @@ describe('safeRedirectPath', () => {
     [null, '/'],
   ])('%j → %s', (input, out) => {
     expect(safeRedirectPath(input as string | null)).toBe(out);
+  });
+});
+
+describe('emailPasswordSignInPath', () => {
+  it('uses a safe next or redirect path, otherwise /account', () => {
+    expect(emailPasswordSignInPath('')).toBe('/account');
+    expect(emailPasswordSignInPath('next=/checkout')).toBe('/checkout');
+    expect(emailPasswordSignInPath('redirect=/checkout')).toBe('/checkout');
+    expect(emailPasswordSignInPath('next=/checkout&redirect=/account')).toBe('/checkout');
+    expect(emailPasswordSignInPath('redirect=/account/orders/1')).toBe('/account/orders/1');
+  });
+
+  it('rejects an off-site return path', () => {
+    expect(emailPasswordSignInPath('next=https://evil.example')).toBe('/account');
+    expect(emailPasswordSignInPath('next=//evil.example')).toBe('/account');
+    expect(emailPasswordSignInPath('redirect=\\\\evil')).toBe('/account');
   });
 });
 

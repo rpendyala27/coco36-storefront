@@ -1,4 +1,17 @@
-import { isGoogleOAuthReturn } from './googleAuth';
+/**
+ * Google's return is marked `?oauth=google` (see googleAuth.ts). This check
+ * lives here, not in googleAuth.ts: googleAuth imports apiAuth, which imports
+ * the Supabase client, which calls readAuthLink while this module is still
+ * starting. Importing googleAuth from here made that call run before
+ * EXPIRED_LINK_MESSAGE existed, so a failed reset link never painted.
+ */
+export function isGoogleOAuthReturn(href: string): boolean {
+  try {
+    return new URL(href).searchParams.get('oauth') === 'google';
+  } catch {
+    return false;
+  }
+}
 
 /**
  * What a Supabase Auth email link (password reset, signup confirmation) put in
@@ -49,9 +62,9 @@ export function readAuthLink(href: string): AuthLinkState {
   const param = (key: string) => url.searchParams.get(key) ?? hash.get(key);
 
   const errorCode = param('error_code');
-  if (errorCode || param('error')) {
-    // error_description is NOT shown: it comes from the URL, so anyone could
-    // put their own text on our page with a crafted link.
+  // Any of these means the link failed. error_description is NOT shown: it
+  // comes from the URL, so anyone could put their own text on our page.
+  if (errorCode || param('error') || param('error_description')) {
     const error = isGoogleOAuthReturn(href)
       ? GOOGLE_SIGNIN_ERROR_MESSAGE
       : errorCode === 'otp_expired' ? EXPIRED_LINK_MESSAGE : FAILED_LINK_MESSAGE;
@@ -77,6 +90,39 @@ export function readAuthLink(href: string): AuthLinkState {
  * this one tick before treating the shopper as an ordinary sign-in.
  * Queued after that timer, so the recovery callback runs first.
  */
+const AUTH_ERROR_PARAMS = ['error', 'error_code', 'error_description'] as const;
+
+/**
+ * Same URL with a failed-link's error, error_code, and error_description
+ * removed from the query and the hash. Other params (a recovery token, the
+ * Google return marker) stay. The description text is never copied into the
+ * result.
+ */
+export function stripAuthErrorParams(href: string): string {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return href;
+  }
+  for (const key of AUTH_ERROR_PARAMS) url.searchParams.delete(key);
+  if (url.hash.startsWith('#')) {
+    const hash = new URLSearchParams(url.hash.slice(1));
+    let changed = false;
+    for (const key of AUTH_ERROR_PARAMS) {
+      if (hash.has(key)) {
+        hash.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
+      const next = hash.toString();
+      url.hash = next ? `#${next}` : '';
+    }
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export function afterPasswordRecoverySignal(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);

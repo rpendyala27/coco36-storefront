@@ -33,6 +33,16 @@ export async function syncCustomerProfile(
   }
 }
 
+/**
+ * Where email/password sign-in should land. `next` or `redirect` when it is a
+ * safe in-app path, otherwise the account page. Google and the sign-up
+ * confirmation link do not use this.
+ */
+export function emailPasswordSignInPath(search: string): string {
+  const params = new URLSearchParams(search.replace(/^\?/, ''));
+  return safeRedirectPath(params.get('next') ?? params.get('redirect'), '/account');
+}
+
 /** Same-site path only ("/x", not "//host" or "/\host"); anything else → fallback. */
 export function safeRedirectPath(next: string | null | undefined, fallback = '/'): string {
   if (!next || !next.startsWith('/') || next.startsWith('//') || next.includes('\\')) return fallback;

@@ -4,7 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { ResetPasswordView, type ResetPasswordMode } from '../../src/pages/ResetPassword';
+import { ForgotPasswordForm } from '../../src/pages/Auth';
+import { ResetPasswordView, resetPageMode, type ResetPasswordMode } from '../../src/pages/ResetPassword';
 import { afterPasswordRecoverySignal } from '../../src/lib/authLink';
 import {
   PASSWORD_HINT,
@@ -14,7 +15,9 @@ import {
   PASSWORD_UPDATE_FAILED_MESSAGE,
   PASSWORD_WEAK_MESSAGE,
   RESET_LINK_EXPIRED_MESSAGE,
+  RESET_LINK_SENT_MESSAGE,
   RESET_PASSWORD_PATH,
+  FORGOT_PASSWORD_PATH,
   SEND_NEW_LINK_LABEL,
   passwordIsWeak,
   passwordResetRedirectTo,
@@ -174,9 +177,81 @@ describe('ResetPasswordView', () => {
     expect(html).toContain('Link expired');
     expect(html).toContain(RESET_LINK_EXPIRED_MESSAGE);
     expect(html).toContain(SEND_NEW_LINK_LABEL);
-    expect(html).toContain('href="/auth"');
+    expect(html).toContain(`href="${FORGOT_PASSWORD_PATH}"`);
+    expect(html).not.toContain('href="/auth"');
     expect(html).not.toContain('<form');
     expect(html).not.toMatch(/FSSAI|repack/i);
+  });
+});
+
+describe('resetPageMode', () => {
+  const base = {
+    updated: false,
+    linkError: false,
+    sessionExpired: false,
+    passwordRecovery: false,
+    signedIn: false,
+  };
+
+  it('shows the expired card for a failed link even when a session is already signed in', () => {
+    expect(resetPageMode({ ...base, linkError: true, passwordRecovery: true, signedIn: true })).toBe('expired');
+  });
+
+  it('shows the form only for a recovery session, and success after the password is saved', () => {
+    expect(resetPageMode({ ...base, passwordRecovery: true, signedIn: true })).toBe('form');
+    expect(resetPageMode({ ...base, signedIn: true })).toBe('expired');
+    expect(resetPageMode({ ...base, updated: true, passwordRecovery: false, signedIn: true })).toBe('success');
+  });
+});
+
+function forgotForm(overrides: Partial<{
+  email: string;
+  error: string;
+  sent: boolean;
+  submitting: boolean;
+}> = {}) {
+  return renderToStaticMarkup(createElement(
+    MemoryRouter,
+    null,
+    createElement(ForgotPasswordForm, {
+      email: '',
+      error: '',
+      sent: false,
+      submitting: false,
+      onEmail() {},
+      onSubmit(event: FormEvent) { event.preventDefault(); },
+      backHref: '/auth',
+      backLabel: 'Back to sign in',
+      ...overrides,
+    }),
+  ));
+}
+
+describe('ForgotPasswordForm', () => {
+  it('asks for an email and links back to sign-in', () => {
+    const html = forgotForm();
+    expect(html).toContain('Reset your password');
+    expect(html).toContain('Enter your email.');
+    expect(html).toContain('Send reset link');
+    expect(html).toContain('href="/auth"');
+    expect(html).toContain('<form');
+    expect(html).not.toContain(RESET_LINK_SENT_MESSAGE);
+  });
+
+  it('keeps an empty-email or rate-limit error on the form', () => {
+    const html = forgotForm({ error: 'Enter your email address first.' });
+    expect(html).toContain('Enter your email address first.');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('<form');
+    expect(html).not.toContain(RESET_LINK_SENT_MESSAGE);
+  });
+
+  it('leaves the confirmation up, with no form and no email address', () => {
+    const html = forgotForm({ sent: true, email: 'baker@example.com' });
+    expect(html).toContain(RESET_LINK_SENT_MESSAGE);
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain('<form');
+    expect(html).not.toContain('baker@example.com');
   });
 });
 
@@ -193,13 +268,27 @@ describe('reset password wiring', () => {
     expect(auth).toContain('passwordIsWeak(password)');
     expect(auth).not.toContain('updateUser({ password');
     expect(auth).toContain('if (passwordRecovery) return;');
+    expect(auth).toContain('if (forgot) return;');
+    expect(auth).toContain('if (sawForgot.current === forgot) return;');
+    expect(auth).toContain("setError(authLinkError ?? '')");
+    expect(auth).toContain("params.get('mode') === 'forgot'");
+    expect(auth).toContain('RESET_LINK_SENT_MESSAGE');
+    expect(auth).toContain("setError('Enter your email address first.')");
+    expect(auth).toContain("err?.message ?? 'Could not send reset email.'");
+    expect(auth).not.toContain('Reset link sent to your email.');
+    expect(auth).toContain('emailPasswordSignInPath(params.toString())');
+    expect(auth).toContain('passwordSignInTo.current ?? redirectTo');
+    expect(auth).toContain('googleOAuthRedirectTo(window.location.origin, redirectParam)');
+    expect(auth).toContain("if (outcome === 'signed_in') navigate(redirectTo)");
   });
 
   it('the reset page calls updateUser and then routes to /account', () => {
     expect(page).toContain('supabase.auth.updateUser({ password: next })');
     expect(page).toContain("navigate('/account', { replace: true })");
     expect(page).toContain('PASSWORD_UPDATED_REDIRECT_MS');
-    expect(page).toContain('expired || !(passwordRecovery && user)');
+    expect(page).toContain('resetPageMode(');
+    expect(page).toContain('const linkError = Boolean(initialAuthLink.error)');
+    expect(page).toContain('if (!linkError && loading) return <AuthPending />');
     expect(app).toContain('path="/account/reset-password"');
   });
 
@@ -207,6 +296,14 @@ describe('reset password wiring', () => {
     expect(redirect).toContain('RESET_PASSWORD_PATH');
     expect(redirect).toContain("navigate(RESET_PASSWORD_PATH, { replace: true })");
     expect(redirect).not.toContain('handled');
+  });
+
+  it('strips a failed-link hash before the Supabase client is created', () => {
+    const client = read('src/lib/supabase.ts');
+    const stripAt = client.indexOf('stripAuthErrorParams(window.location.href)');
+    const clientAt = client.indexOf('export const supabase = createClient(');
+    expect(stripAt).toBeGreaterThan(-1);
+    expect(clientAt).toBeGreaterThan(stripAt);
   });
 
   it('waits for the PASSWORD_RECOVERY tick before pages can send a session to /', () => {
