@@ -13,6 +13,7 @@ import { useProduct, useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useStoreConfig } from '../lib/storeConfig';
 import { allPacksOut, canBuy, isComingSoon, sizeAvailability } from '../lib/availability';
+import { availableFor, stepQuantity } from '../lib/stock';
 import { useLiveStock } from '../lib/liveStock';
 import { freeShippingOnLabel, reportIssuesLabel, shipsInLabel } from '../content/policyLabels';
 import { dispatchWindow } from '../seo/site';
@@ -149,7 +150,10 @@ export const ProductDetail = () => {
 
   const page = productPage(product);
   const selectedSize    = product.sizes.find((s) => s.id === selectedSizeId) ?? product.sizes[0];
-  const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * quantity;
+  const qtyCap = availableFor(liveStock, selectedSize?.id ?? '');
+  const shownQty = stepQuantity(quantity, 0, qtyCap);
+  const atQtyCap = qtyCap !== undefined && qtyCap >= 1 && shownQty >= qtyCap;
+  const totalPricePaise = (selectedSize?.priceInPaise ?? 0) * shownQty;
   // Driven by tag.kind (like Shop/ProductCard) — no hardcoded slug sets.
   const certTags        = (product.tags ?? []).filter((t) => t.kind === 'certification' && !isFssaiClaim(t.slug, t.label));
   const dietaryTags     = (product.tags ?? []).filter((t) => t.kind === 'dietary' && !isFssaiClaim(t.slug, t.label));
@@ -162,8 +166,8 @@ export const ProductDetail = () => {
   const comingSoon      = isComingSoon(product);
   const buyable         = canBuy(product, selectedSize, liveStock);
 
-  const handleAddToCart = () => { if (buyable && selectedSize) addItem(product, selectedSize, quantity); };
-  const handleBuyNow    = () => { if (buyable && selectedSize) { addItem(product, selectedSize, quantity); setTimeout(() => navigate('/checkout'), 150); } };
+  const handleAddToCart = () => { if (buyable && selectedSize) addItem(product, selectedSize, shownQty); };
+  const handleBuyNow    = () => { if (buyable && selectedSize) { addItem(product, selectedSize, shownQty); setTimeout(() => navigate('/checkout'), 150); } };
   const toggle = (k: keyof typeof open) => setOpen((s) => ({ ...s, [k]: !s[k] }));
 
   return (
@@ -274,9 +278,9 @@ export const ProductDetail = () => {
             ) : (
               <>
                 <div className="flex items-center border border-brand-line rounded-full px-1.5">
-                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Decrease quantity"><Minus size={15} strokeWidth={2.5} /></button>
-                  <span className="min-w-8 text-center font-semibold tabular-nums">{quantity}</span>
-                  <button onClick={() => setQuantity((q) => q + 1)} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
+                  <button type="button" onClick={() => setQuantity(stepQuantity(shownQty, -1, qtyCap))} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf" aria-label="Decrease quantity"><Minus size={15} strokeWidth={2.5} /></button>
+                  <span className="min-w-8 text-center font-semibold tabular-nums">{shownQty}</span>
+                  <button type="button" onClick={() => setQuantity(stepQuantity(shownQty, 1, qtyCap))} disabled={atQtyCap} className="size-10 flex items-center justify-center text-brand-forest hover:text-brand-leaf disabled:opacity-30" aria-label="Increase quantity"><Plus size={15} strokeWidth={2.5} /></button>
                 </div>
                 <button onClick={handleAddToCart} className="btn-primary flex-1 min-w-[200px] !py-3.5">
                   <ShoppingBag size={15} /> Add to bag · {formatMoney(totalPricePaise)}
@@ -432,7 +436,7 @@ export const ProductDetail = () => {
 
       {/* Sticky add-to-bag — meets the buyer at peak intent on scroll */}
       {showSticky && selectedSize && (
-        <div data-sticky-buy className="fixed bottom-[var(--cookie-banner-offset,0px)] left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div data-sticky-buy style={{ bottom: 'var(--cookie-banner-offset, 0px)' }} className="fixed left-0 w-full z-30 bg-white/95 backdrop-blur border-t border-brand-line shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
           <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 py-3 flex items-center gap-4">
             <div className="hidden sm:block min-w-0 flex-1">
               <p className="font-display font-bold text-lg text-brand-forest truncate">{product.name}</p>

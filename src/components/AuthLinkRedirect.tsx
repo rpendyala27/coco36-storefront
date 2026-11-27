@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { stayOnPageForAuthLinkError } from '../lib/authLink';
 import { RESET_PASSWORD_PATH } from '../lib/password';
 import { supabase } from '../lib/supabase';
 
@@ -19,7 +20,7 @@ import { supabase } from '../lib/supabase';
  * changing the path cannot drop the recovery session.
  */
 export function AuthLinkRedirect() {
-  const { passwordRecovery, authLinkError } = useAuth();
+  const { passwordRecovery, authLinkError, user, loading } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -35,14 +36,18 @@ export function AuthLinkRedirect() {
     }
 
     if (!authLinkError) return undefined;
-    if (pathname === '/auth' || pathname === RESET_PASSWORD_PATH) return undefined;
+    // Wait until we know who is signed in. A used link on / must stay there
+    // for a signed-in shopper; sending them to /auth used to bounce them home
+    // and drop the message. Signed-out visitors still go to the sign-in form.
+    if (loading) return undefined;
+    if (stayOnPageForAuthLinkError(pathname, !!user)) return undefined;
     let live = true;
     void supabase.auth.initialize().then(() => {
       if (!live) return;
       navigate('/auth', { replace: true });
     });
     return () => { live = false; };
-  }, [passwordRecovery, authLinkError, pathname, navigate]);
+  }, [passwordRecovery, authLinkError, loading, user, pathname, navigate]);
 
   return null;
 }

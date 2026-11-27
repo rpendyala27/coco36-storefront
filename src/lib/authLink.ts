@@ -123,6 +123,16 @@ export function stripAuthErrorParams(href: string): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+/**
+ * A used or expired reset link must stay on screen when this browser is
+ * already signed in. `/` and `/auth` are the two places those links land.
+ * Other pages still go to `/auth`. The reset page has its own expired state.
+ */
+export function stayOnPageForAuthLinkError(pathname: string, signedIn: boolean): boolean {
+  if (pathname === '/auth' || pathname === '/account/reset-password') return true;
+  return pathname === '/' && signedIn;
+}
+
 export function afterPasswordRecoverySignal(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, 0);

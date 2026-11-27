@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { SALES_AUTO_REPLY, SUPPORT_AUTO_REPLY } from '../../src/content/enquiryCopy';
+import { PARTNERSHIPS_AUTO_REPLY, SALES_AUTO_REPLY, SUPPORT_AUTO_REPLY } from '../../src/content/enquiryCopy';
 
 /** P34 · form types posted to /api/enquiry and the approved auto-reply copy (23 Nov). */
 
@@ -15,6 +15,10 @@ describe('enquiry forms (P34)', () => {
     expect(SUPPORT_AUTO_REPLY).toBe(
       "Thanks, we've got your message and will reply from support@coco36.com within 1 business day.",
     );
+    expect(PARTNERSHIPS_AUTO_REPLY).toBe(
+      "Thanks for reaching out to COCO36. We've received your partnership enquiry and will reply from sales@coco36.com within 1 business day.",
+    );
+    expect(PARTNERSHIPS_AUTO_REPLY).not.toContain('Trial packs');
   });
 
   it('Trade posts trade, Partnerships posts partnerships, Request a product posts product_request', () => {
@@ -32,9 +36,10 @@ describe('enquiry forms (P34)', () => {
     }
   });
 
-  it('Trade and Partnerships show the sales reply; Request a product shows the support reply', () => {
+  it('Trade shows the sales reply; Partnerships has its own line; Request a product shows the support reply', () => {
     expect(read('src/pages/Trade.tsx')).toMatch(/\{SALES_AUTO_REPLY\}/);
-    expect(read('src/pages/Partnerships.tsx')).toMatch(/\{SALES_AUTO_REPLY\}/);
+    expect(read('src/pages/Partnerships.tsx')).toMatch(/\{PARTNERSHIPS_AUTO_REPLY\}/);
+    expect(read('src/pages/Partnerships.tsx')).not.toMatch(/SALES_AUTO_REPLY/);
     expect(read('src/components/RequestProduct.tsx')).toMatch(/\{SUPPORT_AUTO_REPLY\}/);
   });
 });

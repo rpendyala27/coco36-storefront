@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
  * Closes on outside click, Escape, or route change.
  */
 export const ProfileDropdown = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, signingOut } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -33,6 +33,7 @@ export const ProfileDropdown = () => {
   const initial = (user.email ?? '?').trim().charAt(0).toUpperCase();
 
   const handleSignOut = async () => {
+    if (signingOut) return;
     setOpen(false);
     await signOut();
     navigate('/');
@@ -90,8 +91,10 @@ export const ProfileDropdown = () => {
               </li>
               <li className="border-t border-brand-surface mt-1.5 pt-1.5">
                 <button
+                  type="button"
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-brand-ink hover:bg-brand-surface transition-colors"
+                  disabled={signingOut}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-brand-ink hover:bg-brand-surface transition-colors disabled:opacity-50"
                   role="menuitem"
                 >
                   <LogOut size={15} className="text-brand-muted" /> Sign out

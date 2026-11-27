@@ -14,16 +14,17 @@ import { listAddresses, addAddress, ADDRESS_SAVE_FAILED_MESSAGE, type BookAddres
 import { AddressForm } from '../components/AddressForm';
 import { AddressSaveAlert } from '../components/AddressSaveAlert';
 import { DeliveryAnswer } from '../components/CheckDelivery';
-import { checkDelivery, rememberPincode, type DeliveryCheck } from '../lib/delivery';
+import { checkDelivery, pinProblem, rememberPincode, type DeliveryCheck } from '../lib/delivery';
 import { fetchCodEnabled, refuseCodOrder, showCodPayment } from '../lib/codGate';
 import { summarizeCart } from '../lib/cartSummary';
 import {
   attemptForCart, attemptSignature, classifyPaymentFailure, confirmingTimeoutMs, isCheckoutExpired,
-  outcomeOnDismiss, CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, paymentMessage,
+  outcomeOnDismiss, CHECKOUT_EXPIRED_MESSAGE, ORDER_CHANGED_MESSAGE, PAYMENT_WINDOW_ENDED_MESSAGE, checkoutPaymentError,
   paymentWindowSeconds, placedOrderMethod, pollUntilPaymentConfirmed, razorpayDisplayConfig,
   readOwnOrderCheckout, type CheckoutAttempt, type PaymentConfirmPhase, type RazorpayFailure,
 } from '../lib/checkout';
-import { normaliseIndianMobile, PHONE_INVALID_MESSAGE } from '../lib/phone';
+import { normaliseIndianMobile, PHONE_INVALID_MESSAGE, PHONE_REQUIRED_MESSAGE } from '../lib/phone';
+import { customerNameError } from '../lib/profile';
 import { RemovedLinesNotice } from '../components/CartSummary';
 import { PaymentResult } from '../components/PaymentResult';
 import {
@@ -321,8 +322,13 @@ export const Checkout = () => {
 
     // Contact is required (the page is no longer a <form>, so we check here —
     // see the <div> wrapper note below).
-    if (!form.name.trim() || !form.phone.trim()) {
-      setError('Please enter your name and phone number.');
+    const nameErr = customerNameError(form.name);
+    if (nameErr) {
+      setError(nameErr);
+      return;
+    }
+    if (!form.phone.trim()) {
+      setError(PHONE_REQUIRED_MESSAGE);
       return;
     }
     // Same rule as signup and the admin API, plus no placeholder numbers (F49).
@@ -350,6 +356,11 @@ export const Checkout = () => {
 
     if (!selectedShipId) {
       setError('Please select or add a shipping address.');
+      return;
+    }
+    const pinErr = shipAddr ? pinProblem(shipAddr.pincode.trim()) : null;
+    if (pinErr) {
+      setError(pinErr);
       return;
     }
     if (deliveryBlock) {
@@ -528,7 +539,7 @@ export const Checkout = () => {
           // Razorpay order. A late payment can still confirm it.
           ondismiss: () => {
             attempt.current = attemptForCart(attempt.current, sig);
-            setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));
+            setError(checkoutPaymentError(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure, orderNumber));
             setSubmitting(false);
           },
         },
@@ -536,7 +547,7 @@ export const Checkout = () => {
 
       rzp.on('payment.failed', (resp: { error?: RazorpayFailure } | undefined) => {
         lastFailure = resp?.error ?? {};
-        setError(paymentMessage(classifyPaymentFailure(lastFailure), lastFailure));
+        setError(checkoutPaymentError(classifyPaymentFailure(lastFailure), lastFailure, orderNumber));
         setSubmitting(false);
       });
 

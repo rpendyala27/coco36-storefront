@@ -14,5 +14,9 @@ export type EnquirySource = 'trade' | 'partnerships' | 'contact' | 'product_requ
 export const SALES_AUTO_REPLY =
   "Thanks for reaching out to COCO36. We've received your enquiry and will reply from sales@coco36.com within 1 business day. Trial packs and wholesale minimums are confirmed by email.";
 
+/** Partnerships only. Trade keeps SALES_AUTO_REPLY, including the trial-pack line. */
+export const PARTNERSHIPS_AUTO_REPLY =
+  "Thanks for reaching out to COCO36. We've received your partnership enquiry and will reply from sales@coco36.com within 1 business day.";
+
 export const SUPPORT_AUTO_REPLY =
   "Thanks, we've got your message and will reply from support@coco36.com within 1 business day.";

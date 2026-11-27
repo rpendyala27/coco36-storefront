@@ -241,6 +241,23 @@ function detail(err: RazorpayFailure | null | undefined): string {
 export const PAYMENT_WINDOW_CLOSED_MESSAGE =
   "Payment not completed. If money left your account, don't pay again — we'll confirm your order automatically or refund you.";
 
+/** Same screen, with the order number the shopper can quote. */
+export function paymentNotCompletedMessage(orderNumber: string): string {
+  const n = orderNumber.trim();
+  if (!n) return PAYMENT_WINDOW_CLOSED_MESSAGE;
+  return `Payment not completed for order ${n}. If money left your account, don't pay again — we'll confirm your order automatically or refund you.`;
+}
+
+/** Decline and gateway errors stay as they are. A closed window names the order. */
+export function checkoutPaymentError(
+  outcome: PaymentOutcome,
+  err: RazorpayFailure | null | undefined,
+  orderNumber: string,
+): string {
+  if (outcome === 'cancelled' || outcome === 'timed_out') return paymentNotCompletedMessage(orderNumber);
+  return paymentMessage(outcome, err);
+}
+
 /**
  * The reused order's Razorpay window has under a minute left, so it is not
  * opened. The same attempt stays until the server says the checkout expired.

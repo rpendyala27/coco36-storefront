@@ -255,7 +255,7 @@ describe('same order when the window closes', () => {
     expect(dismiss).toContain('attempt.current = attemptForCart(attempt.current, sig);');
     expect(dismiss).not.toContain('freshAttempt');
     expect(dismiss).not.toContain('abandonCheckout');
-    expect(dismiss).toContain('setError(paymentMessage(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure));');
+    expect(dismiss).toContain('setError(checkoutPaymentError(outcomeOnDismiss(lastFailure, openedAt, windowSeconds), lastFailure, orderNumber));');
     expect(src).not.toContain('abandonCheckout');
     expect(src).toContain('shipAddressId: selectedShipId');
     expect(src).toContain('billAddressId,');

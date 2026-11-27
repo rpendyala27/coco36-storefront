@@ -2,6 +2,7 @@ import { Printer } from 'lucide-react';
 import type { InvoiceBreakup, InvoiceSeller, InvoiceSettings } from '../lib/invoice-types';
 import { sellerHeaderReady } from '../lib/invoiceHeader';
 import { INVOICE_FOOTER } from '../content/accountCopy';
+import { formatIndiaDate } from '../lib/indiaDate';
 
 /**
  * Customer-facing invoice template.
@@ -61,9 +62,9 @@ export function InvoiceTemplate({
           <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Tax Invoice</p>
           <p className="text-2xl font-bold font-mono mt-1">{invoiceNumber}</p>
           <p className="text-xs text-gray-600 mt-2">
-            Invoice Date: {invoiceDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}<br />
+            Invoice Date: {formatIndiaDate(invoiceDate, 'invoice')}<br />
             Order #: <span className="font-mono">{orderNumber}</span><br />
-            Order Date: {orderDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            Order Date: {formatIndiaDate(orderDate, 'invoice')}
           </p>
         </div>
       </header>

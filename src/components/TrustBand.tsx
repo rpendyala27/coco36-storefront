@@ -5,7 +5,7 @@ import type { ClaimMark } from '../lib/claimMarks';
 import { trustLinesFromConfig } from '../lib/trustLines';
 import { useStoreConfig } from '../lib/storeConfig';
 
-const LINE = 'font-display font-bold text-[10px] uppercase tracking-[0.07em] leading-[1.35] text-center text-brand-forest/70 whitespace-nowrap';
+const LINE = 'font-display font-bold text-[10px] uppercase tracking-[0.07em] leading-[1.35] text-center text-brand-forest/70 whitespace-normal md:whitespace-nowrap';
 
 /**
  * Six plain lines, then certification marks only for claim types
@@ -20,9 +20,9 @@ export function TrustBand({ marks, lines }: { marks?: readonly ClaimMark[]; line
 
   return (
     <section aria-label={certs.length ? 'Trust marks' : 'How we sell'} className="max-w-7xl mx-auto px-4 md:px-12 lg:px-20 mt-4 md:mt-5 mb-3">
-      <ul className="rounded-2xl bg-brand-surface border border-brand-line text-brand-forest flex items-center gap-x-5 md:gap-x-8 lg:gap-x-10 md:[justify-content:safe_center] px-4 md:px-6 py-3.5 md:py-4 overflow-x-auto no-scrollbar">
+      <ul className="rounded-2xl bg-brand-surface border border-brand-line text-brand-forest flex flex-wrap justify-center items-center gap-x-5 gap-y-2 md:gap-x-8 lg:gap-x-10 md:flex-nowrap md:[justify-content:safe_center] px-4 md:px-6 py-3.5 md:py-4 md:overflow-x-auto md:no-scrollbar">
         {text.map((line) => (
-          <li key={line} className="shrink-0">
+          <li key={line} className="max-w-full min-w-0 md:shrink-0">
             <span className={LINE}>{line}</span>
           </li>
         ))}
