@@ -1,7 +1,8 @@
 import { authHeader } from './apiAuth';
 import {
   reasonCodeFromPayload,
-  settlementLines,
+  settlementCopy,
+  type SettlementCopy,
   type CustomerRefund,
   type CustomerRefundStatus,
 } from './refundCopy';
@@ -87,7 +88,7 @@ export async function loadSettlementLines(
   client: EventClient,
   orders: SettlementOrder[],
   refundsFor: (ids: string[]) => Promise<Map<string, CustomerRefund[]>>,
-): Promise<Record<string, string[]>> {
+): Promise<Record<string, SettlementCopy>> {
   const ids = orders.map((order) => order.id).filter(Boolean);
   if (!ids.length) return {};
   const [reasons, lateEvents, refunds] = await Promise.all([
@@ -108,16 +109,16 @@ export async function loadSettlementLines(
     const id = (row as { order_id?: unknown }).order_id;
     if (typeof id === 'string') late.add(id);
   }
-  const lines: Record<string, string[]> = {};
+  const lines: Record<string, SettlementCopy> = {};
   for (const order of orders) {
-    const text = settlementLines({
+    const text = settlementCopy({
       cancelReason: order.cancelReason,
       reasonCode: codeByOrder.get(order.id) ?? null,
       refunds: refunds.get(order.id) ?? [],
       totalPaise: order.totalPaise,
       paymentAfterCancel: late.has(order.id),
     });
-    if (text.length) lines[order.id] = text;
+    if (text.reason || text.refunds.length) lines[order.id] = text;
   }
   return lines;
 }
@@ -126,7 +127,7 @@ export async function loadSettlementLines(
 export async function loadOwnSettlementLines(
   client: EventClient,
   orders: SettlementOrder[],
-): Promise<Record<string, string[]>> {
+): Promise<Record<string, SettlementCopy>> {
   const auth = await authHeader();
   const token = auth?.Authorization.startsWith('Bearer ') ? auth.Authorization.slice('Bearer '.length) : '';
   return loadSettlementLines(client, orders, (ids) => (

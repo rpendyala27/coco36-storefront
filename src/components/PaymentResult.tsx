@@ -13,7 +13,7 @@ import {
 import {
   cancelReasonPlain,
   formatRefundRupees,
-  latePaymentRefundMessage,
+  refundProcessingMessage,
 } from '../lib/refundCopy';
 
 /**
@@ -35,7 +35,7 @@ export function PaymentResult({
 }) {
   const reason = phase === 'cancelled' ? cancelReasonPlain({ cancelReason }) : null;
   const refund = phase === 'cancelled' && totalPaise > 0
-    ? latePaymentRefundMessage(formatRefundRupees(totalPaise))
+    ? refundProcessingMessage(formatRefundRupees(totalPaise))
     : null;
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto">
@@ -71,8 +71,8 @@ export function PaymentResult({
         {phase === 'cancelled' && (
           <>
             <h1 className="text-4xl md:text-5xl mb-4">Cancelled.</h1>
-            {reason && <p className="text-lg text-brand-muted mb-4">{reason}</p>}
-            {refund && <p className="text-lg text-brand-muted mb-12 leading-relaxed">{refund}</p>}
+            {reason && <p className="text-sm text-brand-muted mb-3">{reason}</p>}
+            {refund && <p className="text-base text-brand-muted mb-12 leading-relaxed">{refund}</p>}
           </>
         )}
       </div>

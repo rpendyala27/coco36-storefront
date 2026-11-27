@@ -11,8 +11,7 @@ export const CANCEL_REASON_PAYMENT = 'Payment not completed in time';
 export const CANCEL_REASON_BY_US = 'Cancelled by us';
 export const CANCEL_REASON_BY_YOU = 'Cancelled at your request';
 
-export const REFUND_QUEUED = 'Refund queued';
-export const REFUND_FAILED = "Refund failed — we're looking into it";
+export const REFUND_DELAYED = "Your refund is delayed. We're on it and will email you.";
 
 /** Labels customers chose, from the reason-code master. Matched as a prefix. */
 const CUSTOMER_LABELS = [
@@ -33,7 +32,7 @@ export interface CustomerRefund {
   /** When a processed or manual refund was settled. Null while it is queued. */
   settledAt: string | null;
   manual: boolean;
-  /** The payment was captured after the order was already cancelled. */
+  /** Kept for the refund read. Copy does not mention a late payment separately. */
   latePayment: boolean;
 }
 
@@ -48,21 +47,25 @@ export function formatRefundRupees(paise: number): string {
   return `₹${formatted}`;
 }
 
-/** 27 Nov 2026 in India. Null when the timestamp cannot be read. */
-export function formatRefundDate(iso: string | null | undefined): string | null {
+/** "26 Nov" in India. No year. Null when the timestamp cannot be read. */
+export function formatRefundDay(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return null;
   return new Intl.DateTimeFormat('en-IN', {
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
     timeZone: 'Asia/Kolkata',
   }).format(new Date(t));
 }
 
-export function latePaymentRefundMessage(amountLabel: string): string {
-  return `We received your payment after this order was cancelled. Your refund of ${amountLabel} is queued.`;
+export function refundProcessingMessage(amountLabel: string): string {
+  return `Order cancelled. Your refund of ${amountLabel} is being processed.`;
+}
+
+export function refundPaidMessage(amountLabel: string, day: string | null): string {
+  const when = day ? ` on ${day}` : '';
+  return `Refunded ${amountLabel}${when}. It can take 5–7 working days to reach your account.`;
 }
 
 /** A reason code from an order event, or null when the value is not a code. */
@@ -100,25 +103,50 @@ export function cancelReasonPlain(input: {
   return null;
 }
 
-function queuedOrLate(refund: CustomerRefund): string {
-  if (refund.latePayment && refund.amountPaise > 0) {
-    return latePaymentRefundMessage(formatRefundRupees(refund.amountPaise));
-  }
-  return REFUND_QUEUED;
+type RefundBucket = 'pending' | 'paid' | 'failed';
+
+function bucketOf(refund: CustomerRefund): RefundBucket | null {
+  if (refund.manual || refund.status === 'processed') return 'paid';
+  if (refund.status === 'failed') return 'failed';
+  if (refund.status === 'pending' || refund.status === 'pending_manual') return 'pending';
+  return null;
 }
 
-/** One line for one refund, or null when the row should not be shown. */
-export function refundStatusLine(refund: CustomerRefund): string | null {
-  if (!Number.isFinite(refund.amountPaise) || refund.amountPaise <= 0) return null;
-  const date = formatRefundDate(refund.settledAt);
-  if (refund.manual) return date ? `Refunded manually on ${date}` : 'Refunded manually';
-  if (refund.status === 'failed') return REFUND_FAILED;
-  if (refund.status === 'processed') {
-    const amount = formatRefundRupees(refund.amountPaise);
-    return date ? `Refund sent on ${date}, ${amount}` : `Refund sent, ${amount}`;
+/**
+ * One short line per status. Pending and manual rows are summed with the
+ * same wording as a gateway refund. A failed refund does not name an amount.
+ */
+export function refundStatusLines(refunds: CustomerRefund[]): string[] {
+  let pending = 0;
+  let paid = 0;
+  let paidAt = Number.NEGATIVE_INFINITY;
+  let failed = false;
+  for (const refund of refunds) {
+    const bucket = bucketOf(refund);
+    if (!bucket) continue;
+    const amount = refund.amountPaise;
+    const usable = Number.isFinite(amount) && amount > 0;
+    if (bucket === 'failed') {
+      failed = true;
+      continue;
+    }
+    if (!usable) continue;
+    if (bucket === 'pending') {
+      pending += amount;
+      continue;
+    }
+    paid += amount;
+    const at = refund.settledAt ? Date.parse(refund.settledAt) : NaN;
+    if (Number.isFinite(at) && at > paidAt) paidAt = at;
   }
-  if (refund.status === 'pending' || refund.status === 'pending_manual') return queuedOrLate(refund);
-  return null;
+  const lines: string[] = [];
+  if (pending > 0) lines.push(refundProcessingMessage(formatRefundRupees(pending)));
+  if (paid > 0) {
+    const day = Number.isFinite(paidAt) ? formatRefundDay(new Date(paidAt).toISOString()) : null;
+    lines.push(refundPaidMessage(formatRefundRupees(paid), day));
+  }
+  if (failed) lines.push(REFUND_DELAYED);
+  return lines;
 }
 
 export interface SettlementInput {
@@ -130,27 +158,17 @@ export interface SettlementInput {
   paymentAfterCancel?: boolean;
 }
 
-/** Cancel reason, then one line per refund. A late capture with no refund row yet still explains the queue. */
-export function settlementLines(input: SettlementInput): string[] {
-  const lines: string[] = [];
-  const reason = cancelReasonPlain(input);
-  if (reason) lines.push(reason);
-  const refunds = input.refunds ?? [];
-  const late = input.paymentAfterCancel === true;
-  let showedLate = false;
-  for (const refund of refunds) {
-    const pending = refund.status === 'pending' || refund.status === 'pending_manual';
-    const line = refundStatusLine({
-      ...refund,
-      latePayment: refund.latePayment || (late && pending && !refund.manual),
-    });
-    if (!line) continue;
-    if (line.startsWith('We received your payment')) showedLate = true;
-    lines.push(line);
-  }
+export interface SettlementCopy {
+  reason: string | null;
+  refunds: string[];
+}
+
+/** A small cancel reason, then at most one refund line per status. */
+export function settlementCopy(input: SettlementInput): SettlementCopy {
+  const refunds = refundStatusLines(input.refunds ?? []);
   const total = input.totalPaise ?? 0;
-  if (late && !showedLate && refunds.length === 0 && total > 0) {
-    lines.push(latePaymentRefundMessage(formatRefundRupees(total)));
+  if (input.paymentAfterCancel && refunds.length === 0 && total > 0) {
+    refunds.push(refundProcessingMessage(formatRefundRupees(total)));
   }
-  return lines;
+  return { reason: cancelReasonPlain(input), refunds };
 }

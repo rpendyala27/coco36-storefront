@@ -7,6 +7,7 @@ import { authHeader } from '../lib/apiAuth';
 import { RETURN_REASON_LABELS } from '../lib/order-status';
 import { formatMoney } from '../lib/currency';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
+import type { SettlementCopy } from '../lib/refundCopy';
 import { OrderStatusNotes } from '../components/OrderStatusNotes';
 
 interface OrderDetail {
@@ -37,7 +38,7 @@ export const AccountOrderDetail = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [settlement, setSettlement] = useState<string[]>([]);
+  const [settlement, setSettlement] = useState<SettlementCopy>({ reason: null, refunds: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +84,7 @@ export const AccountOrderDetail = () => {
       return;
     }
     if (!id) return;
-    setSettlement([]);
+    setSettlement({ reason: null, refunds: [] });
 
     (async () => {
       const { data, error: err } = await supabase
@@ -123,12 +124,12 @@ export const AccountOrderDetail = () => {
               cancelReason: next.cancel_reason,
               totalPaise: next.total_paise,
             }]);
-            setSettlement(lines[next.id] ?? []);
+            setSettlement(lines[next.id] ?? { reason: null, refunds: [] });
           } catch {
-            setSettlement([]);
+            setSettlement({ reason: null, refunds: [] });
           }
         } else {
-          setSettlement([]);
+          setSettlement({ reason: null, refunds: [] });
         }
       }
       setLoading(false);
@@ -171,7 +172,7 @@ export const AccountOrderDetail = () => {
                    order.status === 'returned'  ? 'Returned.' :
                    'We’re preparing your order.'}
                 </h1>
-                <OrderStatusNotes lines={settlement} />
+                <OrderStatusNotes reason={settlement.reason} refunds={settlement.refunds} />
                 <p className="text-sm text-brand-muted mt-2">
                   Placed {new Date(order.placed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </p>

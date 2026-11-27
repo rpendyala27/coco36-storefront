@@ -446,8 +446,10 @@ describe('confirmation screen copy', () => {
       cancelReason: 'Payment not completed in time; stock released',
     })).replace(/&#x27;/g, "'");
     expect(page).toContain('Cancelled.');
+    expect(page).toContain('text-sm');
     expect(page).toContain('Payment not completed in time');
-    expect(page).toContain("We received your payment after this order was cancelled. Your refund of ₹3,154 is queued.");
+    expect(page).toContain('Order cancelled. Your refund of ₹3,154 is being processed.');
+    expect(page).not.toContain('We received your payment after this order was cancelled');
     expect(page).not.toContain(PAYMENT_STILL_CHECKING_MESSAGE);
     expect(page).not.toContain(ORDER_CONFIRMED_HEADING);
     expect(page).not.toContain('stock released');

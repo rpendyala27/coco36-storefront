@@ -1,16 +1,17 @@
-/** Plain cancel and refund sentences under an order. Empty when there is nothing more to say. */
+/** A short cancel reason, then one refund line per status. */
 export function OrderStatusNotes({
-  lines,
-  className = 'text-sm',
+  reason,
+  refunds,
 }: {
-  lines: string[];
-  className?: string;
+  reason: string | null;
+  refunds: string[];
 }) {
-  if (lines.length === 0) return null;
+  if (!reason && refunds.length === 0) return null;
   return (
     <div className="mt-2 space-y-1" data-testid="order-status-notes">
-      {lines.map((line, index) => (
-        <p key={`${index}-${line}`} className={`${className} text-brand-muted`}>{line}</p>
+      {reason ? <p className="text-xs text-brand-muted">{reason}</p> : null}
+      {refunds.map((line, index) => (
+        <p key={`${index}-${line}`} className="text-sm text-brand-muted">{line}</p>
       ))}
     </div>
   );

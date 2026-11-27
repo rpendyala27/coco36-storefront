@@ -9,13 +9,12 @@ import {
   CANCEL_REASON_BY_US,
   CANCEL_REASON_BY_YOU,
   CANCEL_REASON_PAYMENT,
-  REFUND_FAILED,
-  REFUND_QUEUED,
+  REFUND_DELAYED,
   cancelReasonPlain,
   formatRefundRupees,
-  latePaymentRefundMessage,
-  refundStatusLine,
-  settlementLines,
+  refundProcessingMessage,
+  refundStatusLines,
+  settlementCopy,
   type CustomerRefund,
 } from '../../src/lib/refundCopy';
 
@@ -77,49 +76,56 @@ describe('refund lines', () => {
     expect(formatRefundRupees(125050)).toBe('₹1,250.50');
   });
 
-  it('maps each refund status to the customer sentence', () => {
-    expect(refundStatusLine(refund({ status: 'pending' }))).toBe(REFUND_QUEUED);
-    expect(refundStatusLine(refund({ status: 'pending_manual' }))).toBe(REFUND_QUEUED);
-    expect(refundStatusLine(refund({ status: 'processed', settledAt: SENT_AT }))).toBe('Refund sent on 27 Nov 2026, ₹1,250');
-    expect(refundStatusLine(refund({ status: 'failed' }))).toBe(REFUND_FAILED);
-    expect(refundStatusLine(refund({
-      status: 'processed',
-      manual: true,
-      settledAt: SENT_AT,
-    }))).toBe('Refunded manually on 27 Nov 2026');
+  it('uses one short line per status, and the same wording for a manual refund', () => {
+    expect(refundStatusLines([refund({ status: 'pending' })])).toEqual([
+      refundProcessingMessage('₹1,250'),
+    ]);
+    expect(refundStatusLines([refund({ status: 'pending_manual' })])).toEqual([
+      refundProcessingMessage('₹1,250'),
+    ]);
+    expect(refundStatusLines([refund({ status: 'processed', settledAt: SENT_AT })])).toEqual([
+      'Refunded ₹1,250 on 27 Nov. It can take 5–7 working days to reach your account.',
+    ]);
+    expect(refundStatusLines([refund({ status: 'failed' })])).toEqual([REFUND_DELAYED]);
+    expect(refundStatusLines([refund({ status: 'processed', manual: true, settledAt: SENT_AT })])).toEqual([
+      'Refunded ₹1,250 on 27 Nov. It can take 5–7 working days to reach your account.',
+    ]);
   });
 
-  it('explains a payment that arrived after cancellation while that refund is still queued', () => {
-    const line = refundStatusLine(refund({ status: 'pending', latePayment: true, amountPaise: 315400 }));
-    expect(line).toBe(latePaymentRefundMessage('₹3,154'));
-    expect(line).toBe("We received your payment after this order was cancelled. Your refund of ₹3,154 is queued.");
+  it('sums refunds that share a status, including a manual settlement with a processed one', () => {
+    const lines = refundStatusLines([
+      refund({ status: 'pending', amountPaise: 10000 }),
+      refund({ status: 'pending_manual', amountPaise: 25000, latePayment: true }),
+      refund({ status: 'processed', amountPaise: 80000, settledAt: '2026-11-26T08:00:00.000Z' }),
+      refund({ status: 'processed', amountPaise: 45000, manual: true, settledAt: SENT_AT }),
+      refund({ status: 'failed', amountPaise: 5000 }),
+    ]);
+    expect(lines).toEqual([
+      refundProcessingMessage('₹350'),
+      'Refunded ₹1,250 on 27 Nov. It can take 5–7 working days to reach your account.',
+      REFUND_DELAYED,
+    ]);
+    expect(lines.join(' ')).not.toMatch(/queued|manually|after this order was cancelled/i);
   });
 
-  it('a sent late refund says it was sent, and a failed one does not say it is queued', () => {
-    const lines = settlementLines({
+  it('a payment after cancellation uses the same processing line, with no extra sentence', () => {
+    expect(settlementCopy({
       cancelReason: 'Payment not completed in time; stock released',
       paymentAfterCancel: true,
-      refunds: [
-        refund({ status: 'processed', settledAt: SENT_AT, latePayment: true }),
-        refund({ status: 'failed', amountPaise: 5000 }),
-      ],
+      refunds: [refund({ status: 'pending', latePayment: true, amountPaise: 315400 })],
+    })).toEqual({
+      reason: CANCEL_REASON_PAYMENT,
+      refunds: [refundProcessingMessage('₹3,154')],
     });
-    expect(lines[0]).toBe(CANCEL_REASON_PAYMENT);
-    expect(lines[1]).toBe('Refund sent on 27 Nov 2026, ₹1,250');
-    expect(lines[2]).toBe(REFUND_FAILED);
-    expect(lines.join(' ')).not.toMatch(/queued/);
-  });
-
-  it('uses the order total when the payment event is in and the refund row is not yet', () => {
-    expect(settlementLines({
+    expect(settlementCopy({
       cancelReason: 'Payment not completed in time; stock released',
       paymentAfterCancel: true,
       totalPaise: 315400,
       refunds: [],
-    })).toEqual([
-      CANCEL_REASON_PAYMENT,
-      latePaymentRefundMessage('₹3,154'),
-    ]);
+    })).toEqual({
+      reason: CANCEL_REASON_PAYMENT,
+      refunds: [refundProcessingMessage('₹3,154')],
+    });
   });
 });
 
@@ -159,8 +165,11 @@ describe('account settlement read', () => {
     });
     expect(selects).toEqual(['order_id,reason_code:payload->>reason_code', 'order_id']);
     expect(asked).toEqual([[ORDER]]);
-    expect(lines[ORDER]).toEqual([CANCEL_REASON_BY_US, REFUND_QUEUED]);
-    expect(lines[ORDER].join(' ')).not.toMatch(/shelf|unavailable|ADM_/);
+    expect(lines[ORDER]).toEqual({
+      reason: CANCEL_REASON_BY_US,
+      refunds: [refundProcessingMessage('₹1,250')],
+    });
+    expect(`${lines[ORDER].reason} ${lines[ORDER].refunds.join(' ')}`).not.toMatch(/shelf|unavailable|ADM_/);
   });
 
   it('treats a payment-after-cancel event as a queued refund even before the refund row says so', async () => {
@@ -181,10 +190,10 @@ describe('account settlement read', () => {
       cancelReason: 'Payment not completed in time; stock released',
       totalPaise: 315400,
     }], async () => new Map([[ORDER, [refund({ status: 'pending', amountPaise: 315400 })]]]));
-    expect(lines[ORDER]).toEqual([
-      CANCEL_REASON_PAYMENT,
-      "We received your payment after this order was cancelled. Your refund of ₹3,154 is queued.",
-    ]);
+    expect(lines[ORDER]).toEqual({
+      reason: CANCEL_REASON_PAYMENT,
+      refunds: [refundProcessingMessage('₹3,154')],
+    });
   });
 
   it('still shows the cancel sentence when the refund read fails', async () => {
@@ -200,18 +209,20 @@ describe('account settlement read', () => {
       [{ id: ORDER, cancelReason: 'Changed my mind', totalPaise: 100 }],
       async () => { throw new Error('down'); },
     );
-    expect(lines[ORDER]).toEqual([CANCEL_REASON_BY_YOU]);
+    expect(lines[ORDER]).toEqual({ reason: CANCEL_REASON_BY_YOU, refunds: [] });
   });
 });
 
 describe('order status notes', () => {
   it('renders each sentence and nothing when the list is empty', () => {
     const page = renderToStaticMarkup(createElement(OrderStatusNotes, {
-      lines: [CANCEL_REASON_PAYMENT, REFUND_QUEUED],
+      reason: CANCEL_REASON_PAYMENT,
+      refunds: [refundProcessingMessage('₹1,250')],
     }));
+    expect(page).toContain('text-xs');
     expect(page).toContain(CANCEL_REASON_PAYMENT);
-    expect(page).toContain(REFUND_QUEUED);
-    expect(renderToStaticMarkup(createElement(OrderStatusNotes, { lines: [] }))).toBe('');
+    expect(page).toContain(refundProcessingMessage('₹1,250'));
+    expect(renderToStaticMarkup(createElement(OrderStatusNotes, { reason: null, refunds: [] }))).toBe('');
   });
 
   it('the account list and the order page both show the notes and read cancel_reason', () => {

@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { formatMoney } from '../lib/currency';
 import { getOrderStatusMeta } from '../lib/order-status';
 import { loadOwnSettlementLines } from '../lib/accountSettlement';
+import type { SettlementCopy } from '../lib/refundCopy';
 import { OrderStatusNotes } from '../components/OrderStatusNotes';
 import { PHONE_INVALID_MESSAGE } from '../lib/phone';
 import { customerNameError, updateOwnProfile } from '../lib/profile';
@@ -46,7 +47,7 @@ export const Account = () => {
   const { user, profile, signOut, refreshProfile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [settlement, setSettlement] = useState<Record<string, string[]>>({});
+  const [settlement, setSettlement] = useState<Record<string, SettlementCopy>>({});
   const [addresses, setAddresses] = useState<BookAddress[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -314,7 +315,10 @@ export const Account = () => {
                             day: 'numeric', month: 'short', year: 'numeric',
                           })} · {o.item_count} item{o.item_count === 1 ? '' : 's'}
                         </p>
-                        <OrderStatusNotes lines={settlement[o.id] ?? []} className="text-xs" />
+                        <OrderStatusNotes
+                          reason={settlement[o.id]?.reason ?? null}
+                          refunds={settlement[o.id]?.refunds ?? []}
+                        />
                       </div>
                       <div className="flex items-center gap-6">
                         <StatusBadge status={o.status} />
